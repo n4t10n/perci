@@ -1,5 +1,5 @@
 /**
- * Percí v2 - StorageManager (Unified Local-First Model)
+ * Percí v2 - StorageManager (Unified Local-First Model con Aislamiento por Usuario)
  * Entity Hierarchy: Activity -> Plan -> Session -> Metric & Evidence
  */
 
@@ -11,6 +11,18 @@ const STORAGE_KEYS_V2 = {
 };
 
 const StorageManager = {
+  // Helper para aislar claves de localStorage según el usuario activo
+  getUserKey(baseKey) {
+    const session = localStorage.getItem('perci_session_v2');
+    if (!session) return baseKey; // Modo invitado / legacy
+    try {
+      const user = JSON.parse(session);
+      return (user && user.id) ? `usr_${user.id}_${baseKey}` : baseKey;
+    } catch (e) {
+      return baseKey;
+    }
+  },
+
   // --- INITIAL SEED DATA ---
   getInitialSeedActivities() {
     return [
@@ -83,16 +95,22 @@ const StorageManager = {
   // --- ACTIVITIES CRUD ---
   getActivities() {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS_V2.ACTIVITIES);
+      const storageKey = this.getUserKey(STORAGE_KEYS_V2.ACTIVITIES);
+      const data = localStorage.getItem(storageKey);
       if (!data) {
-        const seed = this.getInitialSeedActivities();
-        localStorage.setItem(STORAGE_KEYS_V2.ACTIVITIES, JSON.stringify(seed));
-        return seed;
+        // Si no hay sesión de usuario activa (invitado), carga los datos iniciales
+        if (storageKey === STORAGE_KEYS_V2.ACTIVITIES) {
+          const seed = this.getInitialSeedActivities();
+          localStorage.setItem(STORAGE_KEYS_V2.ACTIVITIES, JSON.stringify(seed));
+          return seed;
+        }
+        // Para usuario con sesión nueva, retorna un arreglo vacío en 0
+        return [];
       }
       const parsed = JSON.parse(data);
       return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-      return this.getInitialSeedActivities();
+      return [];
     }
   },
 
@@ -105,7 +123,8 @@ const StorageManager = {
     if (idx !== -1) activities[idx] = act;
     else activities.push(act);
 
-    localStorage.setItem(STORAGE_KEYS_V2.ACTIVITIES, JSON.stringify(activities));
+    const storageKey = this.getUserKey(STORAGE_KEYS_V2.ACTIVITIES);
+    localStorage.setItem(storageKey, JSON.stringify(activities));
     return act;
   },
 
@@ -115,22 +134,27 @@ const StorageManager = {
 
   deleteActivity(id) {
     const activities = this.getActivities().filter(a => a.id !== id);
-    localStorage.setItem(STORAGE_KEYS_V2.ACTIVITIES, JSON.stringify(activities));
+    const storageKey = this.getUserKey(STORAGE_KEYS_V2.ACTIVITIES);
+    localStorage.setItem(storageKey, JSON.stringify(activities));
   },
 
   // --- PLANS CRUD ---
   getPlans() {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS_V2.PLANS);
+      const storageKey = this.getUserKey(STORAGE_KEYS_V2.PLANS);
+      const data = localStorage.getItem(storageKey);
       if (!data) {
-        const seed = this.getInitialSeedPlans();
-        localStorage.setItem(STORAGE_KEYS_V2.PLANS, JSON.stringify(seed));
-        return seed;
+        if (storageKey === STORAGE_KEYS_V2.PLANS) {
+          const seed = this.getInitialSeedPlans();
+          localStorage.setItem(STORAGE_KEYS_V2.PLANS, JSON.stringify(seed));
+          return seed;
+        }
+        return [];
       }
       const parsed = JSON.parse(data);
       return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-      return this.getInitialSeedPlans();
+      return [];
     }
   },
 
@@ -146,19 +170,22 @@ const StorageManager = {
     if (idx !== -1) plans[idx] = plan;
     else plans.push(plan);
 
-    localStorage.setItem(STORAGE_KEYS_V2.PLANS, JSON.stringify(plans));
+    const storageKey = this.getUserKey(STORAGE_KEYS_V2.PLANS);
+    localStorage.setItem(storageKey, JSON.stringify(plans));
     return plan;
   },
 
   deletePlan(id) {
     const plans = this.getPlans().filter(p => p.id !== id);
-    localStorage.setItem(STORAGE_KEYS_V2.PLANS, JSON.stringify(plans));
+    const storageKey = this.getUserKey(STORAGE_KEYS_V2.PLANS);
+    localStorage.setItem(storageKey, JSON.stringify(plans));
   },
 
   // --- SESSIONS & METRICS & EVIDENCES CRUD ---
   getSessions() {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS_V2.SESSIONS);
+      const storageKey = this.getUserKey(STORAGE_KEYS_V2.SESSIONS);
+      const data = localStorage.getItem(storageKey);
       if (!data) return [];
       const parsed = JSON.parse(data);
       return Array.isArray(parsed) ? parsed : [];
@@ -177,13 +204,15 @@ const StorageManager = {
     if (idx !== -1) sessions[idx] = session;
     else sessions.push(session);
 
-    localStorage.setItem(STORAGE_KEYS_V2.SESSIONS, JSON.stringify(sessions));
+    const storageKey = this.getUserKey(STORAGE_KEYS_V2.SESSIONS);
+    localStorage.setItem(storageKey, JSON.stringify(sessions));
     return session;
   },
 
   deleteSession(id) {
     const sessions = this.getSessions().filter(s => s.id !== id);
-    localStorage.setItem(STORAGE_KEYS_V2.SESSIONS, JSON.stringify(sessions));
+    const storageKey = this.getUserKey(STORAGE_KEYS_V2.SESSIONS);
+    localStorage.setItem(storageKey, JSON.stringify(sessions));
   },
 
   getSessionsByDate(dateStr) {
@@ -270,7 +299,8 @@ const StorageManager = {
   // --- SETTINGS CRUD ---
   getSettings() {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS_V2.SETTINGS);
+      const storageKey = this.getUserKey(STORAGE_KEYS_V2.SETTINGS);
+      const data = localStorage.getItem(storageKey);
       const parsed = data ? JSON.parse(data) : {};
       return (parsed && typeof parsed === 'object') ? parsed : { theme: 'dark', userName: 'Valen' };
     } catch (e) {
@@ -281,7 +311,8 @@ const StorageManager = {
   saveSettings(newSettings) {
     const current = this.getSettings();
     const updated = { ...current, ...newSettings };
-    localStorage.setItem(STORAGE_KEYS_V2.SETTINGS, JSON.stringify(updated));
+    const storageKey = this.getUserKey(STORAGE_KEYS_V2.SETTINGS);
+    localStorage.setItem(storageKey, JSON.stringify(updated));
     return updated;
   },
 
@@ -302,16 +333,20 @@ const StorageManager = {
     try {
       const backup = JSON.parse(jsonString);
       if (backup.activities && Array.isArray(backup.activities)) {
-        localStorage.setItem(STORAGE_KEYS_V2.ACTIVITIES, JSON.stringify(backup.activities));
+        const key = this.getUserKey(STORAGE_KEYS_V2.ACTIVITIES);
+        localStorage.setItem(key, JSON.stringify(backup.activities));
       }
       if (backup.plans && Array.isArray(backup.plans)) {
-        localStorage.setItem(STORAGE_KEYS_V2.PLANS, JSON.stringify(backup.plans));
+        const key = this.getUserKey(STORAGE_KEYS_V2.PLANS);
+        localStorage.setItem(key, JSON.stringify(backup.plans));
       }
       if (backup.sessions && Array.isArray(backup.sessions)) {
-        localStorage.setItem(STORAGE_KEYS_V2.SESSIONS, JSON.stringify(backup.sessions));
+        const key = this.getUserKey(STORAGE_KEYS_V2.SESSIONS);
+        localStorage.setItem(key, JSON.stringify(backup.sessions));
       }
       if (backup.settings) {
-        localStorage.setItem(STORAGE_KEYS_V2.SETTINGS, JSON.stringify(backup.settings));
+        const key = this.getUserKey(STORAGE_KEYS_V2.SETTINGS);
+        localStorage.setItem(key, JSON.stringify(backup.settings));
       }
       return true;
     } catch (e) {
@@ -321,9 +356,9 @@ const StorageManager = {
   },
 
   clearAllData() {
-    localStorage.removeItem(STORAGE_KEYS_V2.ACTIVITIES);
-    localStorage.removeItem(STORAGE_KEYS_V2.PLANS);
-    localStorage.removeItem(STORAGE_KEYS_V2.SESSIONS);
-    localStorage.removeItem(STORAGE_KEYS_V2.SETTINGS);
+    localStorage.removeItem(this.getUserKey(STORAGE_KEYS_V2.ACTIVITIES));
+    localStorage.removeItem(this.getUserKey(STORAGE_KEYS_V2.PLANS));
+    localStorage.removeItem(this.getUserKey(STORAGE_KEYS_V2.SESSIONS));
+    localStorage.removeItem(this.getUserKey(STORAGE_KEYS_V2.SETTINGS));
   }
 };

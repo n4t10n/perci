@@ -1,4 +1,4 @@
-/* Percí v2 Design System - Apple Health + Hevy + Notion Calendar Inspired */
+/* Percí v2 Design System - Purified & Optimized */
 
 :root {
   /* DARK NEUTRAL THEME (DEFAULT) */
@@ -67,12 +67,21 @@
   --shadow-glow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
-/* BASE RESET */
-* {
+/* BASE RESET & PREVENCIÓN DE SCROLL HORIZONTAL */
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden !important;
+  margin: 0;
+  padding: 0;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -80,32 +89,32 @@ body {
   background-color: var(--bg-color);
   background: var(--bg-gradient);
   color: var(--text-main);
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow-x: hidden;
 }
 
 /* MOBILE APP FRAME CONTAINER */
 .mobile-app-frame {
   width: 100%;
-  max-width: 480px;
-  height: 100vh;
-  max-height: 920px;
+  max-width: 100vw;
+  height: 100dvh;
   background: var(--frame-bg);
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden;
-  border: 1px solid var(--card-border);
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 @media (min-width: 500px) {
   .mobile-app-frame {
+    max-width: 480px;
     height: 90vh;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-glow);
+    border: 1px solid var(--card-border);
   }
 }
 
@@ -125,39 +134,39 @@ body {
 .app-logo {
   display: flex;
   align-items: center;
-  gap: 8px;
 }
 
-.logo-icon {
-  width: 24px;
-  height: 24px;
-  color: var(--accent-cyan);
+/* MANEJO DINÁMICO DE LOGOS SEGÚN TEMA */
+.app-logo-img {
+  content: url('assets/logo-perci-horizontal.svg');
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+  display: block;
 }
 
-.logo-text {
-  font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  color: var(--text-main);
+.auth-logo-img {
+  content: url('assets/logo-perci-vertical.svg');
+  height: 90px;
+  width: auto;
+  margin: 0 auto 10px;
+  display: block;
+}
+
+[data-theme="light"] .app-logo-img {
+  content: url('assets/logo-perci-horizontal-black.svg');
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.1));
+}
+
+[data-theme="light"] .auth-logo-img {
+  content: url('assets/logo-perci-vertical-black.svg');
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.1));
 }
 
 .header-right {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.streak-pill {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(255, 171, 0, 0.1);
-  border: 1px solid rgba(255, 171, 0, 0.25);
-  padding: 4px 10px;
-  border-radius: var(--radius-pill);
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--accent-amber);
 }
 
 .icon-btn {
@@ -193,15 +202,18 @@ body {
 .app-body {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  overflow-x: hidden;
+  padding: 16px 16px calc(85px + env(safe-area-inset-bottom, 0px)) 16px;
+  width: 100%;
   position: relative;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
 }
 
 .tab-pane {
   display: none;
   animation: fadeIn 0.2s ease-in-out;
-  padding-bottom: 75px;
 }
 
 .tab-pane.active {
@@ -229,7 +241,17 @@ body {
   margin-top: 2px;
 }
 
-/* CARDS (APPLE HEALTH / HEVY CLEAN STYLE) */
+/* CARDS & CONTENEDORES RESPONSIVE */
+.card, 
+.form-row, 
+.stats-overview-grid, 
+.analytics-card-spaced, 
+.today-action-card,
+.modal-card {
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
 .card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -340,17 +362,34 @@ body {
   font-weight: 700;
 }
 
-/* OVERVIEW STATS GRID (Ajustado a 3 métricas principales) */
+/* OVERVIEW STATS GRID (3 COLUMNAS) */
 .stats-overview-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 16px;
 }
 
-@media (max-width: 360px) {
-  .stats-overview-grid {
-    grid-template-columns: 1fr;
+@media (max-width: 380px) {
+  .stat-card {
+    padding: 8px 6px;
+    flex-direction: column;
+    text-align: center;
+    gap: 4px;
+  }
+
+  .stat-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
+  }
+
+  .stat-value {
+    font-size: 0.95rem;
+  }
+
+  .stat-title {
+    font-size: 0.65rem;
   }
 }
 
@@ -391,7 +430,7 @@ body {
   color: var(--text-muted);
 }
 
-/* TIMELINE CALENDAR (NOTION CALENDAR STYLE) */
+/* TIMELINE CALENDAR */
 .calendar-card {
   padding: 16px;
 }
@@ -544,20 +583,24 @@ body {
   margin-top: 2px;
 }
 
-/* BOTTOM NAVIGATION BAR (FITTS'S LAW FIT) */
+/* BOTTOM NAVIGATION BAR (FIJA Y COMPATIBLE CON IOS SAFE-AREA) */
 .app-nav {
-  position: absolute;
+  position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 68px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  height: calc(68px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   background: var(--nav-bg);
   border-top: 1px solid var(--nav-border);
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 0 6px;
-  z-index: 20;
+  z-index: 100;
+  box-sizing: border-box;
 }
 
 .nav-item {
@@ -596,7 +639,7 @@ body {
   color: var(--text-main);
 }
 
-/* BUTTONS & FORM CONTROLS */
+/* BOTONES Y CONTROLES */
 .btn {
   font-family: var(--font-family);
   font-size: 0.85rem;
@@ -676,7 +719,7 @@ body {
 .flex-between { display: flex; align-items: center; justify-content: space-between; }
 .flex-end { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 
-/* MODALS */
+/* MODALES */
 .modal-backdrop {
   position: fixed;
   top: 0;
@@ -703,9 +746,9 @@ body {
   background: var(--frame-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-lg);
-  width: 100%;
+  width: 95%;
   max-width: 460px;
-  max-height: 88vh;
+  max-height: 90dvh;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-glow);
@@ -751,7 +794,7 @@ body {
   cursor: pointer;
 }
 
-/* FORMS */
+/* FORMULARIOS Y ENTRADAS */
 .form-group {
   display: flex;
   flex-direction: column;
@@ -842,14 +885,15 @@ body {
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease, filter 0.2s ease;
 }
 
 .workout-ex-input-card.is-dimmed {
-  opacity: 0.55;
+  opacity: 0.45;
+  filter: grayscale(0.8);
 }
 
-/* TOAST NOTIFICATIONS */
+/* NOTIFICACIONES TOAST */
 .toast-container {
   position: fixed;
   top: 20px;
@@ -890,7 +934,7 @@ body {
 .toast-item.toast-error { border-left: 4px solid #ff5252; }
 .toast-item.toast-info { border-left: 4px solid var(--accent-cyan); }
 
-/* REORDER HANDLES */
+/* ACCIONES DE REORDENAMIENTO Y PLANES */
 .reorder-actions {
   display: flex;
   flex-direction: column;
@@ -923,7 +967,6 @@ body {
   height: 14px;
 }
 
-/* PLAN SECTIONS & LINKS */
 .plan-section-header {
   background: rgba(0, 242, 254, 0.08);
   border-left: 3px solid var(--accent-cyan);
@@ -973,17 +1016,7 @@ body {
   background: rgba(0, 242, 254, 0.2);
 }
 
-/* WORKOUT LOGGER SKIP TOGGLE */
-.workout-ex-input-card {
-  transition: opacity 0.2s ease, filter 0.2s ease;
-}
-
-.workout-ex-input-card.is-dimmed {
-  opacity: 0.45;
-  filter: grayscale(0.8);
-}
-
-/* ETIQUETA VERTICAL LATERAL EN CARDS DE RESUMEN / HISTORIAL */
+/* ETIQUETA VERTICAL LATERAL EN CARDS */
 .card-vertical-tag-container {
   position: relative;
   overflow: hidden;
@@ -1020,6 +1053,14 @@ body {
 }
 
 /* ANALYTICS CHARTS & UI */
+.analytics-card-spaced {
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: var(--radius-md);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+}
+
 .analytics-bar-row {
   display: flex;
   align-items: center;
@@ -1069,26 +1110,6 @@ body {
   font-size: 0.8rem;
 }
 
-#tabAnalytics {
-  padding: 16px 16px 90px 16px !important;
-  animation: fadeIn 0.25s ease-in-out;
-}
-
-.stats-grid-responsive {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.analytics-card-spaced {
-  padding: 16px;
-  margin-bottom: 16px;
-  border-radius: var(--radius-md);
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-}
-
 .reps-stat-badge {
   background: rgba(124, 77, 255, 0.12);
   border: 1px solid rgba(124, 77, 255, 0.3);
@@ -1099,143 +1120,7 @@ body {
   font-weight: 600;
 }
 
-/* FULLSCREEN AUTHENTICATION SCREEN */
-.auth-screen-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: var(--bg-color);
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.auth-card {
-  width: 100%;
-  max-width: 380px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-lg);
-  padding: 28px 24px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-/* PERCÍ BRANDING LOGO ASSETS */
-.app-logo {
-  display: flex;
-  align-items: center;
-}
-
-.app-logo-img {
-  height: 32px;
-  width: auto;
-  object-fit: contain;
-  display: block;
-}
-
-/* Ajuste sutil para modo claro si tu SVG usa colores oscuros en las letras */
-[data-theme="light"] .app-logo-img,
-[data-theme="light"] .auth-card img {
-  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.1));
-}
-
-/* MANEJO DINÁMICO DE LOGOS SEGÚN TEMA */
-
-/* Imagen de logo por defecto (Modo Oscuro) */
-.app-logo-img {
-  content: url('assets/logo-perci-horizontal.svg');
-  height: 32px;
-  width: auto;
-  display: block;
-}
-
-.auth-logo-img {
-  content: url('assets/logo-perci-vertical.svg');
-  height: 90px;
-  width: auto;
-  margin: 0 auto 10px;
-  display: block;
-}
-
-/* Reemplazo automático cuando cambia a Modo Claro */
-[data-theme="light"] .app-logo-img {
-  content: url('assets/logo-perci-horizontal-black.svg');
-}
-
-[data-theme="light"] .auth-logo-img {
-  content: url('assets/logo-perci-vertical-black.svg');
-}
-
-/* CONTAINER FLUIDO Y ADAPTABLE */
-.mobile-app-frame {
-  width: 100%;
-  max-width: 480px;
-  height: 100vh;
-  /* En móviles llena el alto de pantalla nativo */
-  height: 100dvh; /* Dynamic Viewport Height para navegadores móviles con barra de dirección */
-  background: var(--frame-bg);
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
-}
-
-@media (min-width: 500px) {
-  .mobile-app-frame {
-    height: 90vh;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-glow);
-  }
-}
-
-/* CARDS DE RESUMEN HOME RESPONSIVE */
-.stats-overview-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-/* Ajuste automático para celulares pequeños (320px - 380px) */
-@media (max-width: 380px) {
-  .stats-overview-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
-  .stat-card {
-    padding: 8px 6px;
-    flex-direction: column;
-    text-align: center;
-    gap: 4px;
-  }
-
-  .stat-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 0.95rem;
-  }
-
-  .stat-value {
-    font-size: 0.95rem;
-  }
-
-  .stat-title {
-    font-size: 0.65rem;
-  }
-}
-
-/* ADAPTACIÓN DE MODALES EN PANTALLAS PEQUEÑAS */
-.modal-card {
-  width: 95%;
-  max-width: 460px;
-  max-height: 90dvh;
-}
-
-/* GOALS & TARGETS IN ANALYTICS */
+/* GOALS & TARGETS EN ANALYTICS */
 .goal-progress-item {
   display: flex;
   flex-direction: column;
@@ -1278,4 +1163,29 @@ body {
   height: 100%;
   border-radius: var(--radius-pill);
   transition: width 0.4s ease;
+}
+
+/* FULLSCREEN AUTHENTICATION SCREEN */
+.auth-screen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg-color);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }

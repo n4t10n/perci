@@ -16,14 +16,16 @@ window.AuthModule = {
     const appFrame = document.querySelector('.mobile-app-frame');
 
     if (activeUser) {
-      // Sesión activa: Ocultar Login, Mostrar App Completa
       if (authScreen) authScreen.style.display = 'none';
       if (appFrame) appFrame.style.display = 'flex';
 
       this.updateProfileName(activeUser);
-      if (window.App) App.refreshAllViews();
+
+      // Refrescar vistas con los datos limpios del nuevo usuario
+      if (window.App && typeof window.App.refreshAllViews === 'function') {
+        window.App.refreshAllViews();
+      }
     } else {
-      // Sin Sesión: Mostrar Login Pantalla Completa, Ocultar App
       if (authScreen) authScreen.style.display = 'flex';
       if (appFrame) appFrame.style.display = 'none';
     }
