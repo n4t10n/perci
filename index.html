@@ -2,27 +2,30 @@
 <html lang="es" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />  <title>Percí - Plataforma de Seguimiento de Progreso Personal</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Percí - Plataforma de Seguimiento de Progreso Personal</title>
+  
   <meta name="theme-color" content="#09090b">
+  
+  <!-- Configuración de pantalla completa para iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Percí">
+
   <!-- Google Fonts: Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="styles.css" />
+
   <!-- Icono para iPhone / iOS (Añadir a pantalla de inicio) -->
-<link rel="apple-touch-icon" href="assets/logo.png">
-<link rel="apple-touch-icon" sizes="180x180" href="assets/logo.png">
+  <link rel="apple-touch-icon" href="assets/logo.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/logo.png">
 
-<!-- Favicon estándar para navegadores -->
-<link rel="icon" type="image/png" sizes="32x32" href="assets/logo.png">
-<link rel="icon" type="image/png" sizes="16x16" href="assets/logo.png">
-
-<!-- Configuración de pantalla completa para iOS -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Percí">
+  <!-- Favicon estándar para navegadores -->
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/logo.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/logo.png">
 </head>
 <body>
 
@@ -30,10 +33,9 @@
   <div id="authScreen" class="auth-screen-overlay" style="display: none;">
     <div class="auth-card">
       <div style="margin-bottom: 24px; text-align: center;">
-  <img class="auth-logo-img" alt="Percí Logo" />
-  <p class="view-subtitle" id="authSubtitle" style="margin-top: 6px;">Iniciá sesión para sincronizar tu progreso</p>
-</div>
-      
+        <img class="auth-logo-img" alt="Percí Logo" />
+        <p class="view-subtitle" id="authSubtitle" style="margin-top: 6px;">Iniciá sesión para sincronizar tu progreso</p>
+      </div>
 
       <form id="authForm" onsubmit="AuthModule.handleSubmit(event)">
         <div class="form-group" id="authNameGroup" style="display: none; text-align: left;">
@@ -68,8 +70,8 @@
     <header class="app-header">
       <div class="header-left">
         <div class="app-logo">
-  <img class="app-logo-img" alt="Percí Logo" />
-</div>
+          <img class="app-logo-img" alt="Percí Logo" />
+        </div>
       </div>
       <div class="header-right">
         <button class="icon-btn" id="themeToggleBtn" aria-label="Cambiar tema">
@@ -77,7 +79,6 @@
           <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
       </div>
-      
     </header>
 
     <!-- Main View Content Area -->
@@ -383,12 +384,12 @@
           <input type="hidden" id="activityId" />
           <div class="form-group">
             <label for="activityName">Nombre de la Actividad</label>
-            <input type="text" id="activityName" class="form-input" placeholder="Ej: Gym, Japonés, Lectura, Programación" required />
+            <input type="text" id="activityName" class="form-input" placeholder="Ej: Gym, Inglés, Lectura, Programación" required />
           </div>
           <div class="form-row">
             <div class="form-group" style="flex: 1;">
               <label for="activityIcon">Icono / Emoji</label>
-              <input type="text" id="activityIcon" class="form-input" placeholder="Ej: 🏋️‍♂️, 🇯🇵, 📚, 💻" required />
+              <input type="text" id="activityIcon" class="form-input" placeholder="Ej: 🏋️‍♂️, 🇬🇧, 📚, 💻" required />
             </div>
             <div class="form-group" style="flex: 1.5;">
               <label for="activityCategory">Categoría</label>
