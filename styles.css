@@ -93,6 +93,8 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* MOBILE APP FRAME CONTAINER */
@@ -122,6 +124,7 @@ body {
 .app-header {
   height: 60px;
   padding: 0 16px;
+  padding-top: max(16px, env(safe-area-inset-top));
   display: flex;
   align-items: center;
   justify-content: space-between;
