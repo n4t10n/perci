@@ -134,6 +134,14 @@ body {
   background: var(--frame-bg);
 }
 
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: #09090b; /* Color de fondo exacto de tu app */
+  padding-top: max(12px, env(safe-area-inset-top));
+}
+
 .app-logo {
   display: flex;
   align-items: center;
