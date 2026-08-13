@@ -1,6 +1,6 @@
 /**
- * Percí v2 - StorageManager (Unified Local-First Model con Aislamiento por Usuario)
- * Entity Hierarchy: Activity -> Plan -> Session -> Metric & Evidence
+ * Percí v2 - StorageManager (Hybrid Supabase & Local Cache Model)
+ * Mantiene compatibilidad sincrónica total con app.js, activities.js y calendar.js
  */
 
 const STORAGE_KEYS_V2 = {
@@ -14,7 +14,7 @@ const StorageManager = {
   // Helper para aislar claves de localStorage según el usuario activo
   getUserKey(baseKey) {
     const session = localStorage.getItem('perci_session_v2');
-    if (!session) return baseKey; // Modo invitado / legacy
+    if (!session) return baseKey;
     try {
       const user = JSON.parse(session);
       return (user && user.id) ? `usr_${user.id}_${baseKey}` : baseKey;
@@ -23,73 +23,64 @@ const StorageManager = {
     }
   },
 
-  // --- INITIAL SEED DATA ---
-  getInitialSeedActivities() {
-    return [
-      {
-        id: 'act_gym',
-        name: 'Gym & Entrenamiento',
-        icon: '🏋️‍♂️',
-        color: '#00f2fe',
-        category: 'Ejercicio',
-        weekly_target: 4,
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 'act_japanese',
-        name: 'Japonés',
-        icon: '🇯🇵',
-        color: '#00e676',
-        category: 'Estudio',
-        weekly_target: 5,
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 'act_reading',
-        name: 'Lectura',
-        icon: '📚',
-        color: '#7c4dff',
-        category: 'Hábito',
-        weekly_target: 7,
-        created_at: new Date().toISOString()
-      }
-    ];
+  clearMemoryCache() {
+    // Método auxiliar al cerrar sesión
   },
 
-  getInitialSeedPlans() {
-    return [
-      {
-        id: 'plan_upper_lower',
-        activity_id: 'act_gym',
-        name: 'Upper Lower Routine',
-        active: true,
-        exercises: [
-          { id: 'ex_1', name: 'Press Banca', metric_type: 'fuerza', target: '3 series x 8-10 reps' },
-          { id: 'ex_2', name: 'Dominadas', metric_type: 'fuerza', target: '3 series x fallo técnico' },
-          { id: 'ex_3', name: 'Flexiones', metric_type: 'fuerza', target: '3 series x 12-15 reps' },
-          { id: 'ex_4', name: 'Plancha Abdominal', metric_type: 'tiempo', target: '3 series x 45 seg' }
-        ]
-      },
-      {
-        id: 'plan_minna',
-        activity_id: 'act_japanese',
-        name: 'Minna no Nihongo',
-        active: true,
-        exercises: [
-          { id: 'ex_j1', name: 'Vocabulario & Kanji', metric_type: 'items', target: '15 palabras / 45 min' },
-          { id: 'ex_j2', name: 'Gramática ~てしまう', metric_type: 'tiempo', target: '30 min' }
-        ]
-      },
-      {
-        id: 'plan_reading_book',
-        activity_id: 'act_reading',
-        name: 'Hábitos Atómicos',
-        active: true,
-        exercises: [
-          { id: 'ex_r1', name: 'Lectura Diaria', metric_type: 'paginas', target: '20 páginas por día' }
-        ]
+  // --- SUPABASE PROXY SYNC ---
+  async syncFromSupabase() {
+    if (!window.supabase) return;
+    const sessionStr = localStorage.getItem('perci_session_v2');
+    if (!sessionStr) return;
+
+    try {
+      // 1. Cargar Actividades
+      const { data: actData } = await window.supabase.from('activities').select('*');
+      if (actData) {
+        const formattedAct = actData.map(a => ({
+          id: a.id,
+          name: a.name,
+          icon: a.icon,
+          category: a.category,
+          weekly_target: a.weekly_target,
+          color: a.color,
+          created_at: a.created_at
+        }));
+        localStorage.setItem(this.getUserKey(STORAGE_KEYS_V2.ACTIVITIES), JSON.stringify(formattedAct));
       }
-    ];
+
+      // 2. Cargar Planes
+      const { data: planData } = await window.supabase.from('plans').select('*');
+      if (planData) {
+        const formattedPlans = planData.map(p => ({
+          id: p.id,
+          activity_id: p.activity_id,
+          name: p.name,
+          active: true,
+          exercises: p.items || []
+        }));
+        localStorage.setItem(this.getUserKey(STORAGE_KEYS_V2.PLANS), JSON.stringify(formattedPlans));
+      }
+
+      // 3. Cargar Sesiones
+      const { data: sessData } = await window.supabase.from('sessions').select('*');
+      if (sessData) {
+        const formattedSess = sessData.map(s => ({
+          id: s.id,
+          activity_id: s.activity_id,
+          plan_id: s.plan_id,
+          date: s.date,
+          time: s.time,
+          energy: s.energy,
+          difficulty: s.difficulty,
+          notes: s.notes,
+          metrics: s.metrics || []
+        }));
+        localStorage.setItem(this.getUserKey(STORAGE_KEYS_V2.SESSIONS), JSON.stringify(formattedSess));
+      }
+    } catch (err) {
+      console.error('Error sincronizando desde Supabase:', err);
+    }
   },
 
   // --- ACTIVITIES CRUD ---
@@ -97,16 +88,7 @@ const StorageManager = {
     try {
       const storageKey = this.getUserKey(STORAGE_KEYS_V2.ACTIVITIES);
       const data = localStorage.getItem(storageKey);
-      if (!data) {
-        // Si no hay sesión de usuario activa (invitado), carga los datos iniciales
-        if (storageKey === STORAGE_KEYS_V2.ACTIVITIES) {
-          const seed = this.getInitialSeedActivities();
-          localStorage.setItem(STORAGE_KEYS_V2.ACTIVITIES, JSON.stringify(seed));
-          return seed;
-        }
-        // Para usuario con sesión nueva, retorna un arreglo vacío en 0
-        return [];
-      }
+      if (!data) return [];
       const parsed = JSON.parse(data);
       return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
@@ -116,6 +98,8 @@ const StorageManager = {
 
   saveActivity(act) {
     const activities = this.getActivities();
+    const isNew = !act.id || act.id.startsWith('act_');
+
     if (!act.id) act.id = 'act_' + Date.now();
     if (!act.created_at) act.created_at = new Date().toISOString();
 
@@ -125,6 +109,34 @@ const StorageManager = {
 
     const storageKey = this.getUserKey(STORAGE_KEYS_V2.ACTIVITIES);
     localStorage.setItem(storageKey, JSON.stringify(activities));
+
+    // Async save to Supabase
+    if (window.supabase) {
+      const sessionStr = localStorage.getItem('perci_session_v2');
+      if (sessionStr) {
+        const user = JSON.parse(sessionStr);
+        const payload = {
+          user_id: user.id,
+          name: act.name,
+          icon: act.icon,
+          category: act.category,
+          weekly_target: parseInt(act.weekly_target || 3),
+          color: act.color || '#00f2fe'
+        };
+
+        if (isNew) {
+          window.supabase.from('activities').insert([payload]).select().then(({ data }) => {
+            if (data && data[0]) {
+              act.id = data[0].id;
+              this.saveActivity(act);
+            }
+          });
+        } else {
+          window.supabase.from('activities').update(payload).eq('id', act.id);
+        }
+      }
+    }
+
     return act;
   },
 
@@ -136,6 +148,10 @@ const StorageManager = {
     const activities = this.getActivities().filter(a => a.id !== id);
     const storageKey = this.getUserKey(STORAGE_KEYS_V2.ACTIVITIES);
     localStorage.setItem(storageKey, JSON.stringify(activities));
+
+    if (window.supabase) {
+      window.supabase.from('activities').delete().eq('id', id);
+    }
   },
 
   // --- PLANS CRUD ---
@@ -143,14 +159,7 @@ const StorageManager = {
     try {
       const storageKey = this.getUserKey(STORAGE_KEYS_V2.PLANS);
       const data = localStorage.getItem(storageKey);
-      if (!data) {
-        if (storageKey === STORAGE_KEYS_V2.PLANS) {
-          const seed = this.getInitialSeedPlans();
-          localStorage.setItem(STORAGE_KEYS_V2.PLANS, JSON.stringify(seed));
-          return seed;
-        }
-        return [];
-      }
+      if (!data) return [];
       const parsed = JSON.parse(data);
       return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
@@ -164,6 +173,8 @@ const StorageManager = {
 
   savePlan(plan) {
     const plans = this.getPlans();
+    const isNew = !plan.id || plan.id.startsWith('plan_');
+
     if (!plan.id) plan.id = 'plan_' + Date.now();
 
     const idx = plans.findIndex(p => p.id === plan.id);
@@ -172,6 +183,32 @@ const StorageManager = {
 
     const storageKey = this.getUserKey(STORAGE_KEYS_V2.PLANS);
     localStorage.setItem(storageKey, JSON.stringify(plans));
+
+    // Async save to Supabase
+    if (window.supabase) {
+      const sessionStr = localStorage.getItem('perci_session_v2');
+      if (sessionStr) {
+        const user = JSON.parse(sessionStr);
+        const payload = {
+          user_id: user.id,
+          activity_id: plan.activity_id,
+          name: plan.name,
+          items: plan.exercises || []
+        };
+
+        if (isNew) {
+          window.supabase.from('plans').insert([payload]).select().then(({ data }) => {
+            if (data && data[0]) {
+              plan.id = data[0].id;
+              this.savePlan(plan);
+            }
+          });
+        } else {
+          window.supabase.from('plans').update(payload).eq('id', plan.id);
+        }
+      }
+    }
+
     return plan;
   },
 
@@ -179,9 +216,13 @@ const StorageManager = {
     const plans = this.getPlans().filter(p => p.id !== id);
     const storageKey = this.getUserKey(STORAGE_KEYS_V2.PLANS);
     localStorage.setItem(storageKey, JSON.stringify(plans));
+
+    if (window.supabase) {
+      window.supabase.from('plans').delete().eq('id', id);
+    }
   },
 
-  // --- SESSIONS & METRICS & EVIDENCES CRUD ---
+  // --- SESSIONS CRUD ---
   getSessions() {
     try {
       const storageKey = this.getUserKey(STORAGE_KEYS_V2.SESSIONS);
@@ -196,6 +237,8 @@ const StorageManager = {
 
   saveSession(session) {
     const sessions = this.getSessions();
+    const isNew = !session.id || session.id.startsWith('sess_');
+
     if (!session.id) session.id = 'sess_' + Date.now();
     if (!session.date) session.date = this.getTodayDateString();
     if (!session.time) session.time = new Date().toTimeString().slice(0, 5);
@@ -206,6 +249,37 @@ const StorageManager = {
 
     const storageKey = this.getUserKey(STORAGE_KEYS_V2.SESSIONS);
     localStorage.setItem(storageKey, JSON.stringify(sessions));
+
+    // Async save to Supabase
+    if (window.supabase) {
+      const sessionStr = localStorage.getItem('perci_session_v2');
+      if (sessionStr) {
+        const user = JSON.parse(sessionStr);
+        const payload = {
+          user_id: user.id,
+          activity_id: session.activity_id,
+          plan_id: session.plan_id || null,
+          date: session.date,
+          time: session.time,
+          energy: parseInt(session.energy || 4),
+          difficulty: parseInt(session.difficulty || 3),
+          notes: session.notes || '',
+          metrics: session.metrics || []
+        };
+
+        if (isNew) {
+          window.supabase.from('sessions').insert([payload]).select().then(({ data }) => {
+            if (data && data[0]) {
+              session.id = data[0].id;
+              this.saveSession(session);
+            }
+          });
+        } else {
+          window.supabase.from('sessions').update(payload).eq('id', session.id);
+        }
+      }
+    }
+
     return session;
   },
 
@@ -213,6 +287,10 @@ const StorageManager = {
     const sessions = this.getSessions().filter(s => s.id !== id);
     const storageKey = this.getUserKey(STORAGE_KEYS_V2.SESSIONS);
     localStorage.setItem(storageKey, JSON.stringify(sessions));
+
+    if (window.supabase) {
+      window.supabase.from('sessions').delete().eq('id', id);
+    }
   },
 
   getSessionsByDate(dateStr) {
@@ -227,7 +305,7 @@ const StorageManager = {
   getLastSessionForExercise(exerciseName) {
     const sessions = this.getSessions().sort((a, b) => new Date(b.date + 'T' + (b.time || '00:00')) - new Date(a.date + 'T' + (a.time || '00:00')));
     for (const sess of sessions) {
-      if (!sess.metrics) continue;
+      if (!sess.metrics || !Array.isArray(sess.metrics)) continue;
       const m = sess.metrics.find(item => item.exercise_name && item.exercise_name.trim().toLowerCase() === exerciseName.trim().toLowerCase());
       if (m) return { sessionDate: sess.date, metric: m };
     }
@@ -281,7 +359,6 @@ const StorageManager = {
     let checkDate = new Date();
     let dateStr = this.getTodayDateString(checkDate);
 
-    // If today has no logged session yet, check if yesterday had one to maintain streak
     if (!dateMap[dateStr]) {
       checkDate.setDate(checkDate.getDate() - 1);
       dateStr = this.getTodayDateString(checkDate);

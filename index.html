@@ -37,6 +37,7 @@
         <p class="view-subtitle" id="authSubtitle" style="margin-top: 6px;">Iniciá sesión para sincronizar tu progreso</p>
       </div>
 
+
       <form id="authForm" onsubmit="AuthModule.handleSubmit(event)">
         <div class="form-group" id="authNameGroup" style="display: none; text-align: left;">
           <label for="authName">Nombre de usuario</label>
@@ -50,8 +51,14 @@
 
         <div class="form-group" style="text-align: left;">
           <label for="authPassword">Contraseña</label>
-          <input type="password" id="authPassword" class="form-input" placeholder="••••••••" required />
+          <input type="password" id="authPassword" class="form-input" placeholder="••••••••" required minlength="6" />
+          <span id="passwordHelpText" style="font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; display: none;">
+            Mínimo 6 caracteres
+          </span>
         </div>
+
+        <!-- Mensaje de error visible en pantalla -->
+        <div id="authErrorMessage" style="display: none; color: #ff5252; font-size: 0.8rem; background: rgba(255, 82, 82, 0.1); border: 1px solid rgba(255, 82, 82, 0.3); padding: 8px 12px; border-radius: var(--radius-sm); margin-top: 10px; text-align: left;"></div>
 
         <button type="submit" class="btn btn-primary btn-full" id="authSubmitBtn" style="margin-top: 14px; padding: 12px; font-weight: 700;">
           Iniciar Sesión
@@ -589,6 +596,10 @@
 
   <!-- Toast Notification Container -->
   <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Supabase JS Client & Config -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-client.js"></script>
 
   <!-- JS Scripts -->
   <script src="js/storage.js"></script>
