@@ -2,13 +2,14 @@ import { OFFICIAL_LOGOS } from './brand.js';
 import {cleanImportedState} from './data/import-cleanup.js';
 import { storage,readUserState,writeUserState,getLegacyOwner,legacyAlreadyClaimed,markLegacyClaimed,legacyHasPersonalData } from './data/repository.js';
 import { previewLocalMigration } from './data/migration-preflight.js';
-import { reconcileCloudSnapshot, hasPersonalData } from './data/auto-hydration.js?v=1.4.1';
+import { reconcileCloudSnapshot, hasPersonalData } from './data/auto-hydration.js?v=1.4.2';
 import { dateISO, offsetDate, seed } from './domain/initial-state.js';
 import { getInitialView } from './domain/startup-route.js';
-import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,deleteCloudEntities,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync} from './account.js?v=1.4.1';
-import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.4.1';
-import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.4.1';
-import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.4.1';
+import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,deleteCloudEntities,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync} from './account.js?v=1.4.2';
+import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.4.2';
+import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.4.2';
+import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.4.2';
+import {canAutoRefreshCloud,shouldRefreshOnNavigation} from './data/auto-refresh.js?v=1.4.2';
 
 
 (()=>{'use strict';
@@ -26,7 +27,11 @@ const applyTheme=()=>{let t=state.theme==='system'?(matchMedia('(prefers-color-s
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
 const navs=[['home','Inicio'],['activity','Actividad'],['progress','Progreso'],['habits','Hábitos']];
 const mainView=v=>({home:'home',activity:'activity',routine:'activity',routineEdit:'activity',exerciseLibrary:'activity',session:'activity',otherForm:'activity',progress:'progress',record:'progress',habits:'habits',habitEdit:'habits',settings:'settings',account:'account',onboard:'home'}[v]||'home');
-const go=v=>{if(!account.authenticated||app.needLegacyChoice)return;if(hasAccountConflict())v='account';app.view=v;window.scrollTo({top:0,behavior:'instant'});render()};
+const go=v=>{if(!account.authenticated||app.needLegacyChoice)return;if(hasAccountConflict())v='account';app.view=v;window.scrollTo({top:0,behavior:'instant'});render();
+  // Al navegar a una pantalla de lectura, traer los datos nuevos de la cuenta.
+  // La edición y los entrenamientos activos no deben interrumpirse.
+  if(shouldRefreshOnNavigation(v))queueMicrotask(()=>refreshAccountAutomatically(8000));
+};
 const toast=s=>{app.toast=s;let el=document.createElement('div');el.className='toast';el.setAttribute('role','status');el.textContent=s;document.querySelectorAll('.toast').forEach(x=>x.remove());document.body.appendChild(el);setTimeout(()=>el.remove(),2400)};
 const title=(head,sub,action='')=>`<div class="row between wrap" style="align-items:end;margin:7px 0 21px"><div><h1 style="font-size:clamp(29px,4vw,43px);margin:0 0 8px">${head}</h1><p class="sub" style="margin:0">${sub}</p></div>${action}</div>`;
 const back=(dest='activity')=>`<button class="back" data-action="go" data-value="${dest}">← Volver</button>`;
@@ -82,7 +87,9 @@ function render(){
 function activateAccountData(){
   const id=account.user?.id;
   if(!account.authenticated||!id){
-    app.activeUid=null;app.needLegacyChoice=false;app.hydrating=false;app.cloudConflict=null;app.cloudNotice='';storage.activateUser(null);state=freshState();app.view='home';return;
+    app.activeUid=null;app.needLegacyChoice=false;app.hydrating=false;app.cloudConflict=null;app.cloudNotice='';
+    app.editor=null;app.habit=null;app.record=null;app.routine=null;app.modal=null;
+    storage.activateUser(null);state=freshState();app.view='home';return;
   }
   if(app.activeUid===id)return;
   // Invalidar consultas del usuario anterior antes de cambiar de espacio.
@@ -92,6 +99,9 @@ function activateAccountData(){
   const scoped=readUserState(id);
   // Si v1.1 dejó una sincronización pendiente, conservarla en la cola v1.2 antes de leer la nube.
   if(scoped&&!readOutbox(id)){try{const oldKey=`perci_pending_sync_v09_${id}`;if(localStorage.getItem(oldKey)==='1'){queueSnapshot(id,scoped);localStorage.removeItem(oldKey);}}catch{}}
+  // No arrastrar editores, modales o selecciones de otra cuenta. Esto también
+  // evita bloquear futuras lecturas de Supabase con un editor ya abandonado.
+  app.editor=null;app.habit=null;app.record=null;app.routine=null;app.modal=null;
   app.activeUid=id;
   account.syncPaused=false;
   app.cloudConflict=null;app.cloudNotice='';
@@ -127,6 +137,10 @@ let hydrationGeneration=0;
 // Una actualización solicitada durante otra lectura no se pierde.
 // Importante al guardar un hábito enseguida de iniciar sesión en una cuenta nueva.
 let hydrationRerunRequested=false;
+function hydrationBelongsToAccount(uid,seq){
+  return seq===hydrationGeneration && account.authenticated &&
+    account.user?.id===uid && app.activeUid===uid;
+}
 function checkpointCloud(uid,previous){
   if(!hasPersonalData(previous))return;
   // Copia de seguridad adicional, independiente del respaldo de importación manual.
@@ -152,7 +166,7 @@ async function hydrateCloud(uid,{silent=false}={}){
   let verifiedRoundTrip=false;
   try{
     const remote=await fetchCloudData();
-    if(seq!==hydrationGeneration||uid!==account.user?.id||!account.authenticated)return;
+    if(!hydrationBelongsToAccount(uid,seq))return;
     // Una intención de borrado debe reintentarse incluso si una pestaña se cerró
     // después de registrar el borrado y antes de guardar su snapshot de outbox.
     let pending=readOutbox(uid);
@@ -187,9 +201,13 @@ async function hydrateCloud(uid,{silent=false}={}){
           const grouped={routines:[],records:[],habits:[]};
           for(const item of result.deletions)grouped[item.kind].push(item.id);
           await deleteCloudEntities(Object.fromEntries(Object.entries(grouped).filter(([,ids])=>ids.length)));
+          if(!hydrationBelongsToAccount(uid,seq))return;
         }
+        if(!hydrationBelongsToAccount(uid,seq))return;
         await syncCloudSnapshot({...result.snapshot,draft:null});
+        if(!hydrationBelongsToAccount(uid,seq))return;
         const confirmed=await fetchCloudData();
+        if(!hydrationBelongsToAccount(uid,seq))return;
         if(!verifyRemoteSnapshot(result.snapshot,confirmed,result.deletions))throw Error('La nube todavía no confirmó todos los registros. Conservamos los borradores.');
         saveBaseline(uid,confirmed);
         if(readOutbox(uid)?.revision===revision){
@@ -506,19 +524,36 @@ onAccountChange(()=>{
     hydrateCloud(account.user.id);
   }
 });
-// En otra pestaña/dispositivo puede haber borrados o nuevas rutinas.
-// Consultamos al volver a la página sin interrumpir sesiones ni formularios.
-let lastForegroundRefresh=0;
-function refreshOnForeground(){
-  if(document.visibilityState==='hidden'||!account.authenticated||isOfflineNow(account)||
-    !app.activeUid||app.needLegacyChoice||app.hydrating||app.cloudConflict||app.editor||app.modal||
-    state.draft||['routineEdit','record','session','otherForm','habitEdit'].includes(app.view))return;
-  const now=Date.now();if(now-lastForegroundRefresh<6000)return;
-  lastForegroundRefresh=now;
-  hydrateCloud(app.activeUid,{silent:true});
+// Mantener las cuentas sincronizadas automáticamente, sin intervención manual.
+// 1) Ingreso/login ya inicia hydrateCloud en onAccountChange.
+// 2) Al volver a la pestaña, consultar los cambios de otro dispositivo.
+// 3) Mientras está abierta, refrescar periódicamente aunque no haya foco nuevo.
+// 4) Al navegar a Hábitos, Actividad, Progreso, Inicio o Mi cuenta, refrescar.
+// No se interrumpen formularios, modales, sesiones, conflictos ni modo offline.
+let lastAutoCloudRefreshAt=0;
+let lastAutoCloudRefreshUid=null;
+function refreshAccountAutomatically(minAgeMs=6000){
+  const uid=app.activeUid;
+  if(!canAutoRefreshCloud({
+    uid,authenticated:account.authenticated,online:!isOfflineNow(account),
+    visible:document.visibilityState!=='hidden',legacyChoice:app.needLegacyChoice,
+    hydrating:app.hydrating,conflict:!!app.cloudConflict,modal:!!app.modal,
+    draft:!!state.draft,view:app.view
+  }))return false;
+  const now=Date.now();
+  if(lastAutoCloudRefreshUid===uid && now-lastAutoCloudRefreshAt<minAgeMs)return false;
+  lastAutoCloudRefreshUid=uid;
+  lastAutoCloudRefreshAt=now;
+  hydrateCloud(uid,{silent:true});
+  return true;
 }
-window.addEventListener('focus',refreshOnForeground);
-document.addEventListener('visibilitychange',refreshOnForeground);
+window.addEventListener('focus',()=>refreshAccountAutomatically());
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState!=='hidden')refreshAccountAutomatically();
+});
+// Las pestañas abiertas se actualizan aunque el usuario no cambie de aplicación.
+// 30 segundos evita una conexión permanente tipo realtime y no genera llamadas en background.
+setInterval(()=>refreshAccountAutomatically(30000),30000);
 applyTheme();render();
 initAccount().catch(()=>{});
 })();

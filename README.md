@@ -1,3 +1,7 @@
+# Percí v1.4.2
+
+Recuperación automática por cuenta: ver [notas v1.4.2](README-v1.4.2.md).
+
 # Percí v1.4.1 · Corrección de sincronización de hábitos
 
 Esta versión corrige las confirmaciones prematuras de guardado local,

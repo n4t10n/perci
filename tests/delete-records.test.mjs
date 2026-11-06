@@ -76,7 +76,7 @@ test('el borrado online fuerza el envío y el estado online no muestra banners',
   const app=fs.readFileSync(new URL('../public/src/app.js',import.meta.url),'utf8');
   const accountUI=fs.readFileSync(new URL('../public/src/account-ui.js',import.meta.url),'utf8');
   assert.match(app,/queueMicrotask\(\(\)=>hydrateCloud\(app.activeUid,\{silent:true\}\)\)/);
-  assert.match(app,/window.addEventListener\('focus',refreshOnForeground\)/);
+  assert.match(app,/window\.addEventListener\('focus',\(\)=>refreshAccountAutomatically\(\)\)/);
   assert.match(app,/const syncNotice=\(\)=>isOfflineNow\(account\)\?/);
   assert.match(app,/Tus datos están seguros/);
   assert.match(accountUI,/const offlineText=offline\?/);

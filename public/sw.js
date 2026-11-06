@@ -1,5 +1,5 @@
 // PWA shell cache v1.3: autenticación previa online, datos de usuario accesibles offline si se habían guardado.
-const CACHE = 'perci-shell-v1.4.1';
+const CACHE = 'perci-shell-v1.4.2';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './src/app.js?v=1.4.1', './src/brand.js', './src/account.js?v=1.4.1', './src/account-ui.js?v=1.4.1', './src/styles.css?v=1.4.1',
