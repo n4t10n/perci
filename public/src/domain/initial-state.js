@@ -1,0 +1,5 @@
+// Estado inicial de demostración; NO representa datos remotos.
+const dateISO=(d=new Date())=>{const c=new Date(d);return `${c.getFullYear()}-${String(c.getMonth()+1).padStart(2,'0')}-${String(c.getDate()).padStart(2,'0')}`};
+const offsetDate=n=>{const d=new Date();d.setDate(d.getDate()+n);return dateISO(d)};
+const seed=()=>({version:2,demo:true,theme:'dark',focus:'both',onboardSeen:false,routines:[{id:'r1',name:'Torso · Fuerza',detail:'Un entrenamiento sólido, a tu ritmo',exercises:[{name:'Press de banca',sets:3,reps:10},{name:'Remo con mancuerna',sets:3,reps:12},{name:'Press militar',sets:3,reps:10}]}],records:[{id:'s1',type:'gym',name:'Torso · Fuerza',minutes:52,date:offsetDate(-1),setsDone:9,volume:1850,note:''},{id:'s2',type:'walk',name:'Caminata',minutes:35,distance:2.9,date:offsetDate(-3),note:''},{id:'s3',type:'sport',name:'Vóley',minutes:75,date:offsetDate(-5),note:''}],habits:[{id:'h1',name:'Hidratarme',days:[0,1,2,3,4,5,6],paused:false},{id:'h2',name:'Movilidad',days:[1,3,5],paused:false}],checks:{},draft:null});
+export {dateISO, offsetDate, seed};
