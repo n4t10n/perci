@@ -82,3 +82,5 @@ La v1.1, validada anteriormente en Mac e iPhone con recuperaciones automáticas,
 ## v1.4 · Borrados de rutinas y hábitos
 
 Ver [README-v1.4.md](README-v1.4.md) y [QA v1.4](docs/09-V1.4-Borrados-Concurrencia-QA.md). No se requiere aplicar SQL nuevo.
+
+- [v1.5.1 · Pulido UI transversal](README-v1.5.1.md)

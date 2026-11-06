@@ -1,4 +1,4 @@
-import {previewLocalMigration, clientId} from '../data/migration-preflight.js?v=1.5';
+import {previewLocalMigration, clientId} from '../data/migration-preflight.js?v=1.5.1';
 
 const kinds = ['routines','records','habits'];
 export function prepareCloudImport(snapshot, selection={routines:true,records:false,habits:false}) {

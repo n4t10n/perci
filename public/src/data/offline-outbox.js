@@ -2,7 +2,7 @@
  * No contiene tokens ni contraseñas. El estado offline en localStorage NO está cifrado.
  * Los borradores de sesión / editor no se envían al servidor hasta quedar completos.
  */
-import {cleanImportedState} from './import-cleanup.js?v=1.5';
+import {cleanImportedState} from './import-cleanup.js?v=1.5.1';
 
 const copy=value=>JSON.parse(JSON.stringify(value));
 const items=['routines','records','habits'];
