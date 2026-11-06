@@ -1,3 +1,5 @@
+**Versión actual del paquete: Percí v1.5 (seguridad, concurrencia optimista y actualización PWA).** Consultá [README-v1.5.md](README-v1.5.md) para cambios, límites y QA.
+
 # Percí v1.4.2
 
 Recuperación automática por cuenta: ver [notas v1.4.2](README-v1.4.2.md).

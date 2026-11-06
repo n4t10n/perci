@@ -128,6 +128,14 @@ class TestVercelAPI(unittest.TestCase):
             status, data, _ = self.call('/api/cloud/sync', {'snapshot': {'routines': [], 'records': [], 'habits': []}})
             self.assertEqual(status, 401)
 
+    def test_v15_sync_passes_verified_owner_and_expected_snapshot(self):
+        blank = {'routines': [], 'records': [], 'habits': [], 'checks': {}}
+        with patch.object(Handler, 'authenticated', return_value=('jwt-A', {'id':'user-A'}, ())), \
+             patch.object(shared.core, 'upload_data', return_value={'habits': 0}) as upload:
+            status, result, _ = self.call('/api/cloud/sync', {'snapshot': blank, 'expected': blank})
+            self.assertEqual(status, 200)
+            upload.assert_called_once_with(blank, 'jwt-A', 'user-A', expected=blank)
+
     def test_secure_cookie_attribute_in_production(self):
         with patch.dict('os.environ', {'VERCEL': '1'}):
             self.assertIn('Secure', shared.cookie_value('perci_at', 'abc', secure=True))

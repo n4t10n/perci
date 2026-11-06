@@ -14,5 +14,5 @@ jobs:
         with:
           python-version: '3.12'
       - run: npm test
-      - run: python -m unittest discover -s tests -p 'test_vercel_api.py' -v
-      - run: python -m unittest discover -s tests -p 'test_cookie_server.py' -v
+      - run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - run: python -m py_compile api/shared.py server/perci_server.py

@@ -1,5 +1,5 @@
-import {cloud,getCloudConfig} from './controller.js';
-import {previewLocalMigration} from '../data/migration-preflight.js';
+import {cloud,getCloudConfig} from './controller.js?v=1.5';
+import {previewLocalMigration} from '../data/migration-preflight.js?v=1.5';
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function renderCloudPanel(snapshot) {

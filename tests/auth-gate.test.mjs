@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 const store=new Map();
 globalThis.localStorage={getItem:key=>store.get(key)??null,setItem:(key,value)=>store.set(key,String(value)),removeItem:key=>store.delete(key)};
 globalThis.window={addEventListener(){}};
-const {account,initAccount,signup,login,logout,changeAccountMode,accountInitial} = await import('../public/src/account.js?v=1.4.1');
+const {account,initAccount,signup,login,logout,changeAccountMode,accountInitial} = await import('../public/src/account.js?v=1.5');
 const {renderAuthGate} = await import('../public/src/account-ui.js');
 const user={id:'d7396485-4017-4caa-a4be-2e8f73681e6c',email:'valen@example.com',name:'Valentín'};
 const fakeResponse=(data,status=200)=>({ok:status<400,status,json:async()=>data});

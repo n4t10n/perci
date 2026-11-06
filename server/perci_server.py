@@ -238,8 +238,29 @@ def delete_cloud_entities(deletions, token, user):
     return {'processed': {kind: len(items) for kind, items in validated.items()}}
 
 
-def upload_data(snapshot, token, user):
+def assert_remote_unchanged(expected, current):
+    """Conservative stale-snapshot guard; not a transactional compare-and-swap."""
+    if not isinstance(expected, dict) or any(
+        not isinstance(expected.get(k), list) for k in ('routines', 'records', 'habits')
+    ) or not isinstance(expected.get('checks'), dict):
+        raise ApiError('Versión remota inválida. Actualizá la aplicación.', 400)
+    for kind in ('routines', 'records', 'habits'):
+        if any(not isinstance(item, dict) or not isinstance(item.get('id'), str)
+               for item in expected[kind]):
+            raise ApiError('Versión remota inválida. Actualizá la aplicación.', 400)
+        old = sorted(expected[kind], key=lambda item: item.get('id', ''))
+        live = sorted(current[kind], key=lambda item: item.get('id', ''))
+        if old != live:
+            raise ApiError('Otro dispositivo actualizó tu cuenta. Vamos a comparar los cambios.', 409)
+    if expected['checks'] != current['checks']:
+        raise ApiError('Otro dispositivo actualizó tus hábitos. Vamos a comparar los cambios.', 409)
+
+
+def upload_data(snapshot, token, user, expected=None):
     verify_snapshot(snapshot)
+    # JWT de usuario + lectura fresca de Supabase antes del primer upsert.
+    if expected is not None:
+        assert_remote_unchanged(expected, download_data(token, user))
     # Nunca subir actividad ni hábitos DEMO por accidente. La rutina personalizada sí.
     demo = snapshot.get('demo') is True
     routines = [r for r in snapshot['routines'] if r.get('id') != 'r1'] if demo else snapshot['routines']

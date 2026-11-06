@@ -205,7 +205,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                 token, user, cookies = self.authenticated()
                 if not user:
                     raise core.ApiError('Iniciá sesión para guardar tus datos.', 401)
-                return self.send_json(core.upload_data(body.get('snapshot'), token, user['id']), cookies=cookies)
+                return self.send_json(core.upload_data(body.get('snapshot'), token, user['id'], expected=body.get('expected')), cookies=cookies)
             if path == '/api/cloud/delete':
                 token, user, cookies = self.authenticated()
                 if not user:

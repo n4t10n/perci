@@ -1,15 +1,15 @@
-import { OFFICIAL_LOGOS } from './brand.js';
-import {cleanImportedState} from './data/import-cleanup.js';
-import { storage,readUserState,writeUserState,getLegacyOwner,legacyAlreadyClaimed,markLegacyClaimed,legacyHasPersonalData } from './data/repository.js';
-import { previewLocalMigration } from './data/migration-preflight.js';
-import { reconcileCloudSnapshot, hasPersonalData } from './data/auto-hydration.js?v=1.4.2';
-import { dateISO, offsetDate, seed } from './domain/initial-state.js';
-import { getInitialView } from './domain/startup-route.js';
-import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,deleteCloudEntities,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync} from './account.js?v=1.4.2';
-import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.4.2';
-import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.4.2';
-import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.4.2';
-import {canAutoRefreshCloud,shouldRefreshOnNavigation} from './data/auto-refresh.js?v=1.4.2';
+import { OFFICIAL_LOGOS } from './brand.js?v=1.5';
+import {cleanImportedState} from './data/import-cleanup.js?v=1.5';
+import { storage,readUserState,writeUserState,getLegacyOwner,legacyAlreadyClaimed,markLegacyClaimed,legacyHasPersonalData } from './data/repository.js?v=1.5';
+import { previewLocalMigration } from './data/migration-preflight.js?v=1.5';
+import { reconcileCloudSnapshot, hasPersonalData } from './data/auto-hydration.js?v=1.5';
+import { dateISO, offsetDate, seed } from './domain/initial-state.js?v=1.5';
+import { getInitialView } from './domain/startup-route.js?v=1.5';
+import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,deleteCloudEntities,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync} from './account.js?v=1.5';
+import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.5';
+import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.5';
+import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.5';
+import {canAutoRefreshCloud,shouldRefreshOnNavigation} from './data/auto-refresh.js?v=1.5';
 
 
 (()=>{'use strict';
@@ -83,6 +83,7 @@ function render(){
   let view=app.view;
   let out=({home:renderHome,activity:renderActivity,progress:renderProgress,habits:renderHabits,settings:renderSettings,account:renderAccount,routine:renderRoutine,routineEdit:renderRoutineEdit,exerciseLibrary:renderLibrary,session:renderSession,otherForm:renderOtherForm,record:renderRecord,habitEdit:renderHabitEdit,onboard:renderOnboard}[view]||renderHome)();
   root.innerHTML=shell((isOfflineNow(account)&&app.cloudNotice?`<div class="notice" role="status" style="margin-bottom:15px">${h(app.cloudNotice)}</div>`:'')+out);
+  if(pendingPwaUpdate)applyPendingPwaUpdate();
 }
 function activateAccountData(){
   const id=account.user?.id;
@@ -133,6 +134,17 @@ function decideLegacy(copyLegacy){
 
 // Primer acceso online: leer Supabase antes de permitir ediciones locales.
 // Nunca subimos automáticamente un snapshot previo hasta completar esta lectura.
+// Percí v1.5: actualizar el código de la PWA sin interrumpir ediciones.
+let pendingPwaUpdate=false;
+let pwaReloadQueued=false;
+function applyPendingPwaUpdate(){
+  if(!pendingPwaUpdate||pwaReloadQueued||!account.ready||app.hydrating||account.busy||
+     app.cloudConflict||app.modal||app.needLegacyChoice||state.draft||
+     ['routineEdit','habitEdit','session','record','otherForm'].includes(app.view))return;
+  pwaReloadQueued=true;
+  queueMicrotask(()=>window.location.reload());
+}
+document.addEventListener('perci:pwa-updated',()=>{pendingPwaUpdate=true;applyPendingPwaUpdate();});
 let hydrationGeneration=0;
 // Una actualización solicitada durante otra lectura no se pierde.
 // Importante al guardar un hábito enseguida de iniciar sesión en una cuenta nueva.
@@ -164,6 +176,7 @@ async function hydrateCloud(uid,{silent=false}={}){
   account.syncPaused=true;
   if(!silent)render();
   let verifiedRoundTrip=false;
+  let remoteRevisionChanged=false;
   try{
     const remote=await fetchCloudData();
     if(!hydrationBelongsToAccount(uid,seq))return;
@@ -197,15 +210,17 @@ async function hydrateCloud(uid,{silent=false}={}){
         account.syncPaused=false;
       }else{
         const revision=pending.revision;
+        // v1.5: no aplicar un borrado hasta comparar el snapshot de referencia.
+        // Control optimista, no CAS transaccional entre tablas.
+        if(!hydrationBelongsToAccount(uid,seq))return;
+        await syncCloudSnapshot({...result.snapshot,draft:null},remote);
+        if(!hydrationBelongsToAccount(uid,seq))return;
         if(result.deletions.length){
           const grouped={routines:[],records:[],habits:[]};
           for(const item of result.deletions)grouped[item.kind].push(item.id);
           await deleteCloudEntities(Object.fromEntries(Object.entries(grouped).filter(([,ids])=>ids.length)));
           if(!hydrationBelongsToAccount(uid,seq))return;
         }
-        if(!hydrationBelongsToAccount(uid,seq))return;
-        await syncCloudSnapshot({...result.snapshot,draft:null});
-        if(!hydrationBelongsToAccount(uid,seq))return;
         const confirmed=await fetchCloudData();
         if(!hydrationBelongsToAccount(uid,seq))return;
         if(!verifyRemoteSnapshot(result.snapshot,confirmed,result.deletions))throw Error('La nube todavía no confirmó todos los registros. Conservamos los borradores.');
@@ -253,9 +268,12 @@ async function hydrateCloud(uid,{silent=false}={}){
     }
   }catch(err){
     if(seq!==hydrationGeneration||uid!==account.user?.id)return;
+    remoteRevisionChanged=err?.status===409;
     account.syncPaused=true;
-    account.syncFailed=true;
-    app.cloudNotice='No pudimos confirmar tus cambios en la nube. Siguen guardados en este dispositivo.';
+    account.syncFailed=!remoteRevisionChanged;
+    app.cloudNotice=remoteRevisionChanged
+      ?'Otro dispositivo actualizó tu cuenta. Percí está comparando los cambios sin perder los locales.'
+      :'No pudimos confirmar tus cambios en la nube. Siguen guardados en este dispositivo.';
   }finally{
     if(seq===hydrationGeneration&&uid===account.user?.id){
       app.hydrating=false;app.silentHydration=false;render();
@@ -264,8 +282,8 @@ async function hydrateCloud(uid,{silent=false}={}){
       // No repetir una sincronización fallida indefinidamente. Sí ejecutar
       // exactamente una solicitud recibida mientras había otra en curso.
       if(!app.cloudConflict && !state.draft && !isOfflineNow(account) &&
-          (rerun || (verifiedRoundTrip && readOutbox(uid)))){
-        setTimeout(()=>hydrateCloud(uid,{silent:true}),rerun?150:900);
+          (remoteRevisionChanged || rerun || (verifiedRoundTrip && readOutbox(uid)))){
+        setTimeout(()=>hydrateCloud(uid,{silent:true}),remoteRevisionChanged?450:rerun?150:900);
       }
     }
   }
