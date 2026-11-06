@@ -210,7 +210,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                 token, user, cookies = self.authenticated()
                 if not user:
                     raise core.ApiError('Iniciá sesión para eliminar tus datos.', 401)
-                return self.send_json(core.delete_activity_records(body.get('records'), token, user['id']), cookies=cookies)
+                return self.send_json(core.delete_cloud_entities(body, token, user['id']), cookies=cookies)
             raise core.ApiError('Método no permitido.', 405)
         except (ValueError, TypeError, json.JSONDecodeError):
             return self.send_json({'error': 'Solicitud inválida.'}, 400)

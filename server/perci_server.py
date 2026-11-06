@@ -207,6 +207,37 @@ def delete_activity_records(records, token, user):
     return {'processed':len(set(records))}
 
 
+
+def delete_cloud_entities(deletions, token, user):
+    """Delete only explicitly named own entities using the user's JWT and RLS.
+
+    Idempotent: an already-deleted ID succeeds. Postgres cascades exercise/check
+    children, and preserves historical activity when deleting a routine.
+    """
+    if not isinstance(deletions, dict) or not deletions or any(
+        key not in ('records', 'routines', 'habits') for key in deletions):
+        raise ApiError('Solicitud de eliminación inválida.', 400)
+    tables = {'records': ('perci_activity_records', 'record'),
+              'routines': ('perci_routines', 'routine'),
+              'habits': ('perci_habits', 'habit')}
+    validated = {}
+    for kind, ids in deletions.items():
+        if not isinstance(ids, list) or len(ids) > 100 or any(
+                not isinstance(value, str) or not re.fullmatch(r'[a-zA-Z0-9_-]{1,80}', value)
+                for value in ids):
+            raise ApiError('Identificadores de eliminación inválidos.', 400)
+        validated[kind] = list(dict.fromkeys(ids))
+    if sum(map(len, validated.values())) > 100:
+        raise ApiError('Demasiadas eliminaciones en una solicitud.', 400)
+    for kind, ids in validated.items():
+        table, prefix = tables[kind]
+        for item in ids:
+            postgres(table, token, method='DELETE', filters={
+                'user_id': 'eq.' + user,
+                'client_id': 'eq.' + to_client(prefix, item)})
+    return {'processed': {kind: len(items) for kind, items in validated.items()}}
+
+
 def upload_data(snapshot, token, user):
     verify_snapshot(snapshot)
     # Nunca subir actividad ni hábitos DEMO por accidente. La rutina personalizada sí.

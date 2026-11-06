@@ -58,3 +58,8 @@ python3 -m unittest discover -s tests -p test_workout_sets.py -q
 En este entorno: **48 pruebas JS y 19 pruebas Python aprobadas**. El navegador automatizado bloqueó los sitios de prueba por una política del entorno, por lo que no se afirma que la ejecución visual en Safari o Chromium esté validada. El acceso real a Supabase tampoco se probó en esta versión porque las credenciales no se incluyen aquí.
 
 La v1.1, validada anteriormente en Mac e iPhone con recuperaciones automáticas, se conserva en GitHub mediante el tag `perci-v1.1-stable`.
+
+
+## v1.4 · Borrados de rutinas y hábitos
+
+Ver [README-v1.4.md](README-v1.4.md) y [QA v1.4](docs/09-V1.4-Borrados-Concurrencia-QA.md). No se requiere aplicar SQL nuevo.

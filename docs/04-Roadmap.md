@@ -53,3 +53,13 @@ No hacer operaciones destructivas sobre los datos locales ni anunciar sincroniza
 - [ ] Enviar un borrador desde iPhone, reconectar y validar lectura en Mac, y viceversa.
 - [ ] Probar concurrencia contra Supabase con dos sesiones simultáneas y dos usuarios (RLS).
 - [ ] Implementar borrados sincronizados con tombstones/versiones y transacciones, sin perder datos.
+
+
+## 06/11/2026 · Percí v1.4 · Entrega para QA
+- [x] Eliminar rutinas y hábitos por cuenta; eliminación de dependientes en Supabase mediante FKs existentes.
+- [x] Replay offline y confirmación de ausencia en lectura remota.
+- [x] Proteger edición concurrente vs borrado, incluyendo cumplimientos de hábitos.
+- [x] Suite automatizada ampliada con cuentas simuladas y validación de propietario.
+- [ ] Publicar tras respaldo JSON y probar con datos de demostración en Mac+iPhone reales.
+- [ ] RLS real de dos cuentas y resolución atómica con tombstones/versiones de servidor.
+- [ ] Beta externa de la Fase C, accesibilidad y pruebas de usabilidad completas.

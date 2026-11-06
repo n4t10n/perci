@@ -61,7 +61,7 @@ test('la interfaz pregunta antes de eliminar y no reabre cartel de borrados de r
   const app=fs.readFileSync(new URL('../public/src/app.js',import.meta.url),'utf8');
   assert.match(app,/case 'saveAsRecordDraft'/);
   assert.match(app,/Eliminar definitivamente/);
-  assert.match(app,/deleteCloudRecords/);
+  assert.match(app,/deleteCloudEntities/);
   assert.match(app,/renderSavedRecordDrafts/);
 });
 

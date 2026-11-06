@@ -2,13 +2,13 @@ import { OFFICIAL_LOGOS } from './brand.js';
 import {cleanImportedState} from './data/import-cleanup.js';
 import { storage,readUserState,writeUserState,getLegacyOwner,legacyAlreadyClaimed,markLegacyClaimed,legacyHasPersonalData } from './data/repository.js';
 import { previewLocalMigration } from './data/migration-preflight.js';
-import { reconcileCloudSnapshot, hasPersonalData } from './data/auto-hydration.js?v=1.3.1';
+import { reconcileCloudSnapshot, hasPersonalData } from './data/auto-hydration.js?v=1.4';
 import { dateISO, offsetDate, seed } from './domain/initial-state.js';
 import { getInitialView } from './domain/startup-route.js';
-import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,deleteCloudRecords,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync} from './account.js?v=1.3.1';
-import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.3.1';
-import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteRecordDeletes} from './data/offline-outbox.js?v=1.3.1';
-import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.3.1';
+import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,deleteCloudEntities,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync} from './account.js?v=1.4';
+import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.4';
+import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.4';
+import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.4';
 
 
 (()=>{'use strict';
@@ -132,8 +132,8 @@ function checkpointCloud(uid,previous){
 }
 function renderCloudConflict(){
   const count=app.cloudConflict?.count||0;
-  if(app.cloudConflict?.kind==='deletion')return `<div class="auth-layout"><section class="auth-story"><div class="auth-story-inner"><div class="auth-story-logo">${brandMarkup()}</div><div class="auth-story-copy"><span class="account-eyebrow">SINCRONIZACIÓN SEGURA</span><h1>Tu progreso,<br/><span>sin pérdidas.</span></h1></div></div></section><main class="auth-main"><div class="auth-panel"><div class="auth-form-eyebrow">REVISIÓN PENDIENTE</div><h2>Hay eliminaciones sin sincronizar</h2><p class="auth-hint">${count} ${count===1?'registro fue eliminado':'registros fueron eliminados'} en este dispositivo. Percí todavía no envía borrados a otros dispositivos. Podés restaurarlos desde la nube para continuar sincronizando, o conservar tus cambios locales y seguir sin sincronizar hasta revisarlos.</p><button class="btn auth-submit" type="button" data-sync-choice="remote">Restaurar esos registros desde la nube</button><button class="btn outline auth-submit" style="margin-top:10px" type="button" data-sync-choice="cancel">Conservar borradores locales por ahora</button><p class="auth-trust">Guardaremos un respaldo local antes de aplicar tu decisión.</p></div></main></div>`;
-  return `<div class="auth-layout"><section class="auth-story"><div class="auth-story-inner"><div class="auth-story-logo">${brandMarkup()}</div><div class="auth-story-copy"><span class="account-eyebrow">CUIDAMOS TUS ENTRENAMIENTOS</span><h1>Tu progreso,<br/><span>sin pérdidas.</span></h1><p>Detectamos diferencias entre los datos de este dispositivo y tu cuenta.</p></div></div></section><main class="auth-main"><div class="auth-panel"><div class="auth-form-eyebrow">SINCRONIZACIÓN EN PAUSA</div><h2>¿Qué versión querés conservar?</h2><p class="auth-hint">Hay ${count} ${count===1?'registro':'registros'} con cambios distintos en la nube y en este dispositivo. Guardaremos una copia local antes de aplicar tu decisión. Los registros que existan solamente en una de las dos copias se conservarán.</p><button class="btn auth-submit" type="button" data-sync-choice="remote">Usar cambios de mi cuenta</button><button class="btn outline auth-submit" style="margin-top:10px" type="button" data-sync-choice="local">Usar cambios de este dispositivo</button><p class="auth-trust">Esta elección no elimina los datos remotos. Si elegís los locales, podrás respaldarlos desde Mi cuenta después de revisarlos.</p></div></main></div>`;
+  if(app.cloudConflict?.kind==='deletion')return `<div class="auth-layout"><section class="auth-story"><div class="auth-story-inner"><div class="auth-story-logo">${brandMarkup()}</div><div class="auth-story-copy"><span class="account-eyebrow">SINCRONIZACIÓN SEGURA</span><h1>Tu progreso,<br/><span>sin pérdidas.</span></h1></div></div></section><main class="auth-main"><div class="auth-panel"><div class="auth-form-eyebrow">REVISIÓN PENDIENTE</div><h2>Hay cambios pendientes de revisión</h2><p class="auth-hint">${count} ${count===1?'cambio requiere':'cambios requieren'} confirmación antes de sincronizar. Conservá una copia local o recuperá la última versión de tu cuenta. Tus datos no se borrarán en la nube sin autorización.</p><button class="btn auth-submit" type="button" data-sync-choice="remote">Usar versión de mi cuenta</button><button class="btn outline auth-submit" style="margin-top:10px" type="button" data-sync-choice="cancel">Conservar borradores locales por ahora</button><p class="auth-trust">Guardaremos un respaldo local antes de aplicar tu decisión.</p></div></main></div>`;
+  return `<div class="auth-layout"><section class="auth-story"><div class="auth-story-inner"><div class="auth-story-logo">${brandMarkup()}</div><div class="auth-story-copy"><span class="account-eyebrow">CUIDAMOS TUS ENTRENAMIENTOS</span><h1>Tu progreso,<br/><span>sin pérdidas.</span></h1><p>Detectamos diferencias entre los datos de este dispositivo y tu cuenta.</p></div></div></section><main class="auth-main"><div class="auth-panel"><div class="auth-form-eyebrow">SINCRONIZACIÓN EN PAUSA</div><h2>¿Qué versión querés conservar?</h2><p class="auth-hint">Hay ${count} ${count===1?'registro':'registros'} con cambios distintos en la nube y en este dispositivo. Guardaremos una copia local antes de aplicar tu decisión. Los registros que existan solamente en una de las dos copias se conservarán.</p><button class="btn auth-submit" type="button" data-sync-choice="remote">Usar cambios de mi cuenta</button><button class="btn outline auth-submit" style="margin-top:10px" type="button" data-sync-choice="local">Usar cambios de este dispositivo</button><p class="auth-trust">Si elegís conservar los cambios locales, pueden reemplazar o borrar datos remotos. Guardamos un respaldo antes de aplicarlos.</p></div></main></div>`;
 }
 async function hydrateCloud(uid,{silent=false}={}){
   if(!uid||isOfflineNow(account)||app.needLegacyChoice||app.hydrating)return;
@@ -148,16 +148,23 @@ async function hydrateCloud(uid,{silent=false}={}){
     // Una intención de borrado debe reintentarse incluso si una pestaña se cerró
     // después de registrar el borrado y antes de guardar su snapshot de outbox.
     let pending=readOutbox(uid);
-    const orphanDeletes=listRecordDeletes(uid);
-    if(!pending && orphanDeletes.length){
-      const absent=new Set(orphanDeletes);
-      const cleanState={...state,records:state.records.filter(r=>!absent.has(r.id))};
+    const pendingIntents=allDeleteIntents(uid);
+    if(!pending && hasDeleteIntents(pendingIntents)){
+      // Si la pestaña se cerró entre confirmar y guardar el snapshot,
+      // reconstituir el estado local sin reintroducir entidades borradas.
+      const cleanState={...state};
+      for(const kind of ['routines','records','habits']){
+        const removed=new Set(pendingIntents[kind]);
+        cleanState[kind]=state[kind].filter(item=>!removed.has(item.id));
+      }
+      const keptHabits=new Set(cleanState.habits.map(x=>x.id));
+      cleanState.checks=Object.fromEntries(Object.entries(state.checks).filter(([key])=>keptHabits.has(key.split(':')[0])));
       pending=queueSnapshot(uid,cleanState);
     }
     if(pending){
       // Comparación de 3 vías: cambios locales desde la última lectura, contra la nube actual.
-      const pendingDeletes=listRecordDeletes(uid);
-      const result=planOfflineSync(pending.base,pending.snapshot,remote,null,pendingDeletes);
+      const pendingDeletes=allDeleteIntents(uid);
+      const result=planOfflineSync(pending.base,pending.snapshot,remote,null,pendingDeletes.records,pendingDeletes);
       if(result.unsupportedDeletes.length){
         app.cloudConflict={kind:'deletion',base:pending.base,local:pending.snapshot,remote:JSON.parse(JSON.stringify(remote)),count:result.unsupportedDeletes.length};
         account.syncPaused=true;
@@ -168,7 +175,11 @@ async function hydrateCloud(uid,{silent=false}={}){
         account.syncPaused=false;
       }else{
         const revision=pending.revision;
-        if(result.deletions.length)await deleteCloudRecords(result.deletions.map(x=>x.id));
+        if(result.deletions.length){
+          const grouped={routines:[],records:[],habits:[]};
+          for(const item of result.deletions)grouped[item.kind].push(item.id);
+          await deleteCloudEntities(Object.fromEntries(Object.entries(grouped).filter(([,ids])=>ids.length)));
+        }
         await syncCloudSnapshot({...result.snapshot,draft:null});
         const confirmed=await fetchCloudData();
         if(!verifyRemoteSnapshot(result.snapshot,confirmed,result.deletions))throw Error('La nube todavía no confirmó todos los registros. Conservamos los borradores.');
@@ -178,7 +189,8 @@ async function hydrateCloud(uid,{silent=false}={}){
           state={...result.snapshot,draft:state.draft||null};
           storage.write(state);
           clearOutboxIfCurrent(uid,revision);
-          clearRecordDeletes(uid,pendingDeletes);
+          clearRecordDeletes(uid,pendingDeletes.records);
+          clearEntityDeletes(uid,pendingDeletes);
         }
         account.syncPaused=false;
         markLinked(uid);
@@ -187,10 +199,10 @@ async function hydrateCloud(uid,{silent=false}={}){
         if(!silent)app.view=getInitialView(state);
       }
     }else{
-      const mirror=applyRemoteRecordDeletes(getBaseline(uid),state,remote);
-      const result=reconcileCloudSnapshot(mirror.snapshot,remote);
-      if(result.status==='conflict'){
-        app.cloudConflict={kind:'initial',local:JSON.parse(JSON.stringify(state)),remote:JSON.parse(JSON.stringify(remote)),count:result.conflicts.length};
+      const mirror=applyRemoteEntityDeletes(getBaseline(uid),state,remote);
+      const result=mirror.conflicts.length ? null : reconcileCloudSnapshot(mirror.snapshot,remote);
+      if(mirror.conflicts.length || result.status==='conflict'){
+        app.cloudConflict={kind:'initial',local:JSON.parse(JSON.stringify(state)),remote:JSON.parse(JSON.stringify(remote)),count:mirror.conflicts.length||result.conflicts.length};
       }else{
         saveBaseline(uid,remote);
         if(result.status!=='empty-cloud'){
@@ -229,7 +241,8 @@ function chooseCloudConflict(prefer){
   if(!conflict||!uid||account.user?.id!==uid)return;
   if(prefer==='cancel'&&conflict.kind==='deletion'){app.cloudConflict=null;app.cloudNotice='Los borradores siguen en este dispositivo. Las eliminaciones no se sincronizaron.';account.syncPaused=true;render();return;}
   try{
-    const outcome=conflict.kind!=='initial'?planOfflineSync(conflict.base,conflict.local,conflict.remote,prefer):reconcileCloudSnapshot(conflict.local,conflict.remote,prefer);
+    const intents=allDeleteIntents(uid);
+    const outcome=conflict.kind!=='initial'?planOfflineSync(conflict.base,conflict.local,conflict.remote,prefer,intents.records,intents):reconcileCloudSnapshot(conflict.local,conflict.remote,prefer);
     if(outcome.unsupportedDeletes?.length)throw Error('Esta versión no permite sincronizar eliminaciones offline. Los borradores siguen guardados.');
     checkpointCloud(uid,conflict.local);
     state=outcome.snapshot;
@@ -237,11 +250,22 @@ function chooseCloudConflict(prefer){
     app.cloudConflict=null;
     app.view=getInitialView(state);
     account.syncPaused=false;
-    if(conflict.kind!=='initial'){saveBaseline(uid,conflict.remote);rebaseOutbox(uid,conflict.remote,state);}
+    if(conflict.kind==='initial'){
+      saveBaseline(uid,conflict.remote);
+      if(prefer==='local')queueSnapshot(uid,state);
+    }
+    if(conflict.kind!=='initial'){
+      saveBaseline(uid,conflict.remote);rebaseOutbox(uid,conflict.remote,state);
+      if(prefer==='remote'){
+        // Aceptó restaurar la versión remota, cancelar intentos incompatibles.
+        clearRecordDeletes(uid,listRecordDeletes(uid));
+        clearEntityDeletes(uid,listEntityDeletes(uid));
+      }
+    }
     if(!account.linked)markLinked(uid);
     app.cloudNotice=prefer==='local'?'Conservaste los cambios locales. Revisalos antes de respaldar desde Mi cuenta.':'Recuperaste los cambios de tu cuenta. Conservamos una copia de los datos locales anteriores.';
     render();
-    if(conflict.kind!=='initial')hydrateCloud(uid);
+    if(conflict.kind!=='initial'||prefer==='local')hydrateCloud(uid);
   }catch(error){window.alert(`No pudimos resolver la diferencia: ${error.message}`);}
 }
 
@@ -273,6 +297,25 @@ function deleteRecordConfirmed(recordId,keepDraft=false){
   }
   // Sin cartel posterior: el estado mínimo de sincronización sigue en la barra lateral.
 }
+function deletePersonalEntity(kind,itemId){
+  if(!['routines','habits'].includes(kind)||!state[kind].some(x=>x.id===itemId))return;
+  const previous=JSON.parse(JSON.stringify(state));
+  try{markEntityDeleted(app.activeUid,kind,itemId);}catch{
+    window.alert('No pudimos guardar el borrado pendiente. Conservamos los datos.');return;
+  }
+  state[kind]=state[kind].filter(x=>x.id!==itemId);
+  // Eliminar un hábito elimina sus checks asociados; no se cuentan en métricas.
+  if(kind==='habits')state.checks=Object.fromEntries(Object.entries(state.checks).filter(([key])=>key.split(':')[0]!==itemId));
+  app.modal=null;app.cloudNotice='';
+  if(save()){
+    go(kind==='routines'?'activity':'habits');
+    if(!isOfflineNow(account))queueMicrotask(()=>hydrateCloud(app.activeUid,{silent:true}));
+  }else{
+    state=previous;
+    cancelEntityDelete(app.activeUid,kind,itemId);
+    render();
+  }
+}
 function handle(action,value){switch(action){
 case 'go':app.modal=null;go(value);break;
 case 'tab':app.tab=value;render();break;
@@ -293,8 +336,8 @@ case 'addCustomExercise':{let n=get('customexercise')?.value.trim();if(!n){toast
 case 'removeExercise':persistEditor();app.editor.exercises.splice(Number(value),1);saveRoutineEditor(app.activeUid,app.editor);render();break;
 case 'saveRoutine':{persistEditor();const e=app.editor;if(!e.name?.trim()){toast('Poné un nombre a la rutina');break}if(!e.exercises.length){toast('Añadí al menos un ejercicio');break}if(e.exercises.some(x=>x.sets<1||x.sets>15||x.reps<1||x.reps>100)){toast('Revisá series y repeticiones');break}const r={id:e.id||id(),name:e.name.trim(),exercises:e.exercises};let k=state.routines.findIndex(x=>x.id===r.id);if(k>=0)state.routines[k]=r;else state.routines.push(r);app.routine=r.id;app.editor=null;if(save()){clearRoutineEditor(app.activeUid);go('routine');toast(isOfflineNow(account)?'Borrador guardado · se sincronizará al volver internet':'Rutina guardada');}break}
 case 'duplicateRoutine':{let r=state.routines.find(x=>x.id===value);if(!r)break;let c=JSON.parse(JSON.stringify(r));c.id=id();c.name+=' · copia';state.routines.push(c);save();app.routine=c.id;render();toast('Copia creada');break}
-case 'deleteRoutine':showModal('¿Eliminar rutina?','No se eliminarán registros de sesiones que ya realizaste.','confirmDeleteRoutine',value,true);break;
-case 'confirmDeleteRoutine':state.routines=state.routines.filter(x=>x.id!==value);app.modal=null;save();go('activity');toast('Rutina eliminada');break;
+case 'deleteRoutine':showModal('¿Eliminar rutina?','La rutina se eliminará de tu cuenta y de los dispositivos sincronizados. Los entrenamientos que ya completaste permanecerán en el historial.','confirmDeleteRoutine',value,true);break;
+case 'confirmDeleteRoutine':deletePersonalEntity('routines',value);break;
 case 'start':{if(state.draft){showModal('Tenés una sesión en curso','Primero retomá o finalizá tu sesión actual. No se crearán dos sesiones por error.','continue');break}if(isOfflineNow(account)){showModal('Sin conexión · Entrenar en borrador','Registraremos las series y los pesos en este dispositivo. Cuando finalices y vuelva la conexión, se sincronizará el progreso.','beginOfflineSession',value,false,'','Empezar borrador');break;}beginSession(value);break}
 case 'beginOfflineSession':app.modal=null;beginSession(value);break;
 case 'continue':app.modal=null;go('session');break;
@@ -321,8 +364,8 @@ case 'discardRecordDraft':removeRecordDraft(app.activeUid,value);render();break;
 case 'editHabit':app.habit=value==='new'?{id:null,name:'',days:[1,2,3,4,5],paused:false}:JSON.parse(JSON.stringify(state.habits.find(x=>x.id===value)));go('habitEdit');break;
 case 'saveHabit':{let n=get('hname').value.trim(),days=[...document.querySelectorAll('[name=hdays]:checked')].map(x=>Number(x.value));if(!n||!days.length){toast('Poné nombre y elegí al menos un día');break}let habit={id:app.habit.id||id(),name:n.slice(0,70),days,paused:app.habit.paused||false};let i=state.habits.findIndex(x=>x.id===habit.id);if(i>=0)state.habits[i]=habit;else state.habits.push(habit);save();go('habits');toast('Hábito guardado');break}
 case 'pauseHabit':{let x=state.habits.find(x=>x.id===value);x.paused=!x.paused;save();go('habits');toast(x.paused?'Hábito pausado':'Hábito reanudado');break}
-case 'deleteHabit':showModal('¿Eliminar hábito?','Se eliminará la configuración de este hábito.','confirmDeleteHabit',value,true);break;
-case 'confirmDeleteHabit':state.habits=state.habits.filter(x=>x.id!==value);app.modal=null;save();go('habits');break;
+case 'deleteHabit':showModal('¿Eliminar hábito?','Se eliminará este hábito y sus cumplimientos de tu cuenta y de los dispositivos sincronizados.','confirmDeleteHabit',value,true);break;
+case 'confirmDeleteHabit':deletePersonalEntity('habits',value);break;
 case 'toggleHabit':{let x=state.habits.find(x=>x.id===value);if(!x||x.paused||!getDueToday(x))break;const k=`${value}:${dateISO()}`;state.checks[k]=!state.checks[k];save();render();break}
 case 'closeModal':app.modal=null;render();break;
 case 'checkMigration':{const review=previewLocalMigration(state);const c=review.counts;const summary=review.ready?`Estructura válida: ${c.routines} rutinas, ${c.exercises} ejercicios, ${c.records} actividades, ${c.habits} hábitos y ${c.completions} cumplimientos.`:`Encontramos ${review.errors.length} problemas: ${review.errors.slice(0,3).join(' ')}`;showModal('Verificación local para migración',summary+' '+review.warnings.join(' '),'closeModal','',false,'','Cerrar');break}
