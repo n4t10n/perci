@@ -39,3 +39,17 @@ No hacer operaciones destructivas sobre los datos locales ni anunciar sincroniza
 - [ ] Probar RLS con dos usuarios y reconciliación de registros concurrentes en Supabase real.
 - [ ] Implementar sincronización bidireccional robusta (incluidos borrados, versiones y resolución de conflictos). No declarar completa todavía.
 - [ ] Conservar `rama-historica` en GitHub y adoptar `main` como rama de trabajo, verificando las variables de entorno en Production.
+
+## 06/11/2026 · Percí v1.2 · Entrega para QA
+- [x] Guardado automático de borradores del editor de rutinas por cuenta.
+- [x] Registro de series y valores en sesión abierta, sin necesidad de red.
+- [x] Conservación de peso/repeticiones de cada serie completada en la tabla ya existente perci_workout_sets, con lectura remota verificada.
+- [x] Cola persistente de cambios por cuenta, con replay solo tras comparación de 3 vías.
+- [x] Confirmación POST + lectura remota y revisión de versión de cola antes de descartarla.
+- [x] UI de modo borrador / pendiente / conflicto, pantalla de carga centrada en 390 px.
+- [x] Caché PWA versionada para módulos actualizados.
+- [x] Pruebas unitarias JS y Python.
+- [ ] Publicar código en `main` y validar el flujo offline real desde Safari iPhone / navegador Mac.
+- [ ] Enviar un borrador desde iPhone, reconectar y validar lectura en Mac, y viceversa.
+- [ ] Probar concurrencia contra Supabase con dos sesiones simultáneas y dos usuarios (RLS).
+- [ ] Implementar borrados sincronizados con tombstones/versiones y transacciones, sin perder datos.

@@ -6,6 +6,7 @@ import hashlib
 import http.cookies
 import http.server
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -129,7 +130,7 @@ def auth_tokens(data):
 
 def postgres(table, token, *, method='GET', filters=None, rows=None, conflict=None):
     if table not in {'perci_profiles', 'perci_routines', 'perci_routine_exercises',
-                     'perci_activity_records', 'perci_habits', 'perci_habit_checks'}:
+                     'perci_activity_records', 'perci_workout_sets', 'perci_habits', 'perci_habit_checks'}:
         raise ApiError('Tabla no autorizada.')
     q = urllib.parse.urlencode(filters or {})
     if conflict:
@@ -164,6 +165,24 @@ def verify_snapshot(snapshot):
     for rec in snapshot['records']:
         if rec.get('type') not in TYPES or not isinstance(rec.get('name'),str) or not rec['name'].strip() or not 1<=int(rec.get('minutes',0))<=1440 or not re.fullmatch(r'\d{4}-\d\d-\d\d',str(rec.get('date',''))):
             raise ApiError('Actividad inválida.')
+        details=rec.get('setDetails',[])
+        if not isinstance(details,list) or len(details)>600 or (details and rec.get('type')!='gym'):
+            raise ApiError('Las series del entrenamiento son inválidas.')
+        seen=set()
+        for entry in details:
+            if not isinstance(entry,dict):
+                raise ApiError('Serie de entrenamiento inválida.')
+            position=entry.get('exercisePosition');number=entry.get('setNumber')
+            reps=entry.get('reps');weight=entry.get('weight');name=entry.get('exerciseName')
+            if (not isinstance(position,int) or position<0 or position>99 or
+                not isinstance(number,int) or not 1<=number<=15 or
+                not isinstance(reps,int) or not 0<=reps<=100 or
+                not isinstance(weight,(int,float)) or isinstance(weight,bool) or
+                not math.isfinite(weight) or not 0<=weight<=99999 or
+                not isinstance(name,str) or not 1<=len(name.strip())<=80 or
+                (position,number) in seen):
+                raise ApiError('Serie de entrenamiento inválida.')
+            seen.add((position,number))
     for h in snapshot['habits']:
         if not isinstance(h.get('name'),str) or not h['name'].strip() or not isinstance(h.get('days'),list) or not h['days'] or any(not isinstance(d,int) or d<0 or d>6 for d in h['days']):
             raise ApiError('Hábito inválido.')
@@ -197,6 +216,21 @@ def upload_data(snapshot, token, user):
             ex.append({'user_id':user,'routine_id':routine_id,'client_id':to_client('exercise',f"{r['id']}:{ix}"),'position':ix,'name':e['name'].strip(),'target_sets':int(e['sets']),'target_reps':int(e['reps'])})
     batch_upsert('perci_routine_exercises', ex, token, 'user_id,client_id')
     batch_upsert('perci_activity_records', [{'user_id':user,'client_id':to_client('record',r['id']), 'activity_type':r['type'],'name':r['name'][:80],'activity_date':r['date'],'minutes':int(r['minutes']), 'distance_km':r.get('distance'), 'sets_done':r.get('setsDone'),'volume_kg':r.get('volume'),'note':str(r.get('note',''))[:400]} for r in records], token, 'user_id,client_id')
+    # Subir series completadas, idempotentes por registro, ejercicio y número de serie.
+    if any(r.get('setDetails') for r in records):
+        remote_records=select_rows('perci_activity_records',token,user,'id,client_id')
+        record_ids={x['client_id']:x['id'] for x in remote_records}
+        set_rows=[]
+        for rec in records:
+            rid=record_ids.get(to_client('record',rec['id']))
+            if rec.get('setDetails') and not rid:
+                raise ApiError('No se pudo verificar el registro remoto.',502)
+            for item in rec.get('setDetails',[]):
+                set_rows.append({'user_id':user,'record_id':rid,
+                    'exercise_position':item['exercisePosition'],'exercise_name':item['exerciseName'].strip(),
+                    'set_number':item['setNumber'],'reps':item['reps'],
+                    'weight_kg':float(item['weight']),'completed':bool(item.get('completed',True))})
+        batch_upsert('perci_workout_sets',set_rows,token,'record_id,exercise_position,set_number')
     batch_upsert('perci_habits', [{'user_id':user,'client_id':to_client('habit',h['id']), 'name':h['name'][:70], 'days':h['days'],'paused':bool(h.get('paused'))} for h in habits],token, 'user_id,client_id')
     remote_habits=select_rows('perci_habits',token,user,'id,client_id')
     map_habits={r['client_id']:r['id'] for r in remote_habits}
@@ -223,7 +257,11 @@ def parse_legacy(client_id,kind):
 def download_data(token,user):
     rt=select_rows('perci_routines',token,user,'id,client_id,name')
     ex=select_rows('perci_routine_exercises',token,user,'routine_id,position,name,target_sets,target_reps')
-    ac=select_rows('perci_activity_records',token,user,'client_id,activity_type,name,activity_date,minutes,distance_km,sets_done,volume_kg,note')
+    ac=select_rows('perci_activity_records',token,user,'id,client_id,activity_type,name,activity_date,minutes,distance_km,sets_done,volume_kg,note')
+    completed_sets=select_rows('perci_workout_sets',token,user,'record_id,exercise_position,exercise_name,set_number,reps,weight_kg,completed')
+    sets_by_record={}
+    for row in completed_sets:
+        sets_by_record.setdefault(row['record_id'],[]).append(row)
     ha=select_rows('perci_habits',token,user,'id,client_id,name,days,paused')
     ck=select_rows('perci_habit_checks',token,user,'habit_id,check_date,completed')
     groups={}
@@ -241,6 +279,12 @@ def download_data(token,user):
             obj={'id':rid,'type':r['activity_type'],'name':r['name'],'date':r['activity_date'],'minutes':r['minutes'],'note':r.get('note') or ''}
             for api,local in [('distance_km','distance'),('sets_done','setsDone'),('volume_kg','volume')]:
                 if r.get(api) is not None:obj[local]=float(r[api]) if api!='sets_done' else r[api]
+            details=sets_by_record.get(r['id'],[])
+            if details:
+                obj['setDetails']=[{'exercisePosition':x['exercise_position'],
+                    'exerciseName':x['exercise_name'],'setNumber':x['set_number'],
+                    'reps':x['reps'],'weight':float(x['weight_kg']),'completed':bool(x['completed'])}
+                    for x in sorted(details,key=lambda y:(y['exercise_position'],y['set_number']))]
             records.append(obj)
     habits=[]
     habit_ids={}

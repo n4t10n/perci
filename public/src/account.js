@@ -1,4 +1,5 @@
-/** Percí v0.9: cuenta obligatoria, sesión del servidor + acceso offline previamente autorizado.
+import {queueSnapshot,readOutbox,isOfflineNow} from './data/offline-outbox.js?v=1.2';
+/** Percí v1.2: cuenta obligatoria, sesión del servidor + acceso offline previamente autorizado.
  * La credencial offline solo recuerda un usuario autenticado en este dispositivo;
  * NO sustituye cifrado local ni autentica contra Supabase sin conexión.
  */
@@ -11,6 +12,8 @@ const OFFLINE_GRANT_KEY = 'perci_offline_trusted_user_v09';
 const LEGACY_OWNER_KEY = 'perci_cloud_owner_v08';
 let notify=()=>{};
 let syncTimer=null;
+let requestSafeSync=()=>{};
+export function onSyncRequested(fn){requestSafeSync=fn;}
 export function onAccountChange(fn){notify=fn;}
 function update(changes){Object.assign(account,changes);notify({...account});}
 export const displayName=user=>{
@@ -128,35 +131,30 @@ export function markLinked(userId){
 }
 export function linkAccount(snapshot){return action(async()=>{
   if(!account.authenticated||!account.user)throw new Error('Primero iniciá sesión.');
-  if(account.offline)throw new Error('Conectate para respaldar tu progreso en la nube.');
-  if(account.syncPaused)throw new Error('Primero volvé a comprobar los datos de tu cuenta antes de respaldar.');
-  update({syncing:true});
-  try{
-    const result=await request('/api/cloud/sync',{snapshot});
-    markLinked(account.user.id);
-    update({syncing:false,lastSync:new Date().toISOString(),message:result.demoExcluded?
-      'Tus rutinas se respaldaron en la nube. Excluimos los registros de ejemplo.':
-      'Tus datos se respaldaron en la nube.'});
-  }finally{if(account.syncing)update({syncing:false});}
+  if(isOfflineNow(account))throw new Error('Guardamos tus cambios como borrador. Volvé a conectarte para sincronizar.');
+  queueSnapshot(account.user.id,snapshot);
+  await requestSafeSync(); // Nunca enviar una copia sin comparar primero la nube.
 });}
 export function scheduleAccountSync(snapshot){
-  if(!account.authenticated||!account.linked||account.syncPaused||account.busy||snapshot?.draft)return;
-  try{localStorage.setItem(pendingMarker(account.user.id),'1');}catch{}
-  if(account.offline)return;
+  if(!account.authenticated||!account.user)return;
+  try{queueSnapshot(account.user.id,snapshot);}catch(error){
+    account.error='Sin espacio para guardar el borrador local. Exportá una copia JSON antes de cerrar.';
+    console.error('Percí: almacenamiento local no disponible',error?.name);
+    return;
+  }
+  // Las sesiones en progreso jamás se envían como registros finalizados.
+  if(snapshot?.draft||isOfflineNow(account)||account.syncPaused||account.busy)return;
   if(syncTimer)clearTimeout(syncTimer);
-  syncTimer=setTimeout(async()=>{
-    if(!account.authenticated||account.offline||!account.linked||account.syncPaused)return;
-    update({syncing:true,error:''});
-    try{await request('/api/cloud/sync',{snapshot});try{localStorage.removeItem(pendingMarker(account.user.id));}catch{}update({syncing:false,lastSync:new Date().toISOString()});}
-    catch{update({syncing:false,error:'No se pudo actualizar tu copia en la nube. Lo nuevo sigue guardado en este dispositivo. Podés reintentar desde Mi cuenta.'});}
-  },1100);
+  syncTimer=setTimeout(()=>{if(!isOfflineNow(account)&&!account.syncPaused&&readOutbox(account.user.id))requestSafeSync();},1300);
 }
 export function resumePendingSync(snapshot){
-  if(!account.authenticated||account.offline||!account.linked||account.syncPaused||!account.user)return;
-  let pending=false;try{pending=localStorage.getItem(pendingMarker(account.user.id))==='1';}catch{}
-  if(pending)scheduleAccountSync(snapshot);
+  if(!account.authenticated||!account.user||isOfflineNow(account)||account.syncPaused||snapshot?.draft)return;
+  if(readOutbox(account.user.id))requestSafeSync();
 }
 export const fetchCloudData=()=>request('/api/cloud/data');
 export const retrySync=linkAccount;
 // Detectar recuperación de internet y verificar la cookie antes de reactivar sync.
-window.addEventListener('online',()=>{if(account.offline)initAccount().catch(()=>{});});
+window.addEventListener('online',()=>{if(account.authenticated) initAccount().catch(()=>{});});
+window.addEventListener('offline',()=>{if(account.authenticated) update({offline:true,message:'Sin conexión. Los cambios quedan como borradores en este dispositivo.'});});
+/** Solo el orquestador de app.js puede llamarlo, después de comparar tres vías. */
+export const syncCloudSnapshot=snapshot=>request('/api/cloud/sync',{snapshot});

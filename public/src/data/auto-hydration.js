@@ -12,6 +12,7 @@ function fingerprint(kind,item){
   if(kind==='habits')return JSON.stringify({name:item.name,days:[...(item.days||[])].sort((a,b)=>a-b),paused:!!item.paused});
   const result={type:item.type,name:item.name,date:item.date,minutes:Number(item.minutes),note:item.note||''};
   for(const [field] of [['distance'],['setsDone'],['volume']])if(item[field]!=null)result[field]=Number(item[field]);
+  result.setDetails=(item.setDetails||[]).map(x=>({exercisePosition:Number(x.exercisePosition),exerciseName:x.exerciseName,setNumber:Number(x.setNumber),reps:Number(x.reps),weight:Number(x.weight),completed:!!x.completed})).sort((a,b)=>a.exercisePosition-b.exercisePosition||a.setNumber-b.setNumber);
   return JSON.stringify(result);
 }
 export function hasPersonalData(s){

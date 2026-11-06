@@ -87,3 +87,17 @@
 .auth-trust{font-size:12px;color:var(--muted);line-height:1.6;margin-top:25px}.auth-mobile-brand{display:none}.auth-confirm-icon{width:62px;height:62px;border-radius:18px;background:var(--soft);color:var(--accent);font-size:28px;display:grid;place-items:center;margin-bottom:22px}.auth-panel .account-note,.auth-panel .account-alert{margin-top:20px}
 @media(max-width:820px){.auth-layout{display:block}.auth-story{display:none}.auth-main{min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:stretch;gap:40px;padding:30px 22px max(36px,env(safe-area-inset-bottom))}.auth-mobile-brand{display:block;max-width:480px;width:100%;margin:0 auto}.auth-panel{margin:0 auto}.auth-panel h2{font-size:32px}.auth-trust{margin-top:30px}}
 @media(max-width:380px){.auth-main{padding-inline:17px;gap:25px}.auth-panel h2{font-size:28px}}
+
+
+/* v1.2 · Guardado offline y pantalla de recuperación accesible. */
+.auth-loading.sync-loading{min-height:100dvh;max-width:100%;box-sizing:border-box;text-align:center;padding:36px 22px;gap:14px}
+.sync-loading .eyebrow{font-size:11px;letter-spacing:.17em;text-align:center}
+.sync-loading h2{max-width:600px;font-size:clamp(26px,5vw,43px);line-height:1.15;margin:12px auto;text-align:center}
+.sync-loading p{max-width:330px;margin:0 auto;text-align:center;font-size:clamp(14px,3.6vw,17px);line-height:1.55;overflow-wrap:anywhere}
+.offline-alert{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:14px 18px;margin:13px 0 20px;border-radius:15px;border:1px solid rgba(128,224,217,.36);background:var(--soft);color:var(--text);font-size:14px;line-height:1.45}
+.offline-alert strong{font-size:14px;letter-spacing:.01em}
+.offline-alert span{color:var(--muted);flex:1 1 220px}
+.offline-alert .btn{margin-left:auto;white-space:normal}
+.offline-alert.waiting{border-style:dashed}
+.offline-draft-note{background:var(--soft);border-radius:11px;padding:12px 14px;color:var(--muted);font-size:13px;margin-top:14px}
+@media(max-width:600px){.auth-loading.sync-loading{padding:28px 20px}.offline-alert{flex-direction:column;align-items:flex-start;margin:10px 0 18px;padding:12px 14px}.offline-alert span{flex:auto}.offline-alert .btn{width:100%;margin-left:0}.sync-loading p{max-width:300px}}
