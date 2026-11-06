@@ -1,10 +1,11 @@
-// PWA shell cache v0.9: funcionamiento local primero; la nube opcional no funciona sin conexión.
-const CACHE = 'perci-shell-v1.0';
+// PWA shell cache v1.1: autenticación previa online, datos de usuario accesibles offline si se habían guardado.
+const CACHE = 'perci-shell-v1.1';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
-  './src/app.js?v=1.0', './src/brand.js', './src/account.js', './src/account-ui.js', './src/styles.css?v=1.0',
+  './src/app.js?v=1.1', './src/brand.js', './src/account.js', './src/account-ui.js', './src/styles.css?v=1.1',
   './src/pwa.js', './src/data/repository.js',
-  './src/data/migration-preflight.js',
+  './src/data/migration-preflight.js', './src/data/import-cleanup.js',
+  './src/data/auto-hydration.js',
   './src/domain/initial-state.js', './src/domain/startup-route.js',
   './assets/favicon.svg', './assets/icon-180.png',
   './assets/icon-192.png', './assets/icon-512.png',

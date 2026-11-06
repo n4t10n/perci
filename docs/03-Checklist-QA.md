@@ -27,3 +27,12 @@
 - [ ] Diseño con fotos online y degradación offline.
 
 Este checklist no supone que se hayan ejecutado pruebas en dispositivos reales.
+
+## QA v1.1 (06/11/2026)
+- [x] Test unitario: nube con rutina + navegador vacío = rutina recuperada sin clic adicional.
+- [x] Test unitario: nube vacía no borra rutina local.
+- [x] Test unitario: ID en conflicto no se pisa en silencio; elección explícita.
+- [x] Test unitario: demo excluida sin perder rutinas del usuario.
+- [x] Test Chromium simulado: Inicio muestra Día 1 Full Body al iniciar sesión en 390px y 1280px.
+- [x] Test Chromium simulado: elección de copia remota en conflicto y backup local.
+- [ ] QA real: Vercel Production + Safari Mac/iPhone, RLS con dos cuentas, cookies y almacenamiento offline.

@@ -27,3 +27,15 @@ No hacer operaciones destructivas sobre los datos locales ni anunciar sincroniza
 - Work informó `perci-dev` con las ocho tablas y RLS, sin ejecutar nuevamente el SQL en esta versión.
 - QA local: pruebas JS/Python y flujo de navegador con Supabase simulado.
 - **Pendiente**: confirmar en Safari el registro/login reales, verificación de correo, cookies, RLS con dos cuentas, nube y duplicados.
+
+## 06/11/2026 · Percí v1.1
+- [x] Descarga automática desde `/api/cloud/data` al autenticar sesión online en un navegador nuevo.
+- [x] Pantalla de carga previa a Inicio, sin acceso a funciones durante la reconciliación.
+- [x] Rutinas y actividades de la nube + datos locales exclusivos: combinación por ID.
+- [x] Divergencia en el mismo ID: sincronización pausada, elección explícita y respaldo antes de reemplazar.
+- [x] Nuevo cache de PWA para evitar módulos viejos.
+- [x] Pruebas unitarias y visuales con Supabase simulado (390 px/1280 px).
+- [ ] Verificar v1.1 desplegada en Safari real, recuperación automática de Día 1 Full Body y persistencia de cookie.
+- [ ] Probar RLS con dos usuarios y reconciliación de registros concurrentes en Supabase real.
+- [ ] Implementar sincronización bidireccional robusta (incluidos borrados, versiones y resolución de conflictos). No declarar completa todavía.
+- [ ] Conservar `rama-historica` en GitHub y adoptar `main` como rama de trabajo, verificando las variables de entorno en Production.

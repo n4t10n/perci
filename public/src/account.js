@@ -4,7 +4,7 @@
  */
 export const account = {
   configured:false,ready:false,authenticated:false,offline:false,user:null,busy:false,
-  syncing:false,linked:false,foreignOwner:false,message:'',error:'',lastSync:null,
+  syncing:false,linked:false,syncPaused:false,foreignOwner:false,message:'',error:'',lastSync:null,
   mode:'login',pendingEmail:''
 };
 const OFFLINE_GRANT_KEY = 'perci_offline_trusted_user_v09';
@@ -129,6 +129,7 @@ export function markLinked(userId){
 export function linkAccount(snapshot){return action(async()=>{
   if(!account.authenticated||!account.user)throw new Error('Primero iniciá sesión.');
   if(account.offline)throw new Error('Conectate para respaldar tu progreso en la nube.');
+  if(account.syncPaused)throw new Error('Primero volvé a comprobar los datos de tu cuenta antes de respaldar.');
   update({syncing:true});
   try{
     const result=await request('/api/cloud/sync',{snapshot});
@@ -139,19 +140,19 @@ export function linkAccount(snapshot){return action(async()=>{
   }finally{if(account.syncing)update({syncing:false});}
 });}
 export function scheduleAccountSync(snapshot){
-  if(!account.authenticated||!account.linked||account.busy||snapshot?.draft)return;
+  if(!account.authenticated||!account.linked||account.syncPaused||account.busy||snapshot?.draft)return;
   try{localStorage.setItem(pendingMarker(account.user.id),'1');}catch{}
   if(account.offline)return;
   if(syncTimer)clearTimeout(syncTimer);
   syncTimer=setTimeout(async()=>{
-    if(!account.authenticated||account.offline||!account.linked)return;
+    if(!account.authenticated||account.offline||!account.linked||account.syncPaused)return;
     update({syncing:true,error:''});
     try{await request('/api/cloud/sync',{snapshot});try{localStorage.removeItem(pendingMarker(account.user.id));}catch{}update({syncing:false,lastSync:new Date().toISOString()});}
     catch{update({syncing:false,error:'No se pudo actualizar tu copia en la nube. Lo nuevo sigue guardado en este dispositivo. Podés reintentar desde Mi cuenta.'});}
   },1100);
 }
 export function resumePendingSync(snapshot){
-  if(!account.authenticated||account.offline||!account.linked||!account.user)return;
+  if(!account.authenticated||account.offline||!account.linked||account.syncPaused||!account.user)return;
   let pending=false;try{pending=localStorage.getItem(pendingMarker(account.user.id))==='1';}catch{}
   if(pending)scheduleAccountSync(snapshot);
 }

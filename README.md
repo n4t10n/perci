@@ -1,71 +1,45 @@
-# Percí v1.0 · GitHub + Vercel + Supabase (DEV)
+# Percí v1.1 · Recuperación automática de datos
 
-> **Estado:** código preparado para publicación. **No está desplegado** en GitHub/Vercel ni validado contra Supabase real. No reemplaza la verificación en Safari, RLS con dos cuentas y migración de datos personales.
+Aplicación PWA mobile-first (iPhone/Safari, macOS y Windows), con autenticación Supabase mediante cookies gestionadas desde funciones Python en Vercel.
 
-## Arquitectura
+## Novedad principal
 
-- `public/`: PWA HTML/CSS/JS; Vercel sirve estos archivos estáticos.
-- `api/`: Python Functions de Vercel para auth y respaldo; usa la clave **publishable** y el JWT del usuario. Sin `service_role` y sin almacenar credenciales en archivos persistentes.
-- `api/shared.py`: cookies host-only `HttpOnly`, `SameSite=Lax`, `Secure` en HTTPS (Vercel); access/refresh tokens gestionados del lado servidor, con consulta a Supabase Auth en cada petición privada y renovación al expirar.
-- `server/perci_server.py`: lógica reutilizada de Supabase Auth/PostgREST y utilitario de servidor local heredado. **No se ejecuta como proceso persistente en Vercel.**
-- `supabase/migrations/`: migración de referencia **ya aplicada** en `perci-dev`; NO ejecutarla otra vez.
-- `tests/`: pruebas locales sin consumir la cuenta de Supabase.
-- `.github/workflows/qa.yml`: corre pruebas en GitHub Actions en cada push/PR.
+Al validar la sesión en Supabase, Percí consulta **GET `/api/cloud/data` antes de presentar Inicio**:
 
-**No se alteró Supabase** ni se modificaron tablas en esta entrega.
+- Si el navegador no tiene datos propios, restaura automáticamente rutinas, actividades, hábitos y cumplimientos. No es necesario tocar **«Recuperar datos de mi cuenta»**.
+- Si el navegador ya tiene datos, conserva los registros locales, agrega IDs nuevos de la nube y comprueba los IDs compartidos.
+- Si un mismo ID tiene contenido diferente, pausa la sincronización y pide elegir entre la copia local y la remota. Conserva los registros exclusivos de cada copia y crea una copia de seguridad local antes de aplicar la elección.
+- Si la nube no tiene registros, no elimina los locales.
+- Si falla la conexión, muestra los datos locales disponibles y **pausa el respaldo** hasta poder reconciliar. El botón **«Reintentar sincronización»** en Mi cuenta permite probar nuevamente.
+- El `service worker` cambia a `perci-shell-v1.1`, para evitar utilizar módulos anteriores y permitir la carga offline de los nuevos módulos.
 
-## Publicar por primera vez (GitHub + Vercel)
+**Alcance:** esta versión soluciona la **descarga automática** y el control básico de conflictos. Todavía NO implementa la sincronización bidireccional completa con control de versiones, borrados y conciliación de ediciones concurrentes; se mantiene como entorno de desarrollo hasta validar RLS con dos usuarios y la experiencia Safari iPhone/Mac.
 
-1. **Respaldo:** desde Percí en Safari, exportá el JSON actualizado. Guardalo fuera del repositorio. No borres tus datos de `localhost`.
-2. **GitHub:** creá un repositorio **privado** y vacío, p. ej. `perci` en una cuenta que controles. El repositorio debe contener los archivos de esta carpeta en su raíz (`public`, `api`, `.gitignore`, `vercel.json`, etc.).
-3. En Terminal, dentro de esta carpeta, corré:
+## Estructura
 
-   ```bash
-   git init
-   git add .
-   git commit -m "feat: Percí DEV para Vercel con sesiones seguras"
-   git branch -M main
-   git remote add origin https://github.com/TU-USUARIO/perci.git
-   git push -u origin main
-   ```
+- `public/`: PWA HTML/CSS/JS.
+- `public/src/data/auto-hydration.js`: reconciliación pura, sin requests ni escrituras.
+- `api/`: Python Functions de Vercel para auth y Supabase. No se necesitan claves secretas ni `service_role`.
+- `server/`: lógica de los endpoints y servidor local DEV.
+- `tests/`: pruebas de frontend, backend y reconciliación.
+- `supabase/migrations/`: referencia SQL **ya aplicada** en perci-dev. NO ejecutar de nuevo sobre tablas existentes.
 
-   Reemplazá `TU-USUARIO`. GitHub puede requerir autenticación. **Verificá con `git status` que `.env` no figure como agregado** antes de publicar.
-4. **Vercel:** [New Project](https://vercel.com/new) → Import Git Repository → elegí `perci`. Framework preset: **Other** (el proyecto incluye Python Functions nativas). Root Directory: `./`; no fijar un build command propio ni output directory. Vercel servirá `public/` y `/api/*`.
-5. En Vercel, **Settings → Environment Variables**, añadí exactamente:
+## Configuración Vercel
 
-   ```dotenv
-   SUPABASE_URL=https://faoilcfpfijyzichwdmj.supabase.co
-   SUPABASE_PUBLISHABLE_KEY=<COPIAR_DESDE_SUPABASE_API_KEYS>
-   ```
+Proyecto existente `perci`, cuenta `valendemarco03-gmailcoms-projects`. La rama `main` es la principal de trabajo y Vercel publica automáticamente cada `git push` a `main`; no confundir el check `READY` con un test completo de login o RLS.
 
-   Aplicá las variables a Preview y Production **solo mientras ambos despliegues sean de desarrollo**, y desplegá nuevamente si las añadiste después del primer deploy. La clave publishable es pública, pero no incluyas ninguna `sb_secret_` ni `service_role`.
-6. Una vez Vercel asigne `https://<tu-proyecto>.vercel.app`, agregá en **Supabase → Authentication → URL Configuration** esa dirección como **Site URL** y `https://<tu-proyecto>.vercel.app/**` en Redirect URLs. Conservá `http://localhost:5173/**` en Redirect URLs si querés seguir probando localmente.
-7. Abrí el dominio Vercel en Safari: Registro → Confirmación de email → Login → Mi cuenta. Validá en DevTools que la cookie tenga `HttpOnly; Secure; SameSite=Lax`. El registro y el login tienen que funcionar antes de migrar tus datos.
-8. **Solo cuando el login funcione**, en el dominio Vercel iniciá sesión, abrí **Ajustes → Importar copia JSON** y seleccioná tu respaldo de Percí. Si el respaldo tiene `demo: true`, este código elimina rutinas/actividades/hábitos de ejemplo y conserva rutinas reales. Revisá `Día 1 Full Body` antes de utilizar **Mi cuenta → Guardar mis rutinas en la nube**. Confirmá ejercicios y series en Supabase, volvé a importar sólo tras revisar duplicados. Conservá el JSON de respaldo.
-9. Hacé pruebas de RLS con una segunda cuenta antes de considerar seguro el uso público. La protección offline de v0.9 aún utiliza localStorage no cifrado y se considera **DEV**, no producción clínica.
+En **Project → Settings → Environment Variables**, configurar en el entorno que corresponda (Preview o Production):
 
-**Cada `git push` a `main` provocará un despliegue nuevo en Vercel si la integración Git está conectada.** Cambios en archivos de Descargas, en esta conversación o en la copia local **no se suben solos**: hay que confirmar un commit y pushearlo. Los pull requests pueden generar previews. [Documentación Vercel Git](https://vercel.com/docs/git).
-
-## Diagnóstico de `.env` local
-
-La captura de v0.9 con `Percí: modo local disponible` significa que **faltó detectar uno o ambos valores**. `server/perci_server.py` busca el archivo exactamente en la misma carpeta donde están `index.html` y `server/`, y lee **solo `.env`**, no `.env.example`.
-
-Desde la raíz de este proyecto podés ejecutar, sin mostrar claves:
-
-```bash
-python3 scripts/check_env.py
+```dotenv
+SUPABASE_URL=https://faoilcfpfijyzichwdmj.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_TU_CLAVE_PUBLICA
 ```
 
-En Vercel no necesitás subir `.env`: las dos variables van en el dashboard de Vercel.
+La clave pública se copia del panel de Supabase y NO debe pegarse en conversaciones. Nunca subir `.env` ni claves `sb_secret_`/`service_role` a GitHub. La app utiliza `perci_at` y `perci_rt` como cookies `HttpOnly`, `Secure` en HTTPS y `SameSite=Lax`.
 
-Para iniciar una prueba local de esta arquitectura (opcional):
+**Site URL y Redirect URLs** de Supabase Auth deben incluir el dominio final que use el usuario. Si cambia el dominio, actualizar esa configuración antes de registrar usuarios nuevos. Conservá el respaldo JSON de Día 1 Full Body.
 
-```bash
-python3 -m api.shared
-# http://localhost:5173
-```
-
-## Pruebas automatizadas ejecutadas
+## Pruebas
 
 ```bash
 npm test
@@ -73,15 +47,21 @@ python3 -m unittest discover -s tests -p 'test_vercel_api.py' -v
 python3 -m unittest discover -s tests -p 'test_cookie_server.py' -v
 ```
 
-**Pendiente:** build real de Vercel, sesión Safari y email de confirmación contra Supabase, renovación de cookie bajo HTTPS real, aislamiento entre dos usuarios y migración real sin duplicados.
+Prueba de navegador controlado (Chromium, mocks de `/api/auth/session` y `/api/cloud/data`): recuperación automática a 390/1280 px y resolución de conflicto en un navegador con copia local. El entorno de test no accede al proyecto real Supabase ni a Safari; ambos requieren QA posterior al deploy.
 
-## Nota importante sobre datos de localhost
+## Flujo GitHub
 
-`localStorage` es por **origen** (`localhost:5173` y `tu-proyecto.vercel.app` son distintos). Por eso **no** se recuperará automáticamente `Día 1 Full Body` en el dominio nuevo. Necesitás importarlo mediante el JSON o primero respaldarlo a Supabase desde la versión local.
+Se entrega el script `Perci_v1.1_Actualizar_Main.sh` para integrar de forma segura la rama existente `feat/perci-v1-vercel-supabase` en `main` sin reescribir el historial, conservarla como `rama-historica` y subir v1.1.
 
-## Seguridad / límites
+**Antes de ejecutar**, confirmá que la configuración **Production** de Vercel tiene las dos variables y que los datos de prueba estén respaldados. El script muestra cambios, corre pruebas y pide confirmación explícita para el push a `main`. Ese push puede generar un despliegue en Production. La antigua rama se borra solo después de una segunda confirmación.
 
-- La cookie en HTTPS es `HttpOnly; Secure; SameSite=Lax`, sin atributo Domain y con Max-Age hasta 30 días. La verificación de identidad utiliza `/auth/v1/user` con el JWT, y un refresh token puede renovarlo. Supabase RLS controla el acceso real a los datos.
-- Para offline, la PWA recuerda el último usuario autenticado y conserva datos en `localStorage` no cifrado. No se debe presentar como seguro contra alguien con acceso físico o DevTools. Para un lanzamiento real habrá que implementar persistencia cifrada y sincronización bidireccional con resolución de conflictos.
-- Se habilitó seguridad de origen para POST JSON, pero quedan pendientes limitación de tasa, recuperación de contraseña, auditoría RLS real y revisión de seguridad del despliegue.
-- Nunca uses claves de servicio en frontend ni en este proyecto sin revisión técnica explícita.
+## Validación manual obligatoria
+
+1. Abrir Percí en incógnito, iniciar sesión y comprobar que **Día 1 Full Body** aparece sola, con **6 ejercicios y 23 series**, sin importar JSON.
+2. Recargar Safari y verificar que la sesión persiste.
+3. Entrar con otra cuenta: verificar que no ve rutinas ajenas (RLS con dos cuentas).
+4. Editar una rutina desde dos dispositivos y revisar el aviso de conflicto antes de sincronizar.
+5. Desconectar internet después de una sesión válida y registrar actividad local; volver a conectar y comprobar que no se pierde el progreso.
+6. En producción, comprobar atributos reales de las cookies y Site URL de Supabase.
+
+**Advertencia sobre datos antiguos:** `localhost:5173` y un dominio Vercel son orígenes distintos. Utilizá un JSON guardado para migrar rutinas locales antiguas. Las copias locales no están cifradas contra acceso físico al navegador.

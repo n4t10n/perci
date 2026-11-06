@@ -2,9 +2,10 @@ import { OFFICIAL_LOGOS } from './brand.js';
 import {cleanImportedState} from './data/import-cleanup.js';
 import { storage,readUserState,writeUserState,getLegacyOwner,legacyAlreadyClaimed,markLegacyClaimed,legacyHasPersonalData } from './data/repository.js';
 import { previewLocalMigration } from './data/migration-preflight.js';
+import { reconcileCloudSnapshot, hasPersonalData } from './data/auto-hydration.js';
 import { dateISO, offsetDate, seed } from './domain/initial-state.js';
 import { getInitialView } from './domain/startup-route.js';
-import {account,onAccountChange,initAccount,login,signup,logout,linkAccount,fetchCloudData,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync} from './account.js';
+import {account,onAccountChange,initAccount,login,signup,logout,linkAccount,markLinked,fetchCloudData,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync} from './account.js';
 import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js';
 
 
@@ -14,11 +15,11 @@ import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js';
 
 let state;try{state=storage.read()||seed();if(!Array.isArray(state.records)||!Array.isArray(state.routines)||!Array.isArray(state.habits))throw Error('Formato inválido')}catch(e){state=seed()}
 const freshState=()=>({...seed(),version:3,demo:false,routines:[],records:[],habits:[],checks:{},draft:null});
-const app={activeUid:null,needLegacyChoice:false,view:getInitialView(state),tab:'gym',activity:'walk',filter:'all',record:null,routine:null,editor:null,habit:null,exerciseSearch:'',modal:null,toast:''};
+const app={activeUid:null,needLegacyChoice:false,hydrating:false,cloudConflict:null,cloudNotice:'',view:getInitialView(state),tab:'gym',activity:'walk',filter:'all',record:null,routine:null,editor:null,habit:null,exerciseSearch:'',modal:null,toast:''};
 const icons={home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>',activity:'<path d="M6.5 6.5 17.5 17.5M4 9l5-5M2 7l5-5M15 20l5-5M17 22l5-5"/>',progress:'<path d="M3 19V5m0 14h18M7 16l5-5 4 3 5-7"/>',habits:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 10h18m-13 5 2 2 4-4"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.8 1.8-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.05 1.57V21h-2.5v-.08a1.7 1.7 0 0 0-1.05-1.57 1.7 1.7 0 0 0-1.88.34l-.06.06-1.8-1.8.06-.06A1.7 1.7 0 0 0 8.1 16a1.7 1.7 0 0 0-1.57-1.05H6.4v-2.5h.09A1.7 1.7 0 0 0 8.1 11.4a1.7 1.7 0 0 0-.34-1.88L7.7 9.46l1.8-1.8.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.05-1.57V6.4H15v.09a1.7 1.7 0 0 0 1.05 1.57 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.8 1.8-.06.06A1.7 1.7 0 0 0 19.4 11.4a1.7 1.7 0 0 0 1.57 1.05H21v2.5h-.09A1.7 1.7 0 0 0 19.4 15"/>',arrow:'<path d="m9 18 6-6-6-6"/>',plus:'<path d="M12 5v14M5 12h14"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',check:'<path d="m5 12 4 4L19 6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'};
 const icon=(n)=>`<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icons[n]||icons.arrow}</svg>`;
 const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const save=()=>{if(!account.authenticated||!app.activeUid||app.needLegacyChoice)return;storage.write(state);applyTheme();scheduleAccountSync(JSON.parse(JSON.stringify(state)))};
+const save=()=>{if(!account.authenticated||!app.activeUid||app.needLegacyChoice||app.hydrating||app.cloudConflict)return;storage.write(state);applyTheme();scheduleAccountSync(JSON.parse(JSON.stringify(state)))};
 const applyTheme=()=>{let t=state.theme==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):state.theme;document.documentElement.dataset.theme=t;document.querySelector('meta[name=theme-color]').content=t==='dark'?'#111716':'#f2f4f1'};
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
 const navs=[['home','Inicio'],['activity','Actividad'],['progress','Progreso'],['habits','Hábitos']];
@@ -61,19 +62,26 @@ function render(){
   const root=document.getElementById('root');
   if(!account.ready||!account.authenticated){root.innerHTML=renderAuthGate();return;}
   if(app.needLegacyChoice){root.innerHTML=renderLegacyChoice();return;}
+  if(app.hydrating){root.innerHTML=`<main class="auth-loading" role="status"><div class="eyebrow">PERCÍ · TU ESPACIO PERSONAL</div><h2>Preparando tu progreso…</h2><p>Recuperando tus rutinas y actividades de forma segura.</p></main>`;return;}
+  if(app.cloudConflict){root.innerHTML=renderCloudConflict();return;}
   if(!app.activeUid){root.innerHTML=renderAuthGate();return;}
   let view=app.view;
   let out=({home:renderHome,activity:renderActivity,progress:renderProgress,habits:renderHabits,settings:renderSettings,account:renderAccount,routine:renderRoutine,routineEdit:renderRoutineEdit,exerciseLibrary:renderLibrary,session:renderSession,otherForm:renderOtherForm,record:renderRecord,habitEdit:renderHabitEdit,onboard:renderOnboard}[view]||renderHome)();
-  root.innerHTML=shell(out);
+  root.innerHTML=shell((app.cloudNotice?`<div class="notice" role="status" style="margin-bottom:15px">${h(app.cloudNotice)}</div>`:'')+out);
 }
 function activateAccountData(){
   const id=account.user?.id;
   if(!account.authenticated||!id){
-    app.activeUid=null;app.needLegacyChoice=false;storage.activateUser(null);state=freshState();app.view='home';return;
+    app.activeUid=null;app.needLegacyChoice=false;app.hydrating=false;app.cloudConflict=null;app.cloudNotice='';storage.activateUser(null);state=freshState();app.view='home';return;
   }
   if(app.activeUid===id)return;
+  // Invalidar consultas del usuario anterior antes de cambiar de espacio.
+  hydrationGeneration++;
+  app.hydrating=false;
   const scoped=readUserState(id);
   app.activeUid=id;
+  account.syncPaused=false;
+  app.cloudConflict=null;app.cloudNotice='';
   storage.activateUser(id);
   app.modal=null;
   if(scoped){state=scoped;app.needLegacyChoice=false;app.view=getInitialView(state);return;}
@@ -96,7 +104,76 @@ function decideLegacy(copyLegacy){
   markLegacyClaimed();
   app.needLegacyChoice=false;
   app.view=getInitialView(state);
+  if(!account.offline)hydrateCloud(app.activeUid);
+  else render();
+}
+
+// Primer acceso online: leer Supabase antes de permitir ediciones locales.
+// Nunca subimos automáticamente un snapshot previo hasta completar esta lectura.
+let hydrationGeneration=0;
+function checkpointCloud(uid,previous){
+  if(!hasPersonalData(previous))return;
+  // Copia de seguridad adicional, independiente del respaldo de importación manual.
+  const key=`perci_before_cloud_v11_${uid}`;
+  if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(previous));
+  storage.backup(previous);
+}
+function renderCloudConflict(){
+  const count=app.cloudConflict?.count||0;
+  return `<div class="auth-layout"><section class="auth-story"><div class="auth-story-inner"><div class="auth-story-logo">${brandMarkup()}</div><div class="auth-story-copy"><span class="account-eyebrow">CUIDAMOS TUS ENTRENAMIENTOS</span><h1>Tu progreso,<br/><span>sin pérdidas.</span></h1><p>Detectamos diferencias entre los datos de este dispositivo y tu cuenta.</p></div></div></section><main class="auth-main"><div class="auth-panel"><div class="auth-form-eyebrow">SINCRONIZACIÓN EN PAUSA</div><h2>¿Qué versión querés conservar?</h2><p class="auth-hint">Hay ${count} ${count===1?'registro':'registros'} con cambios distintos en la nube y en este dispositivo. Guardaremos una copia local antes de aplicar tu decisión. Los registros que existan solamente en una de las dos copias se conservarán.</p><button class="btn auth-submit" type="button" data-sync-choice="remote">Usar cambios de mi cuenta</button><button class="btn outline auth-submit" style="margin-top:10px" type="button" data-sync-choice="local">Usar cambios de este dispositivo</button><p class="auth-trust">Esta elección no elimina los datos remotos. Si elegís los locales, podrás respaldarlos desde Mi cuenta después de revisarlos.</p></div></main></div>`;
+}
+async function hydrateCloud(uid){
+  if(!uid||account.offline||app.needLegacyChoice||app.hydrating)return;
+  const seq=++hydrationGeneration;
+  app.hydrating=true;app.cloudConflict=null;app.cloudNotice='';
+  account.syncPaused=true;
   render();
+  try{
+    const remote=await fetchCloudData();
+    if(seq!==hydrationGeneration||uid!==account.user?.id||!account.authenticated)return;
+    const result=reconcileCloudSnapshot(state,remote);
+    if(result.status==='conflict'){
+      app.cloudConflict={local:JSON.parse(JSON.stringify(state)),remote:JSON.parse(JSON.stringify(remote)),count:result.conflicts.length};
+      app.cloudNotice='';
+    }else if(result.status!=='empty-cloud'){
+      // El snapshot local anterior siempre se conserva en una copia de seguridad.
+      if(JSON.stringify(result.snapshot)!==JSON.stringify(state)){
+        checkpointCloud(uid,state);
+        state=result.snapshot;
+        storage.write(state);
+      }
+      app.view=getInitialView(state);
+      if(result.status==='restored')app.cloudNotice='Tus entrenamientos se recuperaron automáticamente de tu cuenta.';
+      else if(result.status==='merged')app.cloudNotice='Combinamos los registros que no tenían conflictos. Los cambios locales pendientes siguen en este dispositivo.';
+      // La descarga inicial no ejecuta un POST. Recién futuras ediciones se respaldan.
+      account.syncPaused=false;
+      if(!account.linked)markLinked(uid);
+    }else{
+      account.syncPaused=false;
+    }
+  }catch(err){
+    if(seq!==hydrationGeneration||uid!==account.user?.id)return;
+    account.syncPaused=true; // Evita subir un snapshot viejo cuando falló la comparación.
+    app.cloudNotice=`No se pudo consultar la nube: ${err.message||'problema de conexión'}. Tus datos locales siguen disponibles; la sincronización está pausada.`;
+  }finally{
+    if(seq===hydrationGeneration&&uid===account.user?.id){app.hydrating=false;render();}
+  }
+}
+function chooseCloudConflict(prefer){
+  const conflict=app.cloudConflict,uid=app.activeUid;
+  if(!conflict||!uid||account.user?.id!==uid)return;
+  try{
+    const outcome=reconcileCloudSnapshot(conflict.local,conflict.remote,prefer);
+    checkpointCloud(uid,conflict.local);
+    state=outcome.snapshot;
+    storage.write(state);
+    app.cloudConflict=null;
+    app.view=getInitialView(state);
+    account.syncPaused=false;
+    if(!account.linked)markLinked(uid);
+    app.cloudNotice=prefer==='local'?'Conservaste los cambios locales. Revisalos antes de respaldar desde Mi cuenta.':'Recuperaste los cambios de tu cuenta. Conservamos una copia de los datos locales anteriores.';
+    render();
+  }catch(error){window.alert(`No pudimos resolver la diferencia: ${error.message}`);}
 }
 
 const get=id=>document.getElementById(id);
@@ -154,7 +231,7 @@ case 'confirmClear':state={...state,demo:false,routines:[],records:[],habits:[],
 case 'resetDemo':showModal('¿Restaurar datos de demostración?','Se reemplazarán tus datos locales de prueba por ejemplos.','confirmReset','',true,'','Restaurar');break;
 case 'confirmReset':{const t=state.theme,f=state.focus;state={...seed(),theme:t,focus:f,onboardSeen:true};app.modal=null;save();go('home');toast('Demo restaurada');break}
 }}
-document.addEventListener('click',e=>{let el=e.target.closest('[data-action]');if(!el)return;e.preventDefault();handle(el.dataset.action,el.dataset.value||'')});
+document.addEventListener('click',e=>{const syncChoice=e.target.closest('[data-sync-choice]');if(syncChoice){e.preventDefault();chooseCloudConflict(syncChoice.dataset.syncChoice);return;}let el=e.target.closest('[data-action]');if(!el)return;e.preventDefault();handle(el.dataset.action,el.dataset.value||'')});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&app.modal){app.modal=null;render()}});
 // Safari puede recuperar una pestaña anterior desde Back/Forward Cache.
 // Si aquella pestaña estaba en Ajustes, al reabrir la app volvemos al
@@ -188,7 +265,8 @@ document.addEventListener('click',async event=>{
     try{decideLegacy(action==='claim-legacy');}catch(error){window.alert(error.message||'No pudimos recuperar tus rutinas.');}
     return;
   }
-  if(action==='logout'){await logout();return;}
+  if(action==='logout'){hydrationGeneration++;await logout();return;}
+  if(action==='refresh-cloud'){if(app.activeUid)hydrateCloud(app.activeUid);return;}
   if(action==='link'||action==='sync'){
     if(action==='link'&&!window.confirm('¿Querés guardar una copia de tus rutinas en tu cuenta? Los datos de ejemplo se excluyen.'))return;
     await linkAccount(JSON.parse(JSON.stringify(state)));
@@ -222,8 +300,8 @@ onAccountChange(()=>{
   activateAccountData();
   if(hasAccountConflict())app.view='account';
   render();
-  if((recovered||onlineSessionStarted)&&account.authenticated&&account.linked&&!app.needLegacyChoice){
-    resumePendingSync(JSON.parse(JSON.stringify(state)));
+  if((recovered||onlineSessionStarted)&&account.authenticated&&!app.needLegacyChoice){
+    hydrateCloud(account.user.id);
   }
 });
 applyTheme();render();
