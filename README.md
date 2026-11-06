@@ -1,3 +1,7 @@
+# Percí v1.3.1 · Corrección de sincronización y avisos
+
+Ver [README-v1.3.1.md](README-v1.3.1.md) para los cambios, la validación pendiente y el procedimiento de prueba.
+
 > **v1.3:** Borrado definitivo de registros de actividad con guardado previo como borrador. Consultá `README-v1.3.md` y `docs/08-Borrado-de-registros-v1.3.md`. No publicar sin probar.
 
 # Percí v1.3 · Borradores offline y sincronización segura

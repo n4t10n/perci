@@ -100,8 +100,10 @@ export function planOfflineSync(base,local,remote,prefer=null,deletedRecordIds=[
       const fl=fingerprint(kind,loc),fr=fingerprint(kind,rem),fo=fingerprint(kind,old);
       // Una eliminación confirmada prevalece sobre el snapshot remoto para este ID.
       // Incluye registros eliminados en v1.2 que siguen en su outbox.
-      if(kind==='records' && loc===undefined && rem!==undefined && (old!==undefined || explicitDeleted.has(id))){
-        deletions.push({kind:'records',id});
+      // Un borrado explícito sigue siendo definitivo aunque otro dispositivo
+      // ya haya eliminado el registro: no convertirlo en un conflicto ficticio.
+      if(kind==='records' && loc===undefined && (old!==undefined || explicitDeleted.has(id))){
+        if(rem!==undefined)deletions.push({kind:'records',id});
         continue;
       }
       const lChanged=old===undefined?loc!==undefined:fl!==fo;

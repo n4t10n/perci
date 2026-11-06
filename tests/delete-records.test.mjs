@@ -64,3 +64,21 @@ test('la interfaz pregunta antes de eliminar y no reabre cartel de borrados de r
   assert.match(app,/deleteCloudRecords/);
   assert.match(app,/renderSavedRecordDrafts/);
 });
+
+test('borrado ya aplicado en remoto no provoca conflicto ni resucita',()=>{
+  const old=base();const plan=planOfflineSync(old,empty(),empty(),null,['x1']);
+  assert.equal(plan.safe,true);
+  assert.deepEqual(plan.deletions,[]);
+  assert.deepEqual(plan.conflicts,[]);
+  assert.deepEqual(plan.snapshot.records,[]);
+});
+test('el borrado online fuerza el envío y el estado online no muestra banners',()=>{
+  const app=fs.readFileSync(new URL('../public/src/app.js',import.meta.url),'utf8');
+  const accountUI=fs.readFileSync(new URL('../public/src/account-ui.js',import.meta.url),'utf8');
+  assert.match(app,/queueMicrotask\(\(\)=>hydrateCloud\(app.activeUid,\{silent:true\}\)\)/);
+  assert.match(app,/window.addEventListener\('focus',refreshOnForeground\)/);
+  assert.match(app,/const syncNotice=\(\)=>isOfflineNow\(account\)\?/);
+  assert.match(app,/Tus datos están seguros/);
+  assert.match(accountUI,/const offlineText=offline\?/);
+  assert.doesNotMatch(app,/Cambios pendientes de sincronizar<\/strong>/);
+});
