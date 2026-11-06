@@ -1,0 +1,19 @@
+# Configuración local, tokens y sesiones
+.env
+.env.*
+!.env.example
+.perci-private/
+*.pem
+*.key
+# Python / JS / Vercel
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+.vercel/
+# Datos personales y copias de entrenamiento
+perci_prototipo_datos.json
+*backup*.json
+*respaldo*.json
+.DS_Store
