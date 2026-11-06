@@ -1,3 +1,16 @@
+# Percí v1.4.1 · Corrección de sincronización de hábitos
+
+Esta versión corrige las confirmaciones prematuras de guardado local,
+asegura una relectura cuando un usuario guarda un hábito mientras otra
+sincronización está en curso y permite reintentar errores previos.
+Si la nube no confirma los datos, Mi cuenta informa el error sin ocultar
+que los cambios siguen en el dispositivo.
+
+**No se modifican tablas ni migraciones de Supabase.**
+
+**Limitación:** las pruebas locales y simuladas no sustituyen la
+validación real con las dos cuentas en Safari y Chrome.
+
 # Percí v1.3.1 · Corrección de sincronización y avisos
 
 Ver [README-v1.3.1.md](README-v1.3.1.md) para los cambios, la validación pendiente y el procedimiento de prueba.

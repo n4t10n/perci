@@ -2,13 +2,13 @@ import { OFFICIAL_LOGOS } from './brand.js';
 import {cleanImportedState} from './data/import-cleanup.js';
 import { storage,readUserState,writeUserState,getLegacyOwner,legacyAlreadyClaimed,markLegacyClaimed,legacyHasPersonalData } from './data/repository.js';
 import { previewLocalMigration } from './data/migration-preflight.js';
-import { reconcileCloudSnapshot, hasPersonalData } from './data/auto-hydration.js?v=1.4';
+import { reconcileCloudSnapshot, hasPersonalData } from './data/auto-hydration.js?v=1.4.1';
 import { dateISO, offsetDate, seed } from './domain/initial-state.js';
 import { getInitialView } from './domain/startup-route.js';
-import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,deleteCloudEntities,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync} from './account.js?v=1.4';
-import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.4';
-import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.4';
-import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.4';
+import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,deleteCloudEntities,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync} from './account.js?v=1.4.1';
+import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.4.1';
+import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.4.1';
+import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.4.1';
 
 
 (()=>{'use strict';
@@ -86,6 +86,7 @@ function activateAccountData(){
   }
   if(app.activeUid===id)return;
   // Invalidar consultas del usuario anterior antes de cambiar de espacio.
+  hydrationRerunRequested=false;
   hydrationGeneration++;
   app.hydrating=false;
   const scoped=readUserState(id);
@@ -123,6 +124,9 @@ function decideLegacy(copyLegacy){
 // Primer acceso online: leer Supabase antes de permitir ediciones locales.
 // Nunca subimos automáticamente un snapshot previo hasta completar esta lectura.
 let hydrationGeneration=0;
+// Una actualización solicitada durante otra lectura no se pierde.
+// Importante al guardar un hábito enseguida de iniciar sesión en una cuenta nueva.
+let hydrationRerunRequested=false;
 function checkpointCloud(uid,previous){
   if(!hasPersonalData(previous))return;
   // Copia de seguridad adicional, independiente del respaldo de importación manual.
@@ -136,7 +140,11 @@ function renderCloudConflict(){
   return `<div class="auth-layout"><section class="auth-story"><div class="auth-story-inner"><div class="auth-story-logo">${brandMarkup()}</div><div class="auth-story-copy"><span class="account-eyebrow">CUIDAMOS TUS ENTRENAMIENTOS</span><h1>Tu progreso,<br/><span>sin pérdidas.</span></h1><p>Detectamos diferencias entre los datos de este dispositivo y tu cuenta.</p></div></div></section><main class="auth-main"><div class="auth-panel"><div class="auth-form-eyebrow">SINCRONIZACIÓN EN PAUSA</div><h2>¿Qué versión querés conservar?</h2><p class="auth-hint">Hay ${count} ${count===1?'registro':'registros'} con cambios distintos en la nube y en este dispositivo. Guardaremos una copia local antes de aplicar tu decisión. Los registros que existan solamente en una de las dos copias se conservarán.</p><button class="btn auth-submit" type="button" data-sync-choice="remote">Usar cambios de mi cuenta</button><button class="btn outline auth-submit" style="margin-top:10px" type="button" data-sync-choice="local">Usar cambios de este dispositivo</button><p class="auth-trust">Si elegís conservar los cambios locales, pueden reemplazar o borrar datos remotos. Guardamos un respaldo antes de aplicarlos.</p></div></main></div>`;
 }
 async function hydrateCloud(uid,{silent=false}={}){
-  if(!uid||isOfflineNow(account)||app.needLegacyChoice||app.hydrating)return;
+  if(!uid||isOfflineNow(account)||app.needLegacyChoice)return;
+  if(app.hydrating){
+    if(account.user?.id===uid)hydrationRerunRequested=true;
+    return;
+  }
   const seq=++hydrationGeneration;
   app.hydrating=true;app.silentHydration=!!silent;app.cloudConflict=null;app.cloudNotice='';
   account.syncPaused=true;
@@ -195,6 +203,7 @@ async function hydrateCloud(uid,{silent=false}={}){
         account.syncPaused=false;
         markLinked(uid);
         verifiedRoundTrip=true;
+        account.syncFailed=false;
         app.cloudNotice='';
         if(!silent)app.view=getInitialView(state);
       }
@@ -216,6 +225,7 @@ async function hydrateCloud(uid,{silent=false}={}){
         account.syncPaused=false;
         if(!account.linked)markLinked(uid);
         verifiedRoundTrip=true;
+        account.syncFailed=false;
         if(result.status==='empty-cloud'&&hasPersonalData(state)){
           queueSnapshot(uid,state);
           // Se necesita otra lectura protegida para enviar datos locales iniciales.
@@ -226,12 +236,18 @@ async function hydrateCloud(uid,{silent=false}={}){
   }catch(err){
     if(seq!==hydrationGeneration||uid!==account.user?.id)return;
     account.syncPaused=true;
-    app.cloudNotice='No pudimos conectar con tu cuenta. Tus cambios siguen guardados en este dispositivo.';
+    account.syncFailed=true;
+    app.cloudNotice='No pudimos confirmar tus cambios en la nube. Siguen guardados en este dispositivo.';
   }finally{
     if(seq===hydrationGeneration&&uid===account.user?.id){
       app.hydrating=false;app.silentHydration=false;render();
-      if(verifiedRoundTrip && readOutbox(uid) && !app.cloudConflict && !state.draft && !isOfflineNow(account)){
-        setTimeout(()=>hydrateCloud(uid,{silent:true}),900);
+      const rerun=hydrationRerunRequested;
+      hydrationRerunRequested=false;
+      // No repetir una sincronización fallida indefinidamente. Sí ejecutar
+      // exactamente una solicitud recibida mientras había otra en curso.
+      if(!app.cloudConflict && !state.draft && !isOfflineNow(account) &&
+          (rerun || (verifiedRoundTrip && readOutbox(uid)))){
+        setTimeout(()=>hydrateCloud(uid,{silent:true}),rerun?150:900);
       }
     }
   }
@@ -362,7 +378,30 @@ case 'restoreRecordDraft':{const record=findRecordDraft(app.activeUid,value);if(
   if(save()){removeRecordDraft(app.activeUid,value);go('progress');}break;}
 case 'discardRecordDraft':removeRecordDraft(app.activeUid,value);render();break;
 case 'editHabit':app.habit=value==='new'?{id:null,name:'',days:[1,2,3,4,5],paused:false}:JSON.parse(JSON.stringify(state.habits.find(x=>x.id===value)));go('habitEdit');break;
-case 'saveHabit':{let n=get('hname').value.trim(),days=[...document.querySelectorAll('[name=hdays]:checked')].map(x=>Number(x.value));if(!n||!days.length){toast('Poné nombre y elegí al menos un día');break}let habit={id:app.habit.id||id(),name:n.slice(0,70),days,paused:app.habit.paused||false};let i=state.habits.findIndex(x=>x.id===habit.id);if(i>=0)state.habits[i]=habit;else state.habits.push(habit);save();go('habits');toast('Hábito guardado');break}
+case 'saveHabit':{
+  const n=get('hname').value.trim();
+  const days=[...document.querySelectorAll('[name=hdays]:checked')].map(x=>Number(x.value));
+  if(!n||!days.length){toast('Poné nombre y elegí al menos un día');break;}
+  const habit={id:app.habit.id||id(),name:n.slice(0,70),days,paused:app.habit.paused||false};
+  const previous=JSON.parse(JSON.stringify(state.habits));
+  const i=state.habits.findIndex(x=>x.id===habit.id);
+  if(i>=0)state.habits[i]=habit;else state.habits.push(habit);
+  if(!save()){
+    // No prometer guardado si localStorage falló o no pudimos persistirlo.
+    state.habits=previous;
+    render();
+    break;
+  }
+  go('habits');
+  toast(isOfflineNow(account)?'Hábito guardado en este dispositivo':'Hábito guardado');
+  if(!isOfflineNow(account)){
+    // Un hábito de una cuenta recién creada no debe quedar esperando que
+    // una sincronización anterior termine para recién entonces programarse.
+    const uid=app.activeUid;
+    queueMicrotask(()=>{if(account.user?.id===uid)hydrateCloud(uid,{silent:true});});
+  }
+  break;
+}
 case 'pauseHabit':{let x=state.habits.find(x=>x.id===value);x.paused=!x.paused;save();go('habits');toast(x.paused?'Hábito pausado':'Hábito reanudado');break}
 case 'deleteHabit':showModal('¿Eliminar hábito?','Se eliminará este hábito y sus cumplimientos de tu cuenta y de los dispositivos sincronizados.','confirmDeleteHabit',value,true);break;
 case 'confirmDeleteHabit':deletePersonalEntity('habits',value);break;

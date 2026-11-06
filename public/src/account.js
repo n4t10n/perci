@@ -1,11 +1,11 @@
-import {queueSnapshot,readOutbox,isOfflineNow} from './data/offline-outbox.js?v=1.4';
+import {queueSnapshot,readOutbox,isOfflineNow} from './data/offline-outbox.js?v=1.4.1';
 /** Percí v1.2: cuenta obligatoria, sesión del servidor + acceso offline previamente autorizado.
  * La credencial offline solo recuerda un usuario autenticado en este dispositivo;
  * NO sustituye cifrado local ni autentica contra Supabase sin conexión.
  */
 export const account = {
   configured:false,ready:false,authenticated:false,offline:false,user:null,busy:false,
-  syncing:false,linked:false,syncPaused:false,foreignOwner:false,message:'',error:'',lastSync:null,
+  syncing:false,linked:false,syncPaused:false,syncFailed:false,foreignOwner:false,message:'',error:'',lastSync:null,
   mode:'login',pendingEmail:''
 };
 const OFFLINE_GRANT_KEY = 'perci_offline_trusted_user_v09';
@@ -66,12 +66,12 @@ export async function initAccount(){
     if(data.authenticated&&data.user){
       rememberUser(data.user);
       update({ready:true,configured:true,authenticated:true,offline:false,user:data.user,
-        linked:linked(data.user),error:'',message:''});
+        linked:linked(data.user),syncFailed:false,error:'',message:''});
     }else{
       // La respuesta explícita del servidor invalida la autorización offline previa.
       forgetUser();
       update({ready:true,configured:!!data.configured,authenticated:false,offline:false,
-        user:null,linked:false,error:'',message:''});
+        user:null,linked:false,syncFailed:false,error:'',message:''});
     }
   }catch(error){
     // Ante caída de red/servidor permitimos trabajo en este dispositivo de confianza.
@@ -100,7 +100,7 @@ export function login(email,password){return action(async()=>{
   const data=await request('/api/auth/login',{email,password});
   rememberUser(data.user);
   update({authenticated:true,offline:false,user:data.user,linked:linked(data.user),mode:'login',
-    message:'¡Bienvenido a Percí!',error:''});
+    message:'¡Bienvenido a Percí!',syncFailed:false,error:''});
 });}
 export function signup(name,email,password,confirmation){return action(async()=>{
   name=String(name||'').trim().replace(/\s+/g,' ');
@@ -123,7 +123,7 @@ export function logout(){return action(async()=>{
   if(syncTimer)clearTimeout(syncTimer);
   forgetUser();
   update({authenticated:false,user:null,offline:false,linked:false,mode:'login',
-    pendingEmail:'',message:'Cerraste sesión. Tus entrenamientos permanecen guardados en este dispositivo.'});
+    syncFailed:false,pendingEmail:'',message:'Cerraste sesión. Tus entrenamientos permanecen guardados en este dispositivo.'});
 });}
 export function markLinked(userId){
   try{localStorage.setItem(syncMarker(userId),'1');localStorage.removeItem(pendingMarker(userId));}catch{}
@@ -143,9 +143,14 @@ export function scheduleAccountSync(snapshot){
     return;
   }
   // Las sesiones en progreso jamás se envían como registros finalizados.
-  if(snapshot?.draft||isOfflineNow(account)||account.syncPaused||account.busy)return;
+  if(snapshot?.draft||isOfflineNow(account)||account.busy || (account.syncPaused&&!account.syncFailed))return;
   if(syncTimer)clearTimeout(syncTimer);
-  syncTimer=setTimeout(()=>{if(!isOfflineNow(account)&&!account.syncPaused&&readOutbox(account.user.id))requestSafeSync();},1300);
+  // Reintentar un fallo previo, sin levantar una pausa por conflicto.
+  const uid=account.user.id;
+  syncTimer=setTimeout(()=>{
+    if(account.authenticated&&account.user?.id===uid&&!isOfflineNow(account)&&
+      (!account.syncPaused||account.syncFailed)&&readOutbox(uid))requestSafeSync();
+  },1300);
 }
 export function resumePendingSync(snapshot){
   if(!account.authenticated||!account.user||isOfflineNow(account)||account.syncPaused||snapshot?.draft)return;
