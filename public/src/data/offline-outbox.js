@@ -11,10 +11,29 @@ const key=(prefix,uid)=>`${prefix}_${uid}`;
 const outboxKey=uid=>key('perci_outbox_v12',uid);
 const baselineKey=uid=>key('perci_remote_baseline_v12',uid);
 const editorKey=uid=>key('perci_routine_editor_v12',uid);
+const deletesKey=uid=>key('perci_record_deletes_v13',uid);
 const safeRead=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}};
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 
 export function readOutbox(uid){return validUid(uid)?safeRead(outboxKey(uid)):null;}
+/** Guardar intención explícita del usuario, incluso si no existía baseline remoto. */
+export function listRecordDeletes(uid){
+  if(!validUid(uid))return [];
+  const ids=safeRead(deletesKey(uid));
+  return Array.isArray(ids)?ids.filter(x=>typeof x==='string'&&/^[a-zA-Z0-9_-]{1,80}$/.test(x)):[];
+}
+export function markRecordDeleted(uid,id){
+  if(!validUid(uid)||typeof id!=='string'||!/^[a-zA-Z0-9_-]{1,80}$/.test(id))throw Error('Registro inválido');
+  const ids=listRecordDeletes(uid);
+  if(!ids.includes(id))ids.push(id);
+  localStorage.setItem(deletesKey(uid),JSON.stringify(ids));
+}
+export function clearRecordDeletes(uid,ids){
+  if(!validUid(uid))return;
+  const omit=new Set(ids);
+  localStorage.setItem(deletesKey(uid),JSON.stringify(listRecordDeletes(uid).filter(id=>!omit.has(id))));
+}
+export function cancelRecordDelete(uid,id){clearRecordDeletes(uid,[id]);}
 export function getBaseline(uid){return validUid(uid)?safeRead(baselineKey(uid)):null;}
 export function saveBaseline(uid,remote){if(!validUid(uid))throw Error('Usuario inválido');localStorage.setItem(baselineKey(uid),JSON.stringify(remote));}
 export function queueSnapshot(uid,snapshot){
@@ -62,13 +81,14 @@ function normalized(src){
   return clean;
 }
 function entry(map,id){return map.has(id)?map.get(id):undefined;}
-/** Merge de 3 vías. Una baja local explícita requiere otro endpoint: se bloquea, no se finge sincronización. */
-export function planOfflineSync(base,local,remote,prefer=null){
+/** Merge de tres vías. Los registros borrados explícitamente se eliminan en la API, no por upsert. */
+export function planOfflineSync(base,local,remote,prefer=null,deletedRecordIds=[]){
   if(prefer!==null&&!['local','remote'].includes(prefer))throw Error('Elección inválida');
   const before=base==null?null:normalized(base);
   const here=normalized(local),there=normalized(remote);
   const merged={...copy(here),demo:false,onboardSeen:true};
-  const conflicts=[],unsupportedDeletes=[];
+  const conflicts=[],unsupportedDeletes=[],deletions=[];
+  const explicitDeleted=new Set(deletedRecordIds);
   for(const kind of items){
     const a=new Map((before?.[kind]||[]).map(x=>[x.id,x]));
     const b=new Map(here[kind].map(x=>[x.id,x]));
@@ -78,6 +98,12 @@ export function planOfflineSync(base,local,remote,prefer=null){
     for(const id of ids){
       const old=entry(a,id),loc=entry(b,id),rem=entry(c,id);
       const fl=fingerprint(kind,loc),fr=fingerprint(kind,rem),fo=fingerprint(kind,old);
+      // Una eliminación confirmada prevalece sobre el snapshot remoto para este ID.
+      // Incluye registros eliminados en v1.2 que siguen en su outbox.
+      if(kind==='records' && loc===undefined && rem!==undefined && (old!==undefined || explicitDeleted.has(id))){
+        deletions.push({kind:'records',id});
+        continue;
+      }
       const lChanged=old===undefined?loc!==undefined:fl!==fo;
       const rChanged=old===undefined?rem!==undefined:fr!==fo;
       let chosen;
@@ -105,16 +131,38 @@ export function planOfflineSync(base,local,remote,prefer=null){
     const value=(a&&!b&&c&&prefer==='remote')?c:(b===c?b:a===b?c:a===c?b:prefer==='remote'?c:b);
     if(value)merged.checks[id]=true;
   }
-  return {snapshot:merged,conflicts:prefer?[]:conflicts,unsupportedDeletes,
+  return {snapshot:merged,conflicts:prefer?[]:conflicts,unsupportedDeletes,deletions,
     safe:(prefer!==null||conflicts.length===0)&&unsupportedDeletes.length===0};
 }
 /** Exigir lectura posterior: confirma que lo que escribimos está realmente en Supabase. */
-export function verifyRemoteSnapshot(expected,actual){
+export function verifyRemoteSnapshot(expected,actual,deletions=[]){
   const left=normalized(expected),right=normalized(actual);
   for(const kind of items){
     const remote=new Map(right[kind].map(x=>[x.id,x]));
     for(const x of left[kind])if(fingerprint(kind,x)!==fingerprint(kind,remote.get(x.id)))return false;
   }
   for(const [id,value] of Object.entries(left.checks||{}))if(value&&!right.checks[id])return false;
+  for(const item of deletions){
+    if(item.kind==='records' && right.records.some(x=>x.id===item.id))return false;
+  }
   return true;
+}
+
+/** Cuando otro dispositivo eliminó un registro, no resucitar su copia local intacta.
+ * Si hubo cambios locales diferentes, los deja para revisión de conflicto.
+ */
+export function applyRemoteRecordDeletes(base,local,remote){
+  if(!base)return {snapshot:local,removed:[]};
+  const before=normalized(base),here=normalized(local),there=normalized(remote);
+  const old=new Map(before.records.map(x=>[x.id,x]));
+  const ids=new Set(there.records.map(x=>x.id));
+  const removed=[];
+  const records=here.records.filter(x=>{
+    const b=old.get(x.id);
+    if(b && !ids.has(x.id) && fingerprint('records',x)===fingerprint('records',b)){
+      removed.push(x.id);return false;
+    }
+    return true;
+  });
+  return {snapshot:{...copy(here),records},removed};
 }

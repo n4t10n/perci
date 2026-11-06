@@ -194,6 +194,19 @@ def batch_upsert(table, rows, token, conflict):
     return postgres(table, token, method='POST', rows=rows, conflict=conflict) or []
 
 
+def delete_activity_records(records, token, user):
+    """Borrado idempotente por propietario+client_id con RLS de Supabase.
+    Incluye la eliminación en cascada de las series ya registradas.
+    """
+    if (not isinstance(records,list) or len(records)>100 or
+        any(not isinstance(x,str) or not re.fullmatch(r'[a-zA-Z0-9_-]{1,80}',x) for x in records)):
+        raise ApiError('Identificadores de registro inválidos.',400)
+    for item in dict.fromkeys(records):
+        postgres('perci_activity_records',token,method='DELETE',filters={
+            'user_id':'eq.'+user, 'client_id':'eq.'+to_client('record',item)})
+    return {'processed':len(set(records))}
+
+
 def upload_data(snapshot, token, user):
     verify_snapshot(snapshot)
     # Nunca subir actividad ni hábitos DEMO por accidente. La rutina personalizada sí.

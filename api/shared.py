@@ -20,7 +20,7 @@ REFRESH_COOKIE = 'perci_rt'
 WEB_ROOT = Path(__file__).resolve().parents[1] / 'public'
 ENDPOINTS = {
     '/api/status', '/api/auth/session', '/api/auth/login',
-    '/api/auth/signup', '/api/auth/logout', '/api/cloud/data', '/api/cloud/sync'
+    '/api/auth/signup', '/api/auth/logout', '/api/cloud/data', '/api/cloud/sync', '/api/cloud/delete'
 }
 
 
@@ -206,6 +206,11 @@ class ApiHandler(BaseHTTPRequestHandler):
                 if not user:
                     raise core.ApiError('Iniciá sesión para guardar tus datos.', 401)
                 return self.send_json(core.upload_data(body.get('snapshot'), token, user['id']), cookies=cookies)
+            if path == '/api/cloud/delete':
+                token, user, cookies = self.authenticated()
+                if not user:
+                    raise core.ApiError('Iniciá sesión para eliminar tus datos.', 401)
+                return self.send_json(core.delete_activity_records(body.get('records'), token, user['id']), cookies=cookies)
             raise core.ApiError('Método no permitido.', 405)
         except (ValueError, TypeError, json.JSONDecodeError):
             return self.send_json({'error': 'Solicitud inválida.'}, 400)

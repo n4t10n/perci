@@ -1,4 +1,6 @@
-# Percí v1.2 · Borradores offline y sincronización segura
+> **v1.3:** Borrado definitivo de registros de actividad con guardado previo como borrador. Consultá `README-v1.3.md` y `docs/08-Borrado-de-registros-v1.3.md`. No publicar sin probar.
+
+# Percí v1.3 · Borradores offline y sincronización segura
 
 **Estado: código desarrollado y probado automáticamente. Pendiente subir a `main` y validar el modo offline con Safari iPhone/Mac reales.** La v1.1 actualmente desplegada no se modifica hasta ejecutar el script de actualización y confirmar el push.
 

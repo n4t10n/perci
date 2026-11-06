@@ -1,5 +1,5 @@
-import {readOutbox,readRoutineEditor,isOfflineNow} from './data/offline-outbox.js?v=1.2';
-import {account,displayName,accountInitial} from './account.js?v=1.2';
+import {readOutbox,readRoutineEditor,isOfflineNow} from './data/offline-outbox.js?v=1.3';
+import {account,displayName,accountInitial} from './account.js?v=1.3';
 import {OFFICIAL_LOGOS} from './brand.js';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const feedback=()=>account.error?`<div class="account-alert" role="alert">${esc(account.error)}</div>`:account.message?`<div class="account-note" role="status">${esc(account.message)}</div>`:'';
