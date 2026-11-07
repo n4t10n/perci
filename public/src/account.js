@@ -1,4 +1,4 @@
-import {queueSnapshot,readOutbox,isOfflineNow} from './data/offline-outbox.js?v=1.6.3';
+import {queueSnapshot,readOutbox,isOfflineNow} from './data/offline-outbox.js?v=1.6.4';
 /** Percí v1.2: cuenta obligatoria, sesión del servidor + acceso offline previamente autorizado.
  * La credencial offline solo recuerda un usuario autenticado en este dispositivo;
  * NO sustituye cifrado local ni autentica contra Supabase sin conexión.

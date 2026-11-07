@@ -44,8 +44,13 @@ class ApiHandler(BaseHTTPRequestHandler):
     endpoint = None
 
     def log_message(self, fmt, *args):
-        # Do not log token, body, credential, or full query string.
-        print('%s %s' % (self.address_string(), fmt % args))
+        # BaseHTTPRequestHandler logs the full request line by default. Strip
+        # all query parameters so user IDs, authorization codes or other
+        # accidentally supplied sensitive values cannot enter Vercel logs.
+        path = urllib.parse.urlsplit(getattr(self, 'path', '')).path
+        method = getattr(self, 'command', 'UNKNOWN')
+        status = str(args[1]) if fmt.startswith('"%s"') and len(args) >= 2 else '-'
+        print(f'{self.address_string()} {method} {path} {status}')
 
     def secure(self):
         # Vercel always exposes HTTPS; local Python test server uses HTTP.

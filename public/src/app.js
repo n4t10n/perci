@@ -1,16 +1,16 @@
-import { OFFICIAL_LOGOS } from './brand.js?v=1.6.3';
-import {cleanImportedState} from './data/import-cleanup.js?v=1.6.3';
-import { storage,readUserState,writeUserState,getLegacyOwner,legacyAlreadyClaimed,markLegacyClaimed,legacyHasPersonalData } from './data/repository.js?v=1.6.3';
-import { previewLocalMigration } from './data/migration-preflight.js?v=1.6.3';
-import { reconcileCloudWithBaseline, hasPersonalData } from './data/auto-hydration.js?v=1.6.3';
-import { dateISO, offsetDate, seed } from './domain/initial-state.js?v=1.6.3';
-import { getInitialView } from './domain/startup-route.js?v=1.6.3';
-import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,deleteCloudEntities,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync,probeOfflineAccount} from './account.js?v=1.6.3';
-import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.6.3';
-import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.6.3';
-import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.6.3';
-import {canAutoRefreshCloud,shouldRefreshOnNavigation} from './data/auto-refresh.js?v=1.6.3';
-import {listTrackedExercises,exerciseHistory,previousExerciseSet,sessionStats,nextPendingSet,restRemaining,restClock} from './domain/training-insights.js?v=1.6.3';
+import { OFFICIAL_LOGOS } from './brand.js?v=1.6.4';
+import {cleanImportedState} from './data/import-cleanup.js?v=1.6.4';
+import { storage,readUserState,writeUserState,getLegacyOwner,legacyAlreadyClaimed,markLegacyClaimed,legacyHasPersonalData } from './data/repository.js?v=1.6.4';
+import { previewLocalMigration } from './data/migration-preflight.js?v=1.6.4';
+import { reconcileCloudWithBaseline, hasPersonalData } from './data/auto-hydration.js?v=1.6.4';
+import { dateISO, offsetDate, seed } from './domain/initial-state.js?v=1.6.4';
+import { getInitialView } from './domain/startup-route.js?v=1.6.4';
+import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,deleteCloudEntities,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync,probeOfflineAccount} from './account.js?v=1.6.4';
+import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.6.4';
+import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.6.4';
+import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.6.4';
+import {canAutoRefreshCloud,shouldRefreshOnNavigation} from './data/auto-refresh.js?v=1.6.4';
+import {listTrackedExercises,exerciseHistory,previousExerciseSet,sessionStats,nextPendingSet,restRemaining,restClock} from './domain/training-insights.js?v=1.6.4';
 
 
 (()=>{'use strict';

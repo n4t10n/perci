@@ -161,6 +161,15 @@ def verify_snapshot(snapshot):
         raise ApiError('Los datos locales no tienen el formato esperado.')
     if any(len(snapshot[k]) > 300 for k in ('routines','records','habits')):
         raise ApiError('Demasiados registros para esta versión de prueba.')
+    # Validate element shapes before reading fields. Invalid JSON must return 400,
+    # never leak into a generic server-side 500 or partially write a snapshot.
+    if any(not isinstance(item, dict) for kind in ('routines','records','habits') for item in snapshot[kind]):
+        raise ApiError('Los registros deben ser objetos válidos.', 400)
+    if any(not isinstance(item, dict) for routine in snapshot['routines']
+           for item in routine.get('exercises', []) if isinstance(routine.get('exercises'), list)):
+        raise ApiError('Los ejercicios deben ser objetos válidos.', 400)
+    if not isinstance(snapshot.get('checks', {}), dict):
+        raise ApiError('Los hábitos marcados tienen un formato inválido.', 400)
     for r in snapshot['routines']:
         if not isinstance(r.get('id'),str) or not isinstance(r.get('name'),str) or not r['name'].strip() or not 1 <= len(r['name']) <= 80:
             raise ApiError('Rutina con nombre inválido.')
