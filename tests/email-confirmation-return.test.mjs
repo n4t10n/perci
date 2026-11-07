@@ -13,10 +13,10 @@ globalThis.window = {
   history: {replaceState(...args){calls.push(args)}},
   addEventListener(){}
 };
-const {account, initAccount} = await import('../public/src/account.js?v=1.6.1');
-const {renderAuthGate} = await import('../public/src/account-ui.js?v=1.6.1');
+const {account, initAccount} = await import('../public/src/account.js?v=1.6.2');
+const {renderAuthGate} = await import('../public/src/account-ui.js?v=1.6.2');
 
-test('v1.6.1: retorno de confirmación va a login sin incorporar credenciales del fragmento',async()=>{
+test('v1.6.2: retorno de confirmación va a login sin incorporar credenciales del fragmento',async()=>{
   assert.equal(calls.length,1);
   assert.equal(calls[0][2],'/');
   globalThis.fetch=async()=>({ok:true,status:200,json:async()=>({configured:true,authenticated:false,user:null})});

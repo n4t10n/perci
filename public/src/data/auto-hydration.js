@@ -2,7 +2,8 @@
  * Este módulo NO implementa sincronización bidireccional ni resolución de borrados.
  * Los conflictos de un mismo ID deben resolverse explícitamente en la interfaz.
  */
-import { cleanImportedState } from './import-cleanup.js?v=1.6.1';
+import { cleanImportedState } from './import-cleanup.js?v=1.6.2';
+import {planOfflineSync} from './offline-outbox.js?v=1.6.2';
 
 const groups = ['routines','records','habits'];
 const own = (obj,key) => Object.prototype.hasOwnProperty.call(obj,key);
@@ -67,4 +68,21 @@ export function reconcileCloudSnapshot(local,remote,prefer=null){
   if(conflicts.length && prefer===null)return {status:'conflict',snapshot:null,conflicts,imported,keptLocal};
   if(!localHasData)return {status:'restored',snapshot:merged,conflicts:[],imported,keptLocal};
   return {status:conflicts.length?'resolved':imported?'merged':'current',snapshot:merged,conflicts:[],imported,keptLocal};
+}
+
+/** v1.6.2: No anunciar un segundo conflicto cuando esta copia está intacta
+ * desde su última sincronización. El baseline es exclusivo de la cuenta.
+ * Sin baseline sigue siendo obligatorio pedir decisión ante un mismo ID distinto.
+ * prefer se usa solamente después de una decisión explícita del usuario.
+ */
+export function reconcileCloudWithBaseline(local,remote,baseline=null,prefer=null){
+  if(baseline===null)return reconcileCloudSnapshot(local,remote,prefer);
+  const result=planOfflineSync(baseline,local,remote,prefer);
+  const conflicts=[...result.conflicts,...result.unsupportedDeletes];
+  const emptyCloud=!hasPersonalData(baseline)&&!hasPersonalData(remote);
+  return {
+    status:conflicts.length?'conflict':emptyCloud?'empty-cloud':prefer?'resolved':'merged',
+    snapshot:conflicts.length?null:result.snapshot,
+    conflicts
+  };
 }

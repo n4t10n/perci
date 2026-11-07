@@ -1,5 +1,5 @@
-import {loadPublicConfig,storePublicConfig,SDK_URL,CLOUD_CONFIG_KEY} from './config.js?v=1.6.1';
-import {prepareCloudImport,performCloudImport} from './migration.js?v=1.6.1';
+import {loadPublicConfig,storePublicConfig,SDK_URL,CLOUD_CONFIG_KEY} from './config.js?v=1.6.2';
+import {prepareCloudImport,performCloudImport} from './migration.js?v=1.6.2';
 
 export const cloud={configured:false,connecting:false,busy:false,authenticated:false,email:'',userId:null,message:'',error:'',lastImport:null,publicHost:''};
 let client=null;

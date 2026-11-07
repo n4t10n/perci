@@ -1,16 +1,16 @@
-import { OFFICIAL_LOGOS } from './brand.js?v=1.6.1';
-import {cleanImportedState} from './data/import-cleanup.js?v=1.6.1';
-import { storage,readUserState,writeUserState,getLegacyOwner,legacyAlreadyClaimed,markLegacyClaimed,legacyHasPersonalData } from './data/repository.js?v=1.6.1';
-import { previewLocalMigration } from './data/migration-preflight.js?v=1.6.1';
-import { reconcileCloudSnapshot, hasPersonalData } from './data/auto-hydration.js?v=1.6.1';
-import { dateISO, offsetDate, seed } from './domain/initial-state.js?v=1.6.1';
-import { getInitialView } from './domain/startup-route.js?v=1.6.1';
-import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,deleteCloudEntities,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync} from './account.js?v=1.6.1';
-import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.6.1';
-import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.6.1';
-import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.6.1';
-import {canAutoRefreshCloud,shouldRefreshOnNavigation} from './data/auto-refresh.js?v=1.6.1';
-import {listTrackedExercises,exerciseHistory,previousExerciseSet,sessionStats,nextPendingSet,restRemaining,restClock} from './domain/training-insights.js?v=1.6.1';
+import { OFFICIAL_LOGOS } from './brand.js?v=1.6.2';
+import {cleanImportedState} from './data/import-cleanup.js?v=1.6.2';
+import { storage,readUserState,writeUserState,getLegacyOwner,legacyAlreadyClaimed,markLegacyClaimed,legacyHasPersonalData } from './data/repository.js?v=1.6.2';
+import { previewLocalMigration } from './data/migration-preflight.js?v=1.6.2';
+import { reconcileCloudWithBaseline, hasPersonalData } from './data/auto-hydration.js?v=1.6.2';
+import { dateISO, offsetDate, seed } from './domain/initial-state.js?v=1.6.2';
+import { getInitialView } from './domain/startup-route.js?v=1.6.2';
+import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,deleteCloudEntities,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync} from './account.js?v=1.6.2';
+import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.6.2';
+import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.6.2';
+import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.6.2';
+import {canAutoRefreshCloud,shouldRefreshOnNavigation} from './data/auto-refresh.js?v=1.6.2';
+import {listTrackedExercises,exerciseHistory,previousExerciseSet,sessionStats,nextPendingSet,restRemaining,restClock} from './domain/training-insights.js?v=1.6.2';
 
 
 (()=>{'use strict';
@@ -284,10 +284,14 @@ async function hydrateCloud(uid,{silent=false}={}){
         if(!silent)app.view=getInitialView(state);
       }
     }else{
-      const mirror=applyRemoteEntityDeletes(getBaseline(uid),state,remote);
-      const result=mirror.conflicts.length ? null : reconcileCloudSnapshot(mirror.snapshot,remote);
+      // v1.6.2: la última copia sincronizada es el ancestro común.
+      // Si solo cambió la nube (por una elección ya hecha en iPhone),
+      // esta Mac debe recibirla automáticamente, sin repetir el conflicto.
+      const baseline=getBaseline(uid);
+      const mirror=applyRemoteEntityDeletes(baseline,state,remote);
+      const result=mirror.conflicts.length ? null : reconcileCloudWithBaseline(mirror.snapshot,remote,baseline);
       if(mirror.conflicts.length || result.status==='conflict'){
-        app.cloudConflict={kind:'initial',local:JSON.parse(JSON.stringify(state)),remote:JSON.parse(JSON.stringify(remote)),count:mirror.conflicts.length||result.conflicts.length};
+        app.cloudConflict={kind:'initial',base:baseline,local:JSON.parse(JSON.stringify(state)),remote:JSON.parse(JSON.stringify(remote)),count:mirror.conflicts.length||result.conflicts.length};
       }else{
         saveBaseline(uid,remote);
         if(result.status!=='empty-cloud'){
@@ -337,7 +341,7 @@ function chooseCloudConflict(prefer){
   if(prefer==='cancel'&&conflict.kind==='deletion'){app.cloudConflict=null;app.cloudNotice='Los borradores siguen en este dispositivo. Las eliminaciones no se sincronizaron.';account.syncPaused=true;render();return;}
   try{
     const intents=allDeleteIntents(uid);
-    const outcome=conflict.kind!=='initial'?planOfflineSync(conflict.base,conflict.local,conflict.remote,prefer,intents.records,intents):reconcileCloudSnapshot(conflict.local,conflict.remote,prefer);
+    const outcome=conflict.kind!=='initial'?planOfflineSync(conflict.base,conflict.local,conflict.remote,prefer,intents.records,intents):reconcileCloudWithBaseline(conflict.local,conflict.remote,conflict.base,prefer);
     if(outcome.unsupportedDeletes?.length)throw Error('Esta versión no permite sincronizar eliminaciones offline. Los borradores siguen guardados.');
     checkpointCloud(uid,conflict.local);
     state=outcome.snapshot;
