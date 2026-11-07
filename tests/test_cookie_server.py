@@ -116,6 +116,10 @@ class RegistrationTests(unittest.TestCase):
         self.assertEqual(status,200)
         self.assertFalse(body['authenticated'])
         self.assertEqual(calls[0][1]['data']['data']['full_name'],'Valentín')
+        from urllib.parse import urlparse, parse_qs
+        self.assertEqual(urlparse(calls[0][0]).path, '/auth/v1/signup')
+        self.assertEqual(parse_qs(urlparse(calls[0][0]).query)['redirect_to'],
+                         [server.CONFIRMATION_LOGIN_URL])
 
     def test_07_signup_fields_independently_validated(self):
         for body,part in [({'name':'X','email':'a@b.co','password':'password123'},'nombre'),

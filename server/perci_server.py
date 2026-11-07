@@ -29,6 +29,13 @@ ALLOWED_GET_PREFIXES = ('/assets/', '/src/')
 ALLOWED_ROOT = {'/', '/index.html', '/manifest.webmanifest', '/sw.js'}
 TYPES = {'gym', 'walk', 'run', 'cycle', 'sport', 'other'}
 
+# Canonical public Percí login for signup confirmation. Avoid Vercel preview URLs.
+# This URL must be allowed under Supabase Auth > URL Configuration.
+CONFIRMATION_LOGIN_URL = 'https://perci-gamma.vercel.app/?auth=verified'
+
+def signup_auth_endpoint():
+    return '/auth/v1/signup?' + urllib.parse.urlencode({'redirect_to': CONFIRMATION_LOGIN_URL})
+
 
 def read_env():
     values = {}
@@ -491,7 +498,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 if not isinstance(pwd,str) or not 8<=len(pwd)<=200:
                     raise ApiError('La contraseña debe tener al menos 8 caracteres.')
                 # En GoTrue el campo data se almacena en user_metadata.
-                data=supabase('/auth/v1/signup',method='POST',data={
+                data=supabase(signup_auth_endpoint(),method='POST',data={
                     'email':email.strip(),'password':pwd,'data':{'full_name':name.strip()}})
                 if data.get('access_token'):
                     sess=auth_tokens(data);sid=secrets.token_urlsafe(40)

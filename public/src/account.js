@@ -1,4 +1,4 @@
-import {queueSnapshot,readOutbox,isOfflineNow} from './data/offline-outbox.js?v=1.6';
+import {queueSnapshot,readOutbox,isOfflineNow} from './data/offline-outbox.js?v=1.6.1';
 /** Percí v1.2: cuenta obligatoria, sesión del servidor + acceso offline previamente autorizado.
  * La credencial offline solo recuerda un usuario autenticado en este dispositivo;
  * NO sustituye cifrado local ni autentica contra Supabase sin conexión.
@@ -10,6 +10,21 @@ export const account = {
 };
 const OFFLINE_GRANT_KEY = 'perci_offline_trusted_user_v09';
 const LEGACY_OWNER_KEY = 'perci_cloud_owner_v08';
+// Supabase confirms email outside our cookie-based login flow. Return to the
+// normal login screen without persisting access/refresh tokens from URL fragments.
+const emailReturn = (() => {
+  try {
+    const loc = window.location;
+    if (!loc) return {requested:false,failed:false};
+    const requested = new URLSearchParams(loc.search || '').get('auth') === 'verified';
+    const fragment = new URLSearchParams(String(loc.hash || '').replace(/^#/, ''));
+    const failed = fragment.has('error') || fragment.has('error_code');
+    if (requested || fragment.has('access_token') || fragment.has('refresh_token') || failed) {
+      window.history?.replaceState?.(null, '', loc.pathname || '/');
+    }
+    return {requested, failed};
+  } catch { return {requested:false,failed:false}; }
+})();
 let notify=()=>{};
 let syncTimer=null;
 let requestSafeSync=()=>{};
@@ -73,7 +88,9 @@ export async function initAccount(){
       // La respuesta explícita del servidor invalida la autorización offline previa.
       forgetUser();
       update({ready:true,configured:!!data.configured,authenticated:false,offline:false,
-        user:null,linked:false,syncFailed:false,error:'',message:''});
+        user:null,linked:false,syncFailed:false,mode:emailReturn.requested?'login':account.mode,
+        error:emailReturn.requested&&emailReturn.failed?'No pudimos confirmar el correo. Abrí el enlace de verificación otra vez o solicitá uno nuevo.':'',
+        message:emailReturn.requested&&!emailReturn.failed?'Si ya confirmaste tu correo, iniciá sesión con tu contraseña.':''});
     }
   }catch(error){
     // Ante caída de red/servidor permitimos trabajo en este dispositivo de confianza.

@@ -87,3 +87,8 @@ Ver [README-v1.4.md](README-v1.4.md) y [QA v1.4](docs/09-V1.4-Borrados-Concurren
 
 ## Percí v1.6 · Piloto de gimnasio
 Ver [README-v1.6.md](README-v1.6.md) para cambios y controles, y [QA de entrenamiento](docs/12-V1.6-Entrenamiento-UX-QA.md).
+
+
+## Percí v1.6.1
+
+Retorno del correo de verificación al login de Percí en vez de una URL de Vercel. Ver `README-v1.6.1.md` para configurar también `Authentication > URL Configuration` en Supabase.

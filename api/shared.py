@@ -174,7 +174,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                     raise core.ApiError('Ingresá un correo electrónico válido.')
                 if not isinstance(pwd, str) or not 8 <= len(pwd) <= 200:
                     raise core.ApiError('La contraseña debe tener al menos 8 caracteres.')
-                data = core.supabase('/auth/v1/signup', method='POST', data={
+                data = core.supabase(core.signup_auth_endpoint(), method='POST', data={
                     'email': email.strip(), 'password': pwd,
                     'data': {'full_name': name.strip()}})
                 if data.get('access_token'):

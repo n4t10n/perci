@@ -83,6 +83,13 @@ class TestVercelAPI(unittest.TestCase):
             self.assertIn('confirmá', result['message'])
             self.assertNotIn('Set-Cookie', headers)
             self.assertEqual(req.call_args.kwargs['data']['data']['full_name'], 'Valentin')
+            from urllib.parse import urlparse, parse_qs
+            requested = req.call_args.args[0]
+            params = parse_qs(urlparse(requested).query)
+            self.assertEqual(urlparse(requested).path, '/auth/v1/signup')
+            self.assertEqual(params['redirect_to'], [shared.core.CONFIRMATION_LOGIN_URL])
+            self.assertEqual(shared.core.CONFIRMATION_LOGIN_URL,
+                             'https://perci-gamma.vercel.app/?auth=verified')
 
     def test_login_http_only_tokens_and_data(self):
         user = {'id': 'user-one', 'email': 'a@test.com', 'user_metadata': {'full_name': 'Alicia'}}
