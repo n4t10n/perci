@@ -63,3 +63,10 @@ No hacer operaciones destructivas sobre los datos locales ni anunciar sincroniza
 - [ ] Publicar tras respaldo JSON y probar con datos de demostración en Mac+iPhone reales.
 - [ ] RLS real de dos cuentas y resolución atómica con tombstones/versiones de servidor.
 - [ ] Beta externa de la Fase C, accesibilidad y pruebas de usabilidad completas.
+
+## 06/11/2026 · Percí v1.6 · Entrega para QA
+- [x] Biblioteca: ejercicio propio por encima del filtro y la lista.
+- [x] Entrenamiento: últimas series registradas, resaltado de serie siguiente, descanso optativo 60/90/120s y resumen final.
+- [x] Progreso: evolución por ejercicio desde series efectivas, sin predicciones.
+- [ ] Validación iPhone/Mac real; la versión no está aprobada hasta probar ambas cuentas piloto.
+- [ ] Completar auditoría RLS y concurrencia real antes de beta.

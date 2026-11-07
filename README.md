@@ -84,3 +84,6 @@ La v1.1, validada anteriormente en Mac e iPhone con recuperaciones automáticas,
 Ver [README-v1.4.md](README-v1.4.md) y [QA v1.4](docs/09-V1.4-Borrados-Concurrencia-QA.md). No se requiere aplicar SQL nuevo.
 
 - [v1.5.1 · Pulido UI transversal](README-v1.5.1.md)
+
+## Percí v1.6 · Piloto de gimnasio
+Ver [README-v1.6.md](README-v1.6.md) para cambios y controles, y [QA de entrenamiento](docs/12-V1.6-Entrenamiento-UX-QA.md).

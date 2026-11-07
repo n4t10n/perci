@@ -1,15 +1,16 @@
-import { OFFICIAL_LOGOS } from './brand.js?v=1.5.1';
-import {cleanImportedState} from './data/import-cleanup.js?v=1.5.1';
-import { storage,readUserState,writeUserState,getLegacyOwner,legacyAlreadyClaimed,markLegacyClaimed,legacyHasPersonalData } from './data/repository.js?v=1.5.1';
-import { previewLocalMigration } from './data/migration-preflight.js?v=1.5.1';
-import { reconcileCloudSnapshot, hasPersonalData } from './data/auto-hydration.js?v=1.5.1';
-import { dateISO, offsetDate, seed } from './domain/initial-state.js?v=1.5.1';
-import { getInitialView } from './domain/startup-route.js?v=1.5.1';
-import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,deleteCloudEntities,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync} from './account.js?v=1.5.1';
-import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.5.1';
-import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.5.1';
-import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.5.1';
-import {canAutoRefreshCloud,shouldRefreshOnNavigation} from './data/auto-refresh.js?v=1.5.1';
+import { OFFICIAL_LOGOS } from './brand.js?v=1.6';
+import {cleanImportedState} from './data/import-cleanup.js?v=1.6';
+import { storage,readUserState,writeUserState,getLegacyOwner,legacyAlreadyClaimed,markLegacyClaimed,legacyHasPersonalData } from './data/repository.js?v=1.6';
+import { previewLocalMigration } from './data/migration-preflight.js?v=1.6';
+import { reconcileCloudSnapshot, hasPersonalData } from './data/auto-hydration.js?v=1.6';
+import { dateISO, offsetDate, seed } from './domain/initial-state.js?v=1.6';
+import { getInitialView } from './domain/startup-route.js?v=1.6';
+import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,deleteCloudEntities,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync} from './account.js?v=1.6';
+import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.6';
+import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.6';
+import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.6';
+import {canAutoRefreshCloud,shouldRefreshOnNavigation} from './data/auto-refresh.js?v=1.6';
+import {listTrackedExercises,exerciseHistory,previousExerciseSet,sessionStats,nextPendingSet,restRemaining,restClock} from './domain/training-insights.js?v=1.6';
 
 
 (()=>{'use strict';
@@ -18,7 +19,7 @@ import {canAutoRefreshCloud,shouldRefreshOnNavigation} from './data/auto-refresh
 
 let state;try{state=storage.read()||seed();if(!Array.isArray(state.records)||!Array.isArray(state.routines)||!Array.isArray(state.habits))throw Error('Formato inválido')}catch(e){state=seed()}
 const freshState=()=>({...seed(),version:3,demo:false,routines:[],records:[],habits:[],checks:{},draft:null});
-const app={activeUid:null,needLegacyChoice:false,hydrating:false,silentHydration:false,cloudConflict:null,cloudNotice:'',view:getInitialView(state),tab:'gym',activity:'walk',filter:'all',record:null,routine:null,editor:null,habit:null,exerciseSearch:'',modal:null,toast:''};
+const app={activeUid:null,needLegacyChoice:false,hydrating:false,silentHydration:false,cloudConflict:null,cloudNotice:'',view:getInitialView(state),tab:'gym',activity:'walk',filter:'all',record:null,routine:null,editor:null,habit:null,exerciseSearch:'',progressExercise:'',completedRecord:null,modal:null,toast:''};
 const icons={account:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>',activity:'<path d="M6.5 6.5 17.5 17.5M4 9l5-5M2 7l5-5M15 20l5-5M17 22l5-5"/>',progress:'<path d="M3 19V5m0 14h18M7 16l5-5 4 3 5-7"/>',habits:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 10h18m-13 5 2 2 4-4"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.8 1.8-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.05 1.57V21h-2.5v-.08a1.7 1.7 0 0 0-1.05-1.57 1.7 1.7 0 0 0-1.88.34l-.06.06-1.8-1.8.06-.06A1.7 1.7 0 0 0 8.1 16a1.7 1.7 0 0 0-1.57-1.05H6.4v-2.5h.09A1.7 1.7 0 0 0 8.1 11.4a1.7 1.7 0 0 0-.34-1.88L7.7 9.46l1.8-1.8.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.05-1.57V6.4H15v.09a1.7 1.7 0 0 0 1.05 1.57 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.8 1.8-.06.06A1.7 1.7 0 0 0 19.4 11.4a1.7 1.7 0 0 0 1.57 1.05H21v2.5h-.09A1.7 1.7 0 0 0 19.4 15"/>',arrow:'<path d="m9 18 6-6-6-6"/>',plus:'<path d="M12 5v14M5 12h14"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',check:'<path d="m5 12 4 4L19 6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'};
 const icon=(n)=>`<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icons[n]||icons.arrow}</svg>`;
 const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -26,7 +27,7 @@ const save=()=>{if(!account.authenticated||!app.activeUid||app.needLegacyChoice|
 const applyTheme=()=>{let t=state.theme==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):state.theme;document.documentElement.dataset.theme=t;document.querySelector('meta[name=theme-color]').content=t==='dark'?'#111716':'#f2f4f1'};
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
 const navs=[['home','Inicio'],['activity','Actividad'],['progress','Progreso'],['habits','Hábitos']];
-const mainView=v=>({home:'home',activity:'activity',routine:'activity',routineEdit:'activity',exerciseLibrary:'activity',session:'activity',otherForm:'activity',progress:'progress',record:'progress',habits:'habits',habitEdit:'habits',settings:'settings',account:'account',onboard:'home'}[v]||'home');
+const mainView=v=>({home:'home',activity:'activity',routine:'activity',routineEdit:'activity',exerciseLibrary:'activity',session:'activity',otherForm:'activity',progress:'progress',record:'progress',sessionSummary:'progress',habits:'habits',habitEdit:'habits',settings:'settings',account:'account',onboard:'home'}[v]||'home');
 const go=v=>{if(!account.authenticated||app.needLegacyChoice)return;if(hasAccountConflict())v='account';app.view=v;window.scrollTo({top:0,behavior:'instant'});render();
   // Al navegar a una pantalla de lectura, traer los datos nuevos de la cuenta.
   // La edición y los entrenamientos activos no deben interrumpirse.
@@ -55,12 +56,54 @@ function renderHabitMini(){let list=state.habits.filter(x=>!x.paused&&getDueToda
 const categories=[['walk','Caminata','🚶'],['run','Running','🏃'],['cycle','Bicicleta','🚴'],['sport','Deporte','🏐'],['other','Otra','✦']];
 function renderActivity(){return `${title('Tu movimiento, a tu manera.','Entrená con una rutina o registrá otra actividad. Todo cuenta.') }<div class="tabbar" role="group" aria-label="Tipo de actividad"><button class="tab ${app.tab==='gym'?'active':''}" data-action="tab" data-value="gym" aria-pressed="${app.tab==='gym'}">Gimnasio</button><button class="tab ${app.tab==='other'?'active':''}" data-action="tab" data-value="other" aria-pressed="${app.tab==='other'}">Otras actividades</button></div>${app.tab==='gym'?`<div class="row between wrap" style="margin:8px 0 17px"><h2>Mis rutinas</h2>${button('+ Crear rutina','editRoutine','new','small')}</div>${readRoutineEditor(app.activeUid)?isOfflineNow(account)?`<div class="offline-alert waiting" role="status"><strong>Rutina guardada sin conexión.</strong><span>Podés continuar desde donde la dejaste.</span>${button('Retomar borrador','resumeRoutineDraft','','small')}</div>`:`<div class="row wrap" style="margin:0 0 16px">${button('Continuar edición guardada','resumeRoutineDraft','','small outline')}</div>`:''}${state.routines.length?`<div class="grid2">${state.routines.map((r,i)=>`<div class="card" style="padding:0;overflow:hidden"><div class="image-strip" style="${i%2?'background-image:linear-gradient(90deg,#17201ed9,#17201e20),url(https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=900&q=80),linear-gradient(130deg,#264a45,#17201e)':''}">RUTINA ${String(i+1).padStart(2,'0')}</div><div style="padding:20px"><h3>${h(r.name)}</h3><p class="micro">${r.exercises.length} ejercicios · ${r.exercises.reduce((a,e)=>a+Number(e.sets),0)} series</p><div class="row wrap">${button('Ver rutina ↗','detailRoutine',r.id,'small')}${button('Empezar','start',r.id,'small ghost')}</div></div></div>`).join('')}</div>`:`<div class="card empty"><div class="emoji">🏋️</div><h3>Tu primera rutina empieza acá.</h3><p>No te mostramos una sesión para iniciar hasta que tengas una rutina real.</p>${button('Crear mi rutina','editRoutine','new')}</div>`}<div class="section-head"><h2>Biblioteca de ejercicios</h2></div><div class="card"><div class="row between wrap"><div><h3 style="margin:0 0 5px">Encontrá tu próximo ejercicio</h3><p class="micro" style="margin:0">Seleccioná, organizá y personalizá tu entrenamiento.</p></div>${button('Explorar ejercicios','library','','small outline')}</div></div>`:`<div class="photo-card" style="min-height:196px;--photo:url('https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=900&q=80'),linear-gradient(130deg,#264a45,#17201e)"><div class="eyebrow">MOVIMIENTO SIN ETIQUETAS</div><h3>Elegí la actividad, después registrá lo importante.</h3></div><div class="section-head"><h2>¿Qué hiciste hoy?</h2></div><div class="grid3" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">${categories.map(([key,label,emoji])=>`<button class="card" data-action="other" data-value="${key}" style="text-align:left;min-height:120px"><span style="font-size:27px">${emoji}</span><h3 style="font-size:17px;margin:13px 0 0">${label}</h3><span class="micro">Registrar ↗</span></button>`).join('')}</div>`}`}
 const lib=['Press de banca','Sentadilla','Peso muerto','Remo con mancuerna','Press militar','Jalón al pecho','Prensa de piernas','Curl de bíceps','Plancha','Elevación lateral','Hip thrust','Dominadas'];
-function renderLibrary(){return `<div class="detail-top">${back(app.editor?'routineEdit':'activity')}<span class="micro">BIBLIOTECA</span></div>${title('Biblioteca de ejercicios','Encontrá movimientos por nombre o añadí uno propio.') }<div class="field"><label for="libsearch">Buscar ejercicio</label><div class="row"><input id="libsearch" placeholder="Ej. Sentadilla" value="${h(app.exerciseSearch)}"/><button class="btn" data-action="searchLibrary">Buscar</button></div></div><div class="card">${lib.filter(e=>e.toLowerCase().includes(app.exerciseSearch.toLowerCase())).map(e=>`<div class="listrow"><div class="bubble">✦</div><div class="grow"><strong>${h(e)}</strong><div class="micro">Fuerza · biblioteca base</div></div>${app.editor?button('+ Añadir','addExercise',e,'small'):button('Ver rutinas','go','activity','small outline')}</div>`).join('')||'<div class="empty">No encontramos coincidencias. Podés crear un ejercicio personalizado.</div>'}<div class="divider"></div>${app.editor?`<div class="field"><label for="customexercise">Ejercicio personalizado</label><div class="row"><input id="customexercise" maxlength="80" placeholder="Nombre del ejercicio"/><button class="btn small" data-action="addCustomExercise">Añadir</button></div></div>`:''}</div>`}
+function renderLibrary(){return `<div class="detail-top">${back(app.editor?'routineEdit':'activity')}<span class="micro">BIBLIOTECA</span></div>${title('Biblioteca de ejercicios','Encontrá movimientos por nombre o añadí uno propio.')}
+${app.editor?`<section class="card custom-exercise-top" aria-label="Añadir ejercicio personalizado"><div class="field" style="margin:0"><label for="customexercise">Crear ejercicio personalizado</label><div class="row wrap custom-exercise-row"><input id="customexercise" maxlength="80" autocomplete="off" placeholder="Ej. Remo unilateral en polea" aria-describedby="customexercise-help"/><button class="btn" data-action="addCustomExercise">+ Añadir</button></div><p class="fieldhint" id="customexercise-help">Escribilo acá sin tener que bajar por toda la biblioteca.</p></div></section>`:''}
+<div class="field library-search"><label for="libsearch">Buscar en la biblioteca</label><div class="row wrap"><input id="libsearch" placeholder="Ej. Sentadilla" autocomplete="off" value="${h(app.exerciseSearch)}"/><button class="btn outline" data-action="searchLibrary">Buscar</button></div></div>
+<div class="card library-results">${lib.filter(e=>e.toLowerCase().includes(app.exerciseSearch.toLowerCase())).map(e=>`<div class="listrow"><div class="bubble">✦</div><div class="grow"><strong>${h(e)}</strong><div class="micro">Fuerza · biblioteca base</div></div>${app.editor?button('+ Añadir','addExercise',e,'small'):button('Ver rutinas','go','activity','small outline')}</div>`).join('')||'<div class="empty">No encontramos coincidencias. Probá con otra búsqueda o agregalo arriba como personalizado.</div>'}</div>`}
+
 function renderRoutine(){const r=state.routines.find(x=>x.id===app.routine);if(!r)return renderActivity();return `<div class="detail-top">${back()}<span class="micro">DETALLE DE RUTINA</span></div><div class="photo-card" style="min-height:240px;--photo:url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1100&q=80'),linear-gradient(130deg,#264a45,#17201e)"><div class="eyebrow">TU PRÓXIMA SESIÓN</div><h2 style="color:#fff">${h(r.name)}</h2><div class="row wrap">${button('▶ Empezar entrenamiento','start',r.id,'small')}</div></div><div class="section-head"><h2>Plan de entrenamiento</h2>${button('Editar rutina','editRoutine',r.id,'small outline')}</div><div class="card">${r.exercises.map((e,i)=>`<div class="listrow"><div class="bubble">${String(i+1).padStart(2,'0')}</div><div class="grow"><strong>${h(e.name)}</strong><div class="micro">${e.sets} series · ${e.reps} repeticiones objetivo</div></div></div>`).join('')}</div><div class="row wrap" style="margin-top:16px">${button('Empezar ahora','start',r.id,'wide')}${button('Duplicar','duplicateRoutine',r.id,'outline')}${button('Eliminar','deleteRoutine',r.id,'outline')}</div>`}
 function renderRoutineEdit(){const e=app.editor||{id:null,name:'',exercises:[]};return `<div class="detail-top">${back(e.id?'routine':'activity')}<span class="micro">${e.id?'EDITAR':'NUEVA'} RUTINA</span></div>${title(e.id?'Editá tu rutina':'Creá una rutina propia','Planificá el entrenamiento. Registrarlo será otra acción, cuando lo realices.') }<div class="card"><div class="field"><label for="rname">Nombre de la rutina *</label><input id="rname" maxlength="80" value="${h(e.name)}" placeholder="Ej. Tren superior A"/></div><div class="section-head"><h2>Ejercicios (${e.exercises.length})</h2>${button('+ Añadir ejercicio','library','','small outline')}</div>${e.exercises.length?e.exercises.map((item,i)=>`<div class="exercise-row" data-exrow="${i}"><div class="row between"><strong>${h(item.name)}</strong><button class="btn small outline" data-action="removeExercise" data-value="${i}">Quitar</button></div><div class="inline2" style="margin-top:12px"><div><label>Series</label><input data-field="sets" type="number" min="1" max="15" value="${item.sets}"/></div><div><label>Reps objetivo</label><input data-field="reps" type="number" min="1" max="100" value="${item.reps}"/></div></div></div>`).join(''):`<div class="empty">Todavía no agregaste ejercicios.<br/>Usá la biblioteca para empezar.</div>`}${isOfflineNow(account)?'<div class="offline-draft-note">◌ Sin conexión: guardá esta rutina como borrador local. Se sincronizará después.</div>':''}<div class="row wrap" style="margin-top:17px">${button(isOfflineNow(account)?'Guardar borrador':'Guardar rutina','saveRoutine')} ${button('Cancelar','cancelEdit','','outline')}</div></div>`}
-function renderSession(){const d=state.draft;if(!d)return '<div class="empty">No hay sesión activa.</div>';const r=state.routines.find(x=>x.id===d.routineId)||{name:'Sesión',exercises:d.snapshot};const items=d.snapshot||r.exercises;const total=items.reduce((sum,e)=>sum+Number(e.sets),0);const completed=Object.values(d.sets||{}).filter(Boolean).length;return `<div class="detail-top">${back('activity')}<span class="badge good">● ${isOfflineNow(account)?'Borrador sin conexión':'Guardado localmente'}</span></div><div class="sessionhead"><div class="eyebrow">ENTRENAMIENTO EN CURSO</div><h2 style="margin:10px 0">${h(r.name)}</h2><p class="micro">Registrá cada serie. Podés salir y continuar más tarde.</p><div class="row between"><strong>${completed} / ${total} series</strong><span class="micro">${Math.round(completed/Math.max(1,total)*100)}% completado</span></div><div class="progressline" style="margin-top:10px"><span style="width:${completed/Math.max(1,total)*100}%"></span></div></div><div class="section-head"><h2>Tu sesión</h2><span class="badge">${isOfflineNow(account)?'Se sincronizará al finalizar y reconectar':'Las series se sincronizan al finalizar'}</span></div>${items.map((item,i)=>`<div class="card" style="margin-bottom:14px"><div class="row between"><div><div class="eyebrow">EJERCICIO ${i+1}/${items.length}</div><h3>${h(item.name)}</h3><div class="micro">Objetivo ${item.reps} reps · ${item.sets} series</div></div><span class="help-icon">${i+1}</span></div>${Array.from({length:Number(item.sets)},(_,j)=>{const k=`${i}-${j}`,o=d.sets[k]||{};return `<div class="setrow" data-set="${k}"><div class="num">${j+1}</div><div><label>Peso (kg)</label><input type="number" min="0" step="0.5" placeholder="0" data-field="weight" value="${o.weight??''}" aria-label="Peso serie ${j+1} de ${h(item.name)}"/></div><div><label>Reps</label><input type="number" min="0" max="100" data-field="reps" placeholder="${item.reps}" value="${o.reps??item.reps}" aria-label="Repeticiones serie ${j+1} de ${h(item.name)}"/></div><button class="${o.done?'done':''}" data-action="toggleSet" data-value="${k}" aria-label="${o.done?'Desmarcar':'Completar'} serie ${j+1}">${o.done?'✓':'○'}</button></div>`}).join('')}</div>`).join('')}<div class="card"><div class="row between wrap"><div><h3 style="margin-bottom:4px">${completed===total?'Sesión completa':'Avanzá a tu ritmo'}</h3><p class="micro" style="margin:0">Tus series se guardan en este dispositivo, incluso si se corta internet. Finalizá para que puedan sincronizarse.</p></div>${button('Finalizar sesión','finishSession')}</div></div>`}
+const asKg=value=>Number(value||0).toLocaleString('es-AR',{maximumFractionDigits:2});
+function renderRestPanel(d){
+  const enabled=d.restEnabled===true,seconds=[60,90,120].includes(Number(d.restSeconds))?Number(d.restSeconds):90;
+  const active=enabled && restRemaining(d.restUntil)>0;
+  return `<section class="rest-panel card" aria-label="Descanso opcional"><div class="row between wrap"><div><h3>Descanso entre series</h3><p class="micro">Opcional. Podés seguir entrenando sin esperar.</p></div><button class="btn small outline" data-action="toggleRest" aria-pressed="${enabled}">${enabled?'Desactivar':'Activar descanso'}</button></div>${enabled?`<div class="rest-controls"><div class="rest-clock" data-rest-clock role="timer" aria-label="Tiempo de descanso">${active?restClock(d.restUntil):'00:00'}</div><div class="rest-actions"><div class="rest-durations" role="group" aria-label="Duración del descanso">${[60,90,120].map(n=>`<button class="chip ${seconds===n?'active':''}" data-action="restDuration" data-value="${n}" aria-pressed="${seconds===n}">${n} s</button>`).join('')}</div><button class="btn small outline" data-action="${active?'skipRest':'startRest'}">${active?'Omitir descanso':'Iniciar descanso'}</button></div></div>`:''}</section>`;
+}
+function renderSession(){
+  const d=state.draft;if(!d)return '<div class="empty">No hay sesión activa.</div>';
+  const r=state.routines.find(x=>x.id===d.routineId)||{name:'Sesión',exercises:d.snapshot};
+  const items=d.snapshot||r.exercises;
+  const summary=sessionStats(d),completed=summary.completed,total=summary.total;
+  const next=nextPendingSet(d);
+  return `<div class="detail-top">${back('activity')}<span class="badge good">● ${isOfflineNow(account)?'Borrador sin conexión':'Guardado localmente'}</span></div><div class="sessionhead"><div class="eyebrow">ENTRENAMIENTO EN CURSO</div><h2 style="margin:10px 0">${h(r.name)}</h2><p class="micro">Registrá cada serie. Podés salir y continuar más tarde.</p><div class="row between wrap"><strong>${completed} / ${total} series confirmadas</strong><span class="micro">${Math.round(completed/Math.max(1,total)*100)}% completado</span></div><div class="progressline" style="margin-top:10px"><span style="width:${completed/Math.max(1,total)*100}%"></span></div><div class="session-live-stats"><span>${asKg(summary.volume)} kg de volumen</span><span>Tiempo transcurrido: ${summary.minutes} min</span></div></div>${renderRestPanel(d)}
+<div class="section-head"><h2>Tu sesión</h2><span class="badge">${isOfflineNow(account)?'Se sincronizará al finalizar y reconectar':'Las series se sincronizan al finalizar'}</span></div>
+${items.map((item,i)=>`<section class="card session-exercise" aria-label="Ejercicio ${i+1}: ${h(item.name)}"><div class="row between wrap"><div><div class="eyebrow">EJERCICIO ${i+1}/${items.length}</div><h3>${h(item.name)}</h3><div class="micro">Objetivo ${item.reps} reps · ${item.sets} series</div></div><span class="help-icon">${i+1}</span></div>
+${Array.from({length:Number(item.sets)},(_,j)=>{
+  const k=`${i}-${j}`,o=d.sets?.[k]||{};
+  const prior=previousExerciseSet(state.records,item.name,j+1);
+  const isCurrent=k===next;
+  return `<div class="set-block ${o.done?'set-complete':isCurrent?'set-next':''}"><div class="setrow" data-set="${k}"><div class="num">${j+1}</div><div><label>Peso (kg)</label><input type="number" inputmode="decimal" min="0" max="99999" step="0.5" placeholder="0" data-field="weight" value="${o.weight??''}" aria-label="Peso serie ${j+1} de ${h(item.name)}"/></div><div><label>Reps</label><input type="number" inputmode="numeric" min="0" max="100" data-field="reps" placeholder="${item.reps}" value="${o.reps??item.reps}" aria-label="Repeticiones serie ${j+1} de ${h(item.name)}"/></div><button class="${o.done?'done':''}" data-action="toggleSet" data-value="${k}" aria-label="${o.done?'Desmarcar':'Completar'} serie ${j+1}" aria-pressed="${!!o.done}">${o.done?'✓':'○'}</button></div><div class="set-foot">${o.done?'<span class="set-finished-text">✓ Confirmada</span>':isCurrent?'<span class="set-next-text">Siguiente serie</span>':'<span class="micro">Pendiente</span>'}${prior?`<span class="set-history">Última vez: ${asKg(prior.weight)} kg × ${prior.reps} reps</span>${!o.done?`<button class="set-use-prior" data-action="usePreviousSet" data-value="${k}" aria-label="Usar valores anteriores de la serie ${j+1}">Usar anterior</button>`:''}`:'<span class="set-history">Sin registro previo de esta serie</span>'}</div></div>`;
+}).join('')}</section>`).join('')}
+<div class="card session-end"><div class="row between wrap"><div><h3 style="margin-bottom:4px">${completed===total?'Sesión completa':'Avanzá a tu ritmo'}</h3><p class="micro" style="margin:0">Guardamos tus series en este dispositivo. Al finalizar, se respaldan en tu cuenta cuando haya conexión.</p></div>${button('Finalizar sesión','finishSession')}</div></div>`;
+}
+function renderSessionSummary(){
+  const r=state.records.find(x=>x.id===app.completedRecord);
+  if(!r || r.type!=='gym')return renderProgress();
+  return `<div class="session-summary"><div class="summary-mark" aria-hidden="true">✓</div><div class="eyebrow">ENTRENAMIENTO GUARDADO</div><h1>${h(r.name)}</h1><p class="sub">Registraste una sesión real. Cada serie suma a tu progreso.</p><div class="tiles summary-tiles"><div class="tile"><div class="val">${r.minutes}</div><div class="micro">Minutos</div></div><div class="tile"><div class="val">${r.setsDone||0}</div><div class="micro">Series</div></div><div class="tile"><div class="val">${asKg(r.volume)}</div><div class="micro">Volumen (kg)</div></div></div><div class="card"><h3>Series realizadas</h3>${(r.setDetails||[]).map(x=>`<div class="listrow"><div class="grow"><strong>${h(x.exerciseName)}</strong><div class="micro">Serie ${x.setNumber} · ${asKg(x.weight)} kg × ${x.reps} reps</div></div><span class="badge good">✓</span></div>`).join('')}</div><p class="micro">${isOfflineNow(account)?'Guardado localmente. Se sincronizará al recuperar conexión.':'La sincronización con tu cuenta continúa automáticamente.'}</p><div class="row wrap summary-actions">${button('Ver progreso','go','progress')}${button('Volver a Actividad','go','activity','outline')}</div></div>`;
+}
+
 function renderOtherForm(){const [key,label,emoji]=categories.find(x=>x[0]===app.activity)||categories[0];const wantsDist=['walk','run','cycle'].includes(key);return `<div class="detail-top">${back('activity')}<span class="micro">REGISTRO DE ACTIVIDAD</span></div>${title(`${emoji} ${label}`,'Solo los datos que importan para esta actividad.') }<div class="card" style="max-width:680px"><div class="field"><label for="adate">Fecha</label><input type="date" id="adate" value="${dateISO()}"/></div>${key==='sport'?'<div class="field"><label for="aname">¿Qué deporte practicaste? *</label><input id="aname" placeholder="Ej. Vóley, fútbol" maxlength="60"/></div>':key==='other'?'<div class="field"><label for="aname">Nombre de la actividad *</label><input id="aname" placeholder="Ej. Yoga, baile" maxlength="60"/></div>':''}<div class="field"><label for="amins">Duración (minutos) *</label><input id="amins" type="number" min="1" max="1440" placeholder="Ej. 40"/></div>${wantsDist?'<div class="field"><label for="adistance">Distancia (km) · opcional</label><input id="adistance" type="number" min="0" max="1000" step="0.01" placeholder="Ej. 4.2"/></div>':''}<div class="field"><label for="anote">Nota · opcional</label><textarea id="anote" maxlength="400" placeholder="¿Cómo te sentiste?"></textarea></div>${isOfflineNow(account)?'<div class="offline-alert"><strong>Sin conexión</strong><span>Tu actividad quedará guardada en este dispositivo.</span></div>':''}<div class="row wrap" style="margin-top:17px">${button('Guardar actividad','saveActivity')} ${button('Cancelar','go','activity','outline')}</div></div>`}
-function renderProgress(){const categories2=[['all','Todas'],['gym','Fuerza'],['walk','Caminata'],['run','Running'],['cycle','Bici'],['sport','Deporte'],['other','Otras']];const list=state.records.filter(r=>app.filter==='all'||r.type===app.filter).sort((a,b)=>b.date.localeCompare(a.date));const mins=countMin(list);return `${title('El progreso también se ve.','Un historial compartido, métricas específicas y contexto para cada actividad.')}<div class="feature-photo" role="img" aria-label="Fotografía deportiva de personas corriendo"><div><div class="eyebrow">TU HISTORIA EN MOVIMIENTO</div><h2>Cada entrenamiento cuenta.</h2><p>Progreso real, a tu ritmo.</p></div></div><div class="grid2">${bars()}<div class="card"><h3>Tu recorrido</h3><p class="micro">Últimos 7 días · datos ${state.demo?'ilustrativos':'registrados'}</p><div class="tiles"><div class="tile"><div class="val">${sessionsWeek().length}</div><div class="micro">Sesiones</div></div><div class="tile"><div class="val">${countMin(sessionsWeek())}</div><div class="micro">Minutos</div></div><div class="tile"><div class="val">${sessionsWeek().filter(x=>x.type==='gym').length}</div><div class="micro">Fuerza</div></div></div><div class="section-head"><h3 style="font-size:17px">Días con actividad</h3></div><div class="week">${getWeek().map(d=>`<div class="day ${d===dateISO()?'today':''}"><span>${weekDay(d).slice(0,3)}</span><b>${d.slice(-2)}</b>${state.records.some(r=>r.date===d)?'<i></i>':'<span style="height:6px"></span>'}</div>`).join('')}</div></div></div><div class="section-head"><h2>Historial</h2><span class="micro">${list.length} registros</span></div><div class="filterline">${categories2.map(([k,l])=>`<button class="chip ${app.filter===k?'active':''}" data-action="filter" data-value="${k}" aria-pressed="${app.filter===k}">${l}</button>`).join('')}</div><div class="card">${list.length?list.map(r=>`<button type="button" class="listrow history-item" data-action="detailRecord" data-value="${r.id}" aria-label="Ver registro ${h(r.name)}"><div class="bubble">${categories.find(x=>x[0]===r.type)?.[2]||'🏋️'}</div><div class="grow"><strong>${h(r.name)}</strong><div class="micro">${new Date(r.date+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'short'})} · ${r.minutes} min ${r.distance?'· '+r.distance+' km':''} ${r.setsDone?'· '+r.setsDone+' series':''}</div></div><span class="history-chevron" aria-hidden="true">${icon('arrow')}</span></button>`).join(''):`<div class="empty"><div class="emoji">◌</div><h3>Sin registros por ahora</h3><p>Cuando registres una actividad, aparecerá acá sin inventar estadísticas.</p>${button('Registrar actividad','go','activity')}</div>`}</div>${renderSavedRecordDrafts()}`}
+function renderStrengthEvolution(){
+  const names=listTrackedExercises(state.records);
+  if(!names.length)return `<section class="card strength-progress" aria-label="Evolución de fuerza"><div class="row between wrap"><div><h3>Evolución por ejercicio</h3><p class="micro">Se activa después de finalizar sesiones con peso y repeticiones reales.</p></div><span class="badge">Fuerza</span></div><div class="strength-empty">Todavía no hay series completadas para comparar. Tu primera sesión será el punto de partida.</div></section>`;
+  const selected=names.some(x=>x===app.progressExercise)?app.progressExercise:names[0];
+  const entries=exerciseHistory(state.records,selected);
+  const latest=entries.at(-1),first=entries[0],lastEight=entries.slice(-8);
+  const max=Math.max(1,...lastEight.map(x=>x.maxWeight));
+  const points=lastEight.map((x,i)=>`${16+(lastEight.length===1?0:i*288/(lastEight.length-1))},${94-x.maxWeight/max*73}`).join(' ');
+  return `<section class="card strength-progress" aria-label="Evolución de fuerza"><div class="row between wrap strength-head"><div><h3>Evolución por ejercicio</h3><p class="micro">Datos reales de sesiones completadas, sin estimaciones.</p></div><label class="strength-select-label" for="progressExercise">Ejercicio<select id="progressExercise">${names.map(n=>`<option value="${h(n)}" ${n===selected?'selected':''}>${h(n)}</option>`).join('')}</select></label></div><div class="strength-kpis"><div><strong>${asKg(latest.maxWeight)} kg</strong><span>Máximo en la última sesión</span></div><div><strong>${entries.length}</strong><span>Sesiones registradas</span></div><div><strong>${asKg(latest.maxWeight-first.maxWeight)} kg</strong><span>Diferencia respecto de la primera</span></div></div>${lastEight.length>1?`<div class="strength-trend"><svg viewBox="0 0 320 112" preserveAspectRatio="none" role="img" aria-label="Evolución del máximo por sesión de ${h(selected)}: ${lastEight.map(x=>`${asKg(x.maxWeight)} kg`).join(', ')}"><line x1="10" y1="98" x2="310" y2="98" stroke="currentColor" stroke-opacity=".15"/><polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>${lastEight.map((x,i)=>`<circle cx="${16+i*288/(lastEight.length-1)}" cy="${94-x.maxWeight/max*73}" r="4.5" fill="var(--accent)"/>`).join('')}</svg></div>`:'<p class="micro strength-first">Con otra sesión de este ejercicio vas a poder comparar la evolución.</p>'}<div class="strength-session-list">${entries.slice(-4).reverse().map(x=>`<div class="strength-session"><span>${h(x.date)}</span><strong>${asKg(x.maxWeight)} kg × ${x.repsAtMax} reps</strong><span>${asKg(x.volume)} kg volumen</span></div>`).join('')}</div><p class="micro">El gráfico muestra el mayor peso registrado en cada sesión, no una estimación de fuerza.</p></section>`;
+}
+function renderProgress(){const categories2=[['all','Todas'],['gym','Fuerza'],['walk','Caminata'],['run','Running'],['cycle','Bici'],['sport','Deporte'],['other','Otras']];const list=state.records.filter(r=>app.filter==='all'||r.type===app.filter).sort((a,b)=>b.date.localeCompare(a.date));const mins=countMin(list);return `${title('El progreso también se ve.','Un historial compartido, métricas específicas y contexto para cada actividad.')}<div class="feature-photo" role="img" aria-label="Fotografía deportiva de personas corriendo"><div><div class="eyebrow">TU HISTORIA EN MOVIMIENTO</div><h2>Cada entrenamiento cuenta.</h2><p>Progreso real, a tu ritmo.</p></div></div><div class="grid2">${bars()}<div class="card"><h3>Tu recorrido</h3><p class="micro">Últimos 7 días · datos ${state.demo?'ilustrativos':'registrados'}</p><div class="tiles"><div class="tile"><div class="val">${sessionsWeek().length}</div><div class="micro">Sesiones</div></div><div class="tile"><div class="val">${countMin(sessionsWeek())}</div><div class="micro">Minutos</div></div><div class="tile"><div class="val">${sessionsWeek().filter(x=>x.type==='gym').length}</div><div class="micro">Fuerza</div></div></div><div class="section-head"><h3 style="font-size:17px">Días con actividad</h3></div><div class="week">${getWeek().map(d=>`<div class="day ${d===dateISO()?'today':''}"><span>${weekDay(d).slice(0,3)}</span><b>${d.slice(-2)}</b>${state.records.some(r=>r.date===d)?'<i></i>':'<span style="height:6px"></span>'}</div>`).join('')}</div></div></div>${renderStrengthEvolution()}<div class="section-head"><h2>Historial</h2><span class="micro">${list.length} registros</span></div><div class="filterline">${categories2.map(([k,l])=>`<button class="chip ${app.filter===k?'active':''}" data-action="filter" data-value="${k}" aria-pressed="${app.filter===k}">${l}</button>`).join('')}</div><div class="card">${list.length?list.map(r=>`<button type="button" class="listrow history-item" data-action="detailRecord" data-value="${r.id}" aria-label="Ver registro ${h(r.name)}"><div class="bubble">${categories.find(x=>x[0]===r.type)?.[2]||'🏋️'}</div><div class="grow"><strong>${h(r.name)}</strong><div class="micro">${new Date(r.date+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'short'})} · ${r.minutes} min ${r.distance?'· '+r.distance+' km':''} ${r.setsDone?'· '+r.setsDone+' series':''}</div></div><span class="history-chevron" aria-hidden="true">${icon('arrow')}</span></button>`).join(''):`<div class="empty"><div class="emoji">◌</div><h3>Sin registros por ahora</h3><p>Cuando registres una actividad, aparecerá acá sin inventar estadísticas.</p>${button('Registrar actividad','go','activity')}</div>`}</div>${renderSavedRecordDrafts()}`}
 function renderSavedRecordDrafts(){
   const drafts=listRecordDrafts(app.activeUid);
   if(!drafts.length)return '';
@@ -81,7 +124,7 @@ function render(){
   if(app.cloudConflict){root.innerHTML=renderCloudConflict();return;}
   if(!app.activeUid){root.innerHTML=renderAuthGate();return;}
   let view=app.view;
-  let out=({home:renderHome,activity:renderActivity,progress:renderProgress,habits:renderHabits,settings:renderSettings,account:renderAccount,routine:renderRoutine,routineEdit:renderRoutineEdit,exerciseLibrary:renderLibrary,session:renderSession,otherForm:renderOtherForm,record:renderRecord,habitEdit:renderHabitEdit,onboard:renderOnboard}[view]||renderHome)();
+  let out=({home:renderHome,activity:renderActivity,progress:renderProgress,habits:renderHabits,settings:renderSettings,account:renderAccount,routine:renderRoutine,routineEdit:renderRoutineEdit,exerciseLibrary:renderLibrary,session:renderSession,otherForm:renderOtherForm,record:renderRecord,sessionSummary:renderSessionSummary,habitEdit:renderHabitEdit,onboard:renderOnboard}[view]||renderHome)();
   root.innerHTML=shell((isOfflineNow(account)&&app.cloudNotice?`<div class="notice" role="status" style="margin-bottom:15px">${h(app.cloudNotice)}</div>`:'')+out);
   if(pendingPwaUpdate)applyPendingPwaUpdate();
 }
@@ -89,7 +132,7 @@ function activateAccountData(){
   const id=account.user?.id;
   if(!account.authenticated||!id){
     app.activeUid=null;app.needLegacyChoice=false;app.hydrating=false;app.cloudConflict=null;app.cloudNotice='';
-    app.editor=null;app.habit=null;app.record=null;app.routine=null;app.modal=null;
+    app.editor=null;app.habit=null;app.record=null;app.routine=null;app.completedRecord=null;app.progressExercise='';app.modal=null;
     storage.activateUser(null);state=freshState();app.view='home';return;
   }
   if(app.activeUid===id)return;
@@ -102,7 +145,7 @@ function activateAccountData(){
   if(scoped&&!readOutbox(id)){try{const oldKey=`perci_pending_sync_v09_${id}`;if(localStorage.getItem(oldKey)==='1'){queueSnapshot(id,scoped);localStorage.removeItem(oldKey);}}catch{}}
   // No arrastrar editores, modales o selecciones de otra cuenta. Esto también
   // evita bloquear futuras lecturas de Supabase con un editor ya abandonado.
-  app.editor=null;app.habit=null;app.record=null;app.routine=null;app.modal=null;
+  app.editor=null;app.habit=null;app.record=null;app.routine=null;app.completedRecord=null;app.progressExercise='';app.modal=null;
   app.activeUid=id;
   account.syncPaused=false;
   app.cloudConflict=null;app.cloudNotice='';
@@ -140,7 +183,7 @@ let pwaReloadQueued=false;
 function applyPendingPwaUpdate(){
   if(!pendingPwaUpdate||pwaReloadQueued||!account.ready||app.hydrating||account.busy||
      app.cloudConflict||app.modal||app.needLegacyChoice||state.draft||
-     ['routineEdit','habitEdit','session','record','otherForm'].includes(app.view))return;
+     ['routineEdit','habitEdit','session','sessionSummary','record','otherForm'].includes(app.view))return;
   pwaReloadQueued=true;
   queueMicrotask(()=>window.location.reload());
 }
@@ -326,7 +369,7 @@ const showModal=(title,body,confirm,value='',danger=false,extra='',confirmLabel=
 const validDate=v=>/^\d{4}-\d{2}-\d{2}$/.test(v)&&!isNaN(new Date(v+'T12:00:00').getTime());
 const id=()=>Math.random().toString(36).slice(2,10);
 function persistEditor(){if(!app.editor)return;const name=get('rname');if(name)app.editor.name=name.value;document.querySelectorAll('[data-exrow]').forEach(x=>{const i=Number(x.dataset.exrow);app.editor.exercises[i].sets=Number(x.querySelector('[data-field=sets]').value)||1;app.editor.exercises[i].reps=Number(x.querySelector('[data-field=reps]').value)||1});try{saveRoutineEditor(app.activeUid,app.editor)}catch{toast('No pudimos guardar el borrador. Exportá una copia JSON antes de cerrar.')}}
-function beginSession(routineId){const r=state.routines.find(x=>x.id===routineId);if(!r)return;state.draft={id:id(),routineId:r.id,snapshot:JSON.parse(JSON.stringify(r.exercises)),startedAt:Date.now(),sets:{},offlineDraft:isOfflineNow(account)};if(save())go('session');}
+function beginSession(routineId){const r=state.routines.find(x=>x.id===routineId);if(!r)return;state.draft={id:id(),routineId:r.id,snapshot:JSON.parse(JSON.stringify(r.exercises)),startedAt:Date.now(),sets:{},restEnabled:false,restSeconds:90,restUntil:null,offlineDraft:isOfflineNow(account)};if(save())go('session');}
 function deleteRecordConfirmed(recordId,keepDraft=false){
   const record=state.records.find(x=>x.id===recordId);
   if(!record)return;
@@ -393,14 +436,70 @@ case 'confirmDeleteRoutine':deletePersonalEntity('routines',value);break;
 case 'start':{if(state.draft){showModal('Tenés una sesión en curso','Primero retomá o finalizá tu sesión actual. No se crearán dos sesiones por error.','continue');break}if(isOfflineNow(account)){showModal('Sin conexión · Entrenar en borrador','Registraremos las series y los pesos en este dispositivo. Cuando finalices y vuelva la conexión, se sincronizará el progreso.','beginOfflineSession',value,false,'','Empezar borrador');break;}beginSession(value);break}
 case 'beginOfflineSession':app.modal=null;beginSession(value);break;
 case 'continue':app.modal=null;go('session');break;
-case 'toggleSet':{const d=state.draft;if(!d)break;const row=document.querySelector(`[data-set="${value}"]`);let weight=Number(row.querySelector('[data-field=weight]').value),reps=Number(row.querySelector('[data-field=reps]').value);const prev=d.sets[value];if(prev?.done)d.sets[value]={weight:prev.weight,reps:prev.reps,done:false};else{if(!Number.isFinite(weight)||weight<0||reps<1||reps>100){toast('Revisá peso y repeticiones');break}d.sets[value]={weight,reps,done:true}}save();render();break}
+case 'usePreviousSet':{
+  const d=state.draft;
+  if(!d || !/^\d+-\d+$/.test(value))break;
+  const [exerciseIndex,setIndex]=value.split('-').map(Number);
+  const item=d.snapshot?.[exerciseIndex];
+  if(!item || setIndex>=item.sets || d.sets?.[value]?.done)break;
+  const prior=previousExerciseSet(state.records,item.name,setIndex+1);
+  if(!prior){toast('Todavía no hay un registro anterior.');break;}
+  d.sets[value]={weight:prior.weight,reps:prior.reps,done:false};
+  if(save())render();
+  break;
+}
+case 'toggleRest':{
+  if(!state.draft)break;
+  state.draft.restEnabled=!state.draft.restEnabled;
+  if(!state.draft.restEnabled)state.draft.restUntil=null;
+  if(save())render();break;
+}
+case 'restDuration':{
+  if(!state.draft || ![60,90,120].includes(Number(value)))break;
+  state.draft.restSeconds=Number(value);
+  if(restRemaining(state.draft.restUntil)>0)state.draft.restUntil=Date.now()+Number(value)*1000;
+  if(save())render();break;
+}
+case 'startRest':{
+  if(!state.draft)break;
+  state.draft.restEnabled=true;
+  state.draft.restUntil=Date.now()+(Number(state.draft.restSeconds)||90)*1000;
+  if(save())render();break;
+}
+case 'skipRest':{
+  if(!state.draft)break;
+  state.draft.restUntil=null;
+  if(save())render();break;
+}
+case 'toggleSet':{
+  const d=state.draft;if(!d || !/^\d+-\d+$/.test(value))break;
+  const row=document.querySelector(`[data-set="${value}"]`);if(!row)break;
+  const weight=Number(row.querySelector('[data-field=weight]').value);
+  const reps=Number(row.querySelector('[data-field=reps]').value);
+  const previous=d.sets[value];
+  if(previous?.done)d.sets[value]={...previous,done:false};
+  else{
+    if(!Number.isFinite(weight)||weight<0||weight>99999||!Number.isInteger(reps)||reps<1||reps>100){toast('Revisá peso y repeticiones');break;}
+    d.sets[value]={weight,reps,done:true};
+    if(d.restEnabled && nextPendingSet(d)!==null)d.restUntil=Date.now()+(Number(d.restSeconds)||90)*1000;
+  }
+  if(save())render();break;
+}
 case 'finishSession':{let d=state.draft;if(!d)break;let done=Object.values(d.sets).filter(x=>x.done);if(!done.length){toast('Confirmá al menos una serie');break}showModal('¿Finalizar sesión?',`Se guardarán ${done.length} series confirmadas en el historial local. Podés seguir editando antes de finalizar.`,'confirmFinish','',false,'','Finalizar');break}
 case 'confirmFinish':{let d=state.draft;if(!d)break;let r=state.routines.find(x=>x.id===d.routineId);let sets=Object.values(d.sets).filter(x=>x.done);let vol=sets.reduce((s,x)=>s+(Number(x.weight)||0)*(Number(x.reps)||0),0);const setDetails=Object.entries(d.sets).filter(([,x])=>x.done).map(([key,entry])=>{
     const [exercisePosition,index]=key.split('-').map(Number);
     const exercise=d.snapshot?.[exercisePosition]||r?.exercises?.[exercisePosition];
     return {exercisePosition,exerciseName:exercise?.name||'Ejercicio',setNumber:index+1,reps:entry.reps,weight:entry.weight,completed:true};
   }).sort((a,b)=>a.exercisePosition-b.exercisePosition||a.setNumber-b.setNumber);
-  state.records.unshift({id:id(),type:'gym',name:r?.name||'Entrenamiento de fuerza',date:dateISO(),minutes:Math.max(1,Math.round((Date.now()-d.startedAt)/60000)),setsDone:sets.length,volume:Math.round(vol),note:'',setDetails});state.draft=null;app.modal=null;if(save()){go('progress');toast(isOfflineNow(account)?'Entrenamiento en borrador · pendiente de sincronizar':'Entrenamiento guardado ✓');}break}
+  const rec={id:id(),type:'gym',name:r?.name||'Entrenamiento de fuerza',date:dateISO(),minutes:Math.max(1,Math.round((Date.now()-d.startedAt)/60000)),setsDone:sets.length,volume:Math.round(vol*100)/100,note:'',setDetails};
+  state.records.unshift(rec);state.draft=null;app.modal=null;
+  if(save()){
+    app.completedRecord=rec.id;
+    go('sessionSummary');
+    toast(isOfflineNow(account)?'Entrenamiento guardado en este dispositivo':'Entrenamiento guardado ✓');
+  }else{state.records=state.records.filter(x=>x.id!==rec.id);state.draft=d;render();}
+  break;}
+
 case 'other':app.activity=value||'walk';go('otherForm');break;
 case 'saveActivity':{let type=app.activity,name=categories.find(x=>x[0]===type)?.[1];const duration=Number(get('amins')?.value),date=get('adate')?.value;const custom=get('aname')?.value.trim();if(['sport','other'].includes(type)){if(!custom){toast('Completá el nombre de la actividad');break}name=custom}if(!duration||duration<1||duration>1440||!validDate(date)){toast('Completá fecha y duración válidas');break}let distance=get('adistance')?.value;if(distance!==undefined&&distance!==''&&(!Number.isFinite(Number(distance))||Number(distance)<0)){toast('Revisá la distancia');break}state.records.unshift({id:id(),type,name:name.slice(0,80),minutes:duration,date,note:get('anote').value.trim(),...(distance?{distance:Number(distance)}:{})});save();go('progress');toast('Actividad guardada localmente ✓');break}
 case 'detailRecord':app.record=value;go('record');break;
@@ -456,7 +555,15 @@ case 'resetDemo':showModal('¿Restaurar datos de demostración?','Se reemplazar�
 case 'confirmReset':{const t=state.theme,f=state.focus;state={...seed(),theme:t,focus:f,onboardSeen:true};app.modal=null;save();go('home');toast('Demo restaurada');break}
 }}
 document.addEventListener('click',e=>{const syncChoice=e.target.closest('[data-sync-choice]');if(syncChoice){e.preventDefault();chooseCloudConflict(syncChoice.dataset.syncChoice);return;}let el=e.target.closest('[data-action]');if(!el)return;e.preventDefault();handle(el.dataset.action,el.dataset.value||'')});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&app.modal){app.modal=null;render()}});
+document.addEventListener('change',e=>{
+  if(e.target.id==='progressExercise'){
+    app.progressExercise=e.target.value;render();
+  }
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter' && e.target.id==='customexercise' && app.editor){e.preventDefault();handle('addCustomExercise','');return;}
+  if(e.key==='Escape'&&app.modal){app.modal=null;render()}
+});
 document.addEventListener('input',e=>{
   if(!account.authenticated||!app.activeUid||(app.hydrating&&!app.silentHydration)||app.cloudConflict)return;
   if(app.view==='routineEdit' && (e.target.id==='rname'||e.target.matches('[data-exrow] input'))){persistEditor();return;}
@@ -468,6 +575,15 @@ document.addEventListener('input',e=>{
     save();
   }
 });
+function refreshRestClock(){
+  const element=document.querySelector('[data-rest-clock]');
+  if(!element || !state.draft || !state.draft.restEnabled)return;
+  const remaining=restRemaining(state.draft.restUntil);
+  element.textContent=restClock(state.draft.restUntil);
+  const button=document.querySelector('.rest-panel [data-action="skipRest"]');
+  if(button && remaining===0){button.dataset.action='startRest';button.textContent='Iniciar descanso';}
+}
+setInterval(refreshRestClock,1000);
 window.addEventListener('pagehide',()=>{if(app.view==='routineEdit'&&app.editor)try{persistEditor()}catch{}});
 
 // Safari puede recuperar una pestaña anterior desde Back/Forward Cache.

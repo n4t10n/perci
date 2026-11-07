@@ -12,7 +12,7 @@ const app=fs.readFileSync(new URL('../public/src/app.js',import.meta.url),'utf8'
 test('regresión Mac: editor viejo no puede impedir actualización en Hábitos',()=>{
   const params={uid:'user-1',authenticated:true,online:true,visible:true,legacyChoice:false,hydrating:false,conflict:false,modal:false,draft:false,view:'habits',editor:{id:'old'}};
   assert.equal(canAutoRefreshCloud(params),true);
-  assert.match(app,/app\.editor=null;app\.habit=null;app\.record=null;app\.routine=null;app\.modal=null/);
+  assert.match(app,/app\.editor=null;app\.habit=null;app\.record=null;app\.routine=null;app\.completedRecord=null;app\.progressExercise=\x27\x27;app\.modal=null/);
   assert.doesNotMatch(app.slice(app.indexOf('function refreshAccountAutomatically('),app.indexOf('window.addEventListener(\'focus\'')),/app\.editor/);
 });
 

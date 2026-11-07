@@ -1,6 +1,6 @@
-import {readOutbox,readRoutineEditor,isOfflineNow} from './data/offline-outbox.js?v=1.5.1';
-import {account,displayName,accountInitial} from './account.js?v=1.5.1';
-import {OFFICIAL_LOGOS} from './brand.js?v=1.5.1';
+import {readOutbox,readRoutineEditor,isOfflineNow} from './data/offline-outbox.js?v=1.6';
+import {account,displayName,accountInitial} from './account.js?v=1.6';
+import {OFFICIAL_LOGOS} from './brand.js?v=1.6';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const feedback=()=>account.error?`<div class="account-alert" role="alert">${esc(account.error)}</div>`:account.message?`<div class="account-note" role="status">${esc(account.message)}</div>`:'';
 const logo=()=>`<span class="brand-slot" aria-label="Percí"><img class="brand-img-dark" src="${OFFICIAL_LOGOS.horizDark}" alt="Percí"><img class="brand-img-light" src="${OFFICIAL_LOGOS.horizLight}" alt="Percí"></span>`;
