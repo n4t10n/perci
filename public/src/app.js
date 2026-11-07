@@ -1,16 +1,16 @@
-import { OFFICIAL_LOGOS } from './brand.js?v=1.6.2';
-import {cleanImportedState} from './data/import-cleanup.js?v=1.6.2';
-import { storage,readUserState,writeUserState,getLegacyOwner,legacyAlreadyClaimed,markLegacyClaimed,legacyHasPersonalData } from './data/repository.js?v=1.6.2';
-import { previewLocalMigration } from './data/migration-preflight.js?v=1.6.2';
-import { reconcileCloudWithBaseline, hasPersonalData } from './data/auto-hydration.js?v=1.6.2';
-import { dateISO, offsetDate, seed } from './domain/initial-state.js?v=1.6.2';
-import { getInitialView } from './domain/startup-route.js?v=1.6.2';
-import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,deleteCloudEntities,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync} from './account.js?v=1.6.2';
-import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.6.2';
-import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.6.2';
-import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.6.2';
-import {canAutoRefreshCloud,shouldRefreshOnNavigation} from './data/auto-refresh.js?v=1.6.2';
-import {listTrackedExercises,exerciseHistory,previousExerciseSet,sessionStats,nextPendingSet,restRemaining,restClock} from './domain/training-insights.js?v=1.6.2';
+import { OFFICIAL_LOGOS } from './brand.js?v=1.6.3';
+import {cleanImportedState} from './data/import-cleanup.js?v=1.6.3';
+import { storage,readUserState,writeUserState,getLegacyOwner,legacyAlreadyClaimed,markLegacyClaimed,legacyHasPersonalData } from './data/repository.js?v=1.6.3';
+import { previewLocalMigration } from './data/migration-preflight.js?v=1.6.3';
+import { reconcileCloudWithBaseline, hasPersonalData } from './data/auto-hydration.js?v=1.6.3';
+import { dateISO, offsetDate, seed } from './domain/initial-state.js?v=1.6.3';
+import { getInitialView } from './domain/startup-route.js?v=1.6.3';
+import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,deleteCloudEntities,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync,probeOfflineAccount} from './account.js?v=1.6.3';
+import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.6.3';
+import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.6.3';
+import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.6.3';
+import {canAutoRefreshCloud,shouldRefreshOnNavigation} from './data/auto-refresh.js?v=1.6.3';
+import {listTrackedExercises,exerciseHistory,previousExerciseSet,sessionStats,nextPendingSet,restRemaining,restClock} from './domain/training-insights.js?v=1.6.3';
 
 
 (()=>{'use strict';
@@ -31,7 +31,7 @@ const mainView=v=>({home:'home',activity:'activity',routine:'activity',routineEd
 const go=v=>{if(!account.authenticated||app.needLegacyChoice)return;if(hasAccountConflict())v='account';app.view=v;window.scrollTo({top:0,behavior:'instant'});render();
   // Al navegar a una pantalla de lectura, traer los datos nuevos de la cuenta.
   // La edición y los entrenamientos activos no deben interrumpirse.
-  if(shouldRefreshOnNavigation(v))queueMicrotask(()=>refreshAccountAutomatically(8000));
+  if(shouldRefreshOnNavigation(v))queueMicrotask(()=>refreshConnectionAware(8000));
 };
 const toast=s=>{app.toast=s;let el=document.createElement('div');el.className='toast';el.setAttribute('role','status');el.textContent=s;document.querySelectorAll('.toast').forEach(x=>x.remove());document.body.appendChild(el);setTimeout(()=>el.remove(),2400)};
 const title=(head,sub,action='')=>`<div class="row between wrap" style="align-items:end;margin:7px 0 21px"><div><h1 style="font-size:clamp(29px,4vw,43px);margin:0 0 8px">${head}</h1><p class="sub" style="margin:0">${sub}</p></div>${action}</div>`;
@@ -599,6 +599,8 @@ window.addEventListener('pageshow', event => {
     app.view = getInitialView(state);
     render();
   }
+  // La PWA puede haber recuperado conexión mientras estaba suspendida.
+  if(account.ready)queueMicrotask(()=>refreshConnectionAware(0));
 });
 // Cuenta personal. Tokens de Supabase nunca se guardan en localStorage.
 document.addEventListener('submit',async event=>{
@@ -685,13 +687,39 @@ function refreshAccountAutomatically(minAgeMs=6000){
   hydrateCloud(uid,{silent:true});
   return true;
 }
-window.addEventListener('focus',()=>refreshAccountAutomatically());
+// En iOS, navigator.onLine y el evento online no siempre se actualizan
+// al mismo tiempo. Si esta sesión quedó marcada offline, comprobar la cookie
+// con el servidor al regresar a la PWA o periódicamente mientras está visible.
+let lastRecoveryProbeAt=0;
+let lastRecoveryProbeUid=null;
+function refreshConnectionAware(minAgeMs=6000){
+  const uid=app.activeUid;
+  if(!uid||!account.authenticated||app.needLegacyChoice||app.cloudConflict||
+     document.visibilityState==='hidden')return false;
+  if(!account.offline && !isOfflineNow(account))return refreshAccountAutomatically(minAgeMs);
+  // No mostrar un conflicto durante la edición, modal o entrenamiento en curso.
+  if(app.hydrating||app.modal||state.draft||
+     ['routineEdit','habitEdit','session','sessionSummary','record','otherForm'].includes(app.view))return false;
+  const now=Date.now();
+  if(lastRecoveryProbeUid===uid && now-lastRecoveryProbeAt<10000)return false;
+  lastRecoveryProbeUid=uid;lastRecoveryProbeAt=now;
+  probeOfflineAccount().then(connected=>{
+    if(connected && uid===app.activeUid && !isOfflineNow(account)){
+      // onAccountChange recupera las colas offline. Si la marca offline estaba
+      // desfasada, el refresco explícito también vuelve a comparar la nube.
+      refreshAccountAutomatically(0);
+    }
+  }).catch(()=>{});
+  return true;
+}
+window.addEventListener('online',()=>refreshConnectionAware(0));
+window.addEventListener('focus',()=>refreshConnectionAware());
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState!=='hidden')refreshAccountAutomatically();
+  if(document.visibilityState!=='hidden')refreshConnectionAware(0);
 });
-// Las pestañas abiertas se actualizan aunque el usuario no cambie de aplicación.
-// 30 segundos evita una conexión permanente tipo realtime y no genera llamadas en background.
-setInterval(()=>refreshAccountAutomatically(30000),30000);
+// Un chequeo offline cada 12s con la app visible, y online cada ~30s.
+// No se abre una conexión permanente ni se ejecutan lecturas en background.
+setInterval(()=>refreshConnectionAware(30000),12000);
 applyTheme();render();
 initAccount().catch(()=>{});
 })();

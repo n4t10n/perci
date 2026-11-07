@@ -39,10 +39,10 @@ test('sincronización automática al abrir vistas de lectura, aunque no se regre
   for(const view of ['home','habits','activity','progress','account']){
     assert.equal(shouldRefreshOnNavigation(view),true);
   }
-  assert.match(app,/if\(shouldRefreshOnNavigation\(v\)\)queueMicrotask\(\(\)=>refreshAccountAutomatically\(8000\)\)/);
+  assert.match(app,/if\(shouldRefreshOnNavigation\(v\)\)queueMicrotask\(\(\)=>refreshConnectionAware\(8000\)\)/);
   assert.match(app,/window\.addEventListener\('focus'/);
   assert.match(app,/document\.addEventListener\('visibilitychange'/);
-  assert.match(app,/setInterval\(\(\)=>refreshAccountAutomatically\(30000\),30000\)/);
+  assert.match(app,/setInterval\(\(\)=>refreshConnectionAware\(30000\),12000\)/);
 });
 
 test('no interferir con formularios, entrenamiento, offline o sesión sin autenticar',()=>{

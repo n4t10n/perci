@@ -9,7 +9,7 @@ function walk(rel){
   const u=urlToPath(rel),id=u.pathname;
   const existing=moduleCache.get(id);
   if(existing){assert.equal(existing,u.search,`Módulo ${id} importado con dos versiones: ${existing} / ${u.search}`);return}
-  assert.equal(u.search,'?v=1.6.2',`${rel} sin la misma identidad de versión`);
+  assert.equal(u.search,'?v=1.6.3',`${rel} sin la misma identidad de versión`);
   moduleCache.set(id,u.search);
   const content=fs.readFileSync(u,'utf8');
   const rx=/\bfrom\s*['"](\.[^'"?]+\.js(?:\?v=[\d.]+)?)['"]/g;
@@ -19,7 +19,7 @@ function walk(rel){
   }
 }
 test('v1.6: cuenta, UI y outbox son una única instancia de módulo por navegador',()=>{
-  moduleCache.clear();walk('src/app.js?v=1.6.2');
+  moduleCache.clear();walk('src/app.js?v=1.6.3');
   assert.ok(moduleCache.has(urlToPath('src/account.js').pathname));
   assert.ok(moduleCache.has(urlToPath('src/data/offline-outbox.js').pathname));
   assert.ok(moduleCache.size>=12);
@@ -32,7 +32,7 @@ test('v1.6: precache y entrada usan el mismo grafo de módulos',()=>{
   const html=fs.readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
   for(const id of moduleCache.keys()){
     const rel=path.posix.relative(root.pathname,id);
-    assert.ok(sw.includes(`'./${rel}?v=1.6.2'`),`SW no cachea ${rel} con query correcta`);
+    assert.ok(sw.includes(`'./${rel}?v=1.6.3'`),`SW no cachea ${rel} con query correcta`);
   }
   assert.match(html,/src\/app\.js\?v=1\.6/);
   assert.match(html,/src\/pwa\.js\?v=1\.6/);

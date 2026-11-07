@@ -2,7 +2,7 @@
  * No contiene tokens ni contraseñas. El estado offline en localStorage NO está cifrado.
  * Los borradores de sesión / editor no se envían al servidor hasta quedar completos.
  */
-import {cleanImportedState} from './import-cleanup.js?v=1.6.2';
+import {cleanImportedState} from './import-cleanup.js?v=1.6.3';
 
 const copy=value=>JSON.parse(JSON.stringify(value));
 const items=['routines','records','habits'];
@@ -91,7 +91,16 @@ export function readRoutineEditor(uid){
 }
 export function saveRoutineEditor(uid,editor){if(!validUid(uid))return;localStorage.setItem(editorKey(uid),JSON.stringify({...copy(editor),savedAt:new Date().toISOString()}));}
 export function clearRoutineEditor(uid){if(validUid(uid))localStorage.removeItem(editorKey(uid));}
-export function isOfflineNow(account){return Boolean(account?.offline)||(typeof navigator!=='undefined'&&navigator.onLine===false);}
+export function isOfflineNow(account){
+  // Safari iPhone puede dejar navigator.onLine=false tras restablecer Internet.
+  // Una verificación exitosa y reciente contra /api/auth/session es evidencia
+  // más fuerte que ese indicador. Un evento offline invalida la verificación.
+  const verifiedRecently=Boolean(account?.verifiedOnline)&&
+    Number(account?.verifiedOnlineAt)>0&&
+    Date.now()-Number(account.verifiedOnlineAt)<60000;
+  return Boolean(account?.offline)||
+    (typeof navigator!=='undefined'&&navigator.onLine===false&&!verifiedRecently);
+}
 
 function fingerprint(kind,obj){
   if(obj===undefined)return '__missing__';

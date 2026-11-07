@@ -1,4 +1,4 @@
-**Versión actual: Percí v1.6.2 (corrección de conflictos duplicados entre dispositivos).** Consultá [README-v1.6.2.md](README-v1.6.2.md) para cambios y QA.
+**Versión actual: Percí v1.6.3 (reconexión automática confiable en iPhone).** Consultá [README-v1.6.3.md](README-v1.6.3.md) para cambios y QA.
 
 **Histórico v1.5:** seguridad, concurrencia optimista y actualización PWA. Consultá [README-v1.5.md](README-v1.5.md) para cambios, límites y QA.
 

@@ -1,10 +1,10 @@
-import {queueSnapshot,readOutbox,isOfflineNow} from './data/offline-outbox.js?v=1.6.2';
+import {queueSnapshot,readOutbox,isOfflineNow} from './data/offline-outbox.js?v=1.6.3';
 /** Percí v1.2: cuenta obligatoria, sesión del servidor + acceso offline previamente autorizado.
  * La credencial offline solo recuerda un usuario autenticado en este dispositivo;
  * NO sustituye cifrado local ni autentica contra Supabase sin conexión.
  */
 export const account = {
-  configured:false,ready:false,authenticated:false,offline:false,user:null,busy:false,
+  configured:false,ready:false,authenticated:false,offline:false,verifiedOnline:false,verifiedOnlineAt:0,user:null,busy:false,
   syncing:false,linked:false,syncPaused:false,syncFailed:false,foreignOwner:false,message:'',error:'',lastSync:null,
   mode:'login',pendingEmail:''
 };
@@ -82,12 +82,12 @@ export async function initAccount(){
     const data=await request('/api/auth/session');
     if(data.authenticated&&data.user){
       rememberUser(data.user);
-      update({ready:true,configured:true,authenticated:true,offline:false,user:data.user,
+      update({ready:true,configured:true,authenticated:true,offline:false,verifiedOnline:true,verifiedOnlineAt:Date.now(),user:data.user,
         linked:linked(data.user),syncFailed:false,error:'',message:''});
     }else{
       // La respuesta explícita del servidor invalida la autorización offline previa.
       forgetUser();
-      update({ready:true,configured:!!data.configured,authenticated:false,offline:false,
+      update({ready:true,configured:!!data.configured,authenticated:false,offline:false,verifiedOnline:true,verifiedOnlineAt:Date.now(),
         user:null,linked:false,syncFailed:false,mode:emailReturn.requested?'login':account.mode,
         error:emailReturn.requested&&emailReturn.failed?'No pudimos confirmar el correo. Abrí el enlace de verificación otra vez o solicitá uno nuevo.':'',
         message:emailReturn.requested&&!emailReturn.failed?'Si ya confirmaste tu correo, iniciá sesión con tu contraseña.':''});
@@ -97,10 +97,10 @@ export async function initAccount(){
     // Nunca habilitamos a una cuenta que no se haya autenticado previamente.
     const grant=savedGrant();
     if(grant && error instanceof NetworkError){
-      update({ready:true,configured:true,authenticated:true,offline:true,user:grant,
+      update({ready:true,configured:true,authenticated:true,offline:true,verifiedOnline:false,verifiedOnlineAt:0,user:grant,
         linked:linked(grant),error:'',message:'Sin conexión. Podés entrenar y registrar avances. Se sincronizarán cuando vuelva el servicio.'});
     }else{
-      update({ready:true,configured:true,authenticated:false,offline:false,user:null,
+      update({ready:true,configured:true,authenticated:false,offline:false,verifiedOnline:false,verifiedOnlineAt:0,user:null,
         linked:false,error:error.message||'No se pudo comprobar tu sesión. Conectate para ingresar.'});
     }
   }
@@ -118,7 +118,7 @@ export function login(email,password){return action(async()=>{
   if(!password)throw new Error('Ingresá tu contraseña.');
   const data=await request('/api/auth/login',{email,password});
   rememberUser(data.user);
-  update({authenticated:true,offline:false,user:data.user,linked:linked(data.user),mode:'login',
+  update({authenticated:true,offline:false,verifiedOnline:true,verifiedOnlineAt:Date.now(),user:data.user,linked:linked(data.user),mode:'login',
     message:'¡Bienvenido a Percí!',syncFailed:false,error:''});
 });}
 export function signup(name,email,password,confirmation){return action(async()=>{
@@ -131,7 +131,7 @@ export function signup(name,email,password,confirmation){return action(async()=>
   const data=await request('/api/auth/signup',{name,email,password});
   if(data.authenticated&&data.user){
     rememberUser(data.user);
-    update({authenticated:true,offline:false,user:data.user,linked:linked(data.user),mode:'login',message:'Tu cuenta está lista.'});
+    update({authenticated:true,offline:false,verifiedOnline:true,verifiedOnlineAt:Date.now(),user:data.user,linked:linked(data.user),mode:'login',message:'Tu cuenta está lista.'});
   }else{
     update({mode:'confirm',pendingEmail:email,message:data.message||'Revisá tu correo y confirmá tu cuenta.'});
   }
@@ -141,7 +141,7 @@ export function logout(){return action(async()=>{
   await request('/api/auth/logout',{});
   if(syncTimer)clearTimeout(syncTimer);
   forgetUser();
-  update({authenticated:false,user:null,offline:false,linked:false,mode:'login',
+  update({authenticated:false,user:null,offline:false,verifiedOnline:true,verifiedOnlineAt:Date.now(),linked:false,mode:'login',
     syncFailed:false,pendingEmail:'',message:'Cerraste sesión. Tus entrenamientos permanecen guardados en este dispositivo.'});
 });}
 export function markLinked(userId){
@@ -177,9 +177,20 @@ export function resumePendingSync(snapshot){
 }
 export const fetchCloudData=()=>request('/api/cloud/data');
 export const retrySync=linkAccount;
-// Detectar recuperación de internet y verificar la cookie antes de reactivar sync.
-window.addEventListener('online',()=>{if(account.authenticated) initAccount().catch(()=>{});});
-window.addEventListener('offline',()=>{if(account.authenticated) update({offline:true,message:'Sin conexión. Los cambios quedan como borradores en este dispositivo.'});});
+// En Safari iPhone, el evento online puede no emitirse al volver desde background.
+// Exponer una comprobación repetible y sin duplicados para page-show/focus/visibility.
+let connectionProbe=null;
+export function probeOfflineAccount(){
+  if(!account.authenticated||!account.user)return Promise.resolve(false);
+  if(connectionProbe)return connectionProbe;
+  connectionProbe=initAccount()
+    .then(()=>Boolean(account.authenticated&&!account.offline))
+    .finally(()=>{connectionProbe=null;});
+  return connectionProbe;
+}
+// Recuperar la sesión incluso si el navegador ya considera que está online.
+window.addEventListener('online',()=>{probeOfflineAccount().catch(()=>{});});
+window.addEventListener('offline',()=>{if(account.authenticated) update({offline:true,verifiedOnline:false,verifiedOnlineAt:0,message:'Sin conexión. Los cambios quedan como borradores en este dispositivo.'});});
 /** Solo el orquestador de app.js puede llamarlo, después de comparar tres vías. */
 export const syncCloudSnapshot=(snapshot, expected)=>request('/api/cloud/sync',{snapshot, expected});
 export const deleteCloudRecords=records=>request('/api/cloud/delete',{records});

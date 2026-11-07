@@ -2,8 +2,8 @@
  * Este módulo NO implementa sincronización bidireccional ni resolución de borrados.
  * Los conflictos de un mismo ID deben resolverse explícitamente en la interfaz.
  */
-import { cleanImportedState } from './import-cleanup.js?v=1.6.2';
-import {planOfflineSync} from './offline-outbox.js?v=1.6.2';
+import { cleanImportedState } from './import-cleanup.js?v=1.6.3';
+import {planOfflineSync} from './offline-outbox.js?v=1.6.3';
 
 const groups = ['routines','records','habits'];
 const own = (obj,key) => Object.prototype.hasOwnProperty.call(obj,key);
