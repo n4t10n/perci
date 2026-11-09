@@ -12,6 +12,7 @@ import os
 import re
 import urllib.parse
 from server import perci_server as core
+from server import perci_share
 
 SESSION_TTL = core.SESSION_TTL
 MAX_BODY = core.MAX_BODY
@@ -20,7 +21,7 @@ REFRESH_COOKIE = 'perci_rt'
 WEB_ROOT = Path(__file__).resolve().parents[1] / 'public'
 ENDPOINTS = {
     '/api/status', '/api/auth/session', '/api/auth/login',
-    '/api/auth/signup', '/api/auth/logout', '/api/cloud/data', '/api/cloud/sync', '/api/cloud/delete'
+    '/api/auth/signup', '/api/auth/logout', '/api/cloud/data', '/api/cloud/sync', '/api/cloud/delete', '/api/routine/share'
 }
 
 
@@ -206,6 +207,11 @@ class ApiHandler(BaseHTTPRequestHandler):
                     except core.ApiError:
                         pass
                 return self.send_json({'authenticated': False}, cookies=self.logout_cookies())
+            if path == '/api/routine/share':
+                token, user, cookies = self.authenticated()
+                if not user:
+                    raise core.ApiError('Iniciá sesión para compartir o importar rutinas.', 401)
+                return self.send_json(perci_share.handle(core, token, body), cookies=cookies)
             if path == '/api/cloud/sync':
                 token, user, cookies = self.authenticated()
                 if not user:

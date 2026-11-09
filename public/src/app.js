@@ -1,16 +1,17 @@
-import { OFFICIAL_LOGOS } from './brand.js?v=1.6.4';
-import {cleanImportedState} from './data/import-cleanup.js?v=1.6.4';
-import { storage,readUserState,writeUserState,getLegacyOwner,legacyAlreadyClaimed,markLegacyClaimed,legacyHasPersonalData } from './data/repository.js?v=1.6.4';
-import { previewLocalMigration } from './data/migration-preflight.js?v=1.6.4';
-import { reconcileCloudWithBaseline, hasPersonalData } from './data/auto-hydration.js?v=1.6.4';
-import { dateISO, offsetDate, seed } from './domain/initial-state.js?v=1.6.4';
-import { getInitialView } from './domain/startup-route.js?v=1.6.4';
-import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,deleteCloudEntities,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync,probeOfflineAccount} from './account.js?v=1.6.4';
-import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.6.4';
-import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.6.4';
-import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.6.4';
-import {canAutoRefreshCloud,shouldRefreshOnNavigation} from './data/auto-refresh.js?v=1.6.4';
-import {listTrackedExercises,exerciseHistory,previousExerciseSet,sessionStats,nextPendingSet,restRemaining,restClock} from './domain/training-insights.js?v=1.6.4';
+import { OFFICIAL_LOGOS } from './brand.js?v=1.6.5';
+import {cleanImportedState} from './data/import-cleanup.js?v=1.6.5';
+import { storage,readUserState,writeUserState,getLegacyOwner,legacyAlreadyClaimed,markLegacyClaimed,legacyHasPersonalData } from './data/repository.js?v=1.6.5';
+import { previewLocalMigration } from './data/migration-preflight.js?v=1.6.5';
+import { reconcileCloudWithBaseline, hasPersonalData } from './data/auto-hydration.js?v=1.6.5';
+import { dateISO, offsetDate, seed } from './domain/initial-state.js?v=1.6.5';
+import { getInitialView } from './domain/startup-route.js?v=1.6.5';
+import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,deleteCloudEntities,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync,probeOfflineAccount} from './account.js?v=1.6.5';
+import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.6.5';
+import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.6.5';
+import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.6.5';
+import {canAutoRefreshCloud,shouldRefreshOnNavigation} from './data/auto-refresh.js?v=1.6.5';
+import {listTrackedExercises,exerciseHistory,previousExerciseSet,sessionStats,nextPendingSet,restRemaining,restClock} from './domain/training-insights.js?v=1.6.5';
+import {cleanSharedRoutine,isValidShareCode,routineTemplateIsEqual} from './domain/routine-share.js?v=1.6.5';
 
 
 (()=>{'use strict';
@@ -19,7 +20,7 @@ import {listTrackedExercises,exerciseHistory,previousExerciseSet,sessionStats,ne
 
 let state;try{state=storage.read()||seed();if(!Array.isArray(state.records)||!Array.isArray(state.routines)||!Array.isArray(state.habits))throw Error('Formato inválido')}catch(e){state=seed()}
 const freshState=()=>({...seed(),version:3,demo:false,routines:[],records:[],habits:[],checks:{},draft:null});
-const app={activeUid:null,needLegacyChoice:false,hydrating:false,silentHydration:false,cloudConflict:null,cloudNotice:'',view:getInitialView(state),tab:'gym',activity:'walk',filter:'all',record:null,routine:null,editor:null,habit:null,exerciseSearch:'',progressExercise:'',completedRecord:null,modal:null,toast:''};
+const app={activeUid:null,needLegacyChoice:false,hydrating:false,silentHydration:false,cloudConflict:null,cloudNotice:'',view:getInitialView(state),tab:'gym',activity:'walk',filter:'all',record:null,routine:null,editor:null,habit:null,exerciseSearch:'',progressExercise:'',completedRecord:null,modal:null,toast:'',share:null};
 const icons={account:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>',activity:'<path d="M6.5 6.5 17.5 17.5M4 9l5-5M2 7l5-5M15 20l5-5M17 22l5-5"/>',progress:'<path d="M3 19V5m0 14h18M7 16l5-5 4 3 5-7"/>',habits:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 10h18m-13 5 2 2 4-4"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.8 1.8-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.05 1.57V21h-2.5v-.08a1.7 1.7 0 0 0-1.05-1.57 1.7 1.7 0 0 0-1.88.34l-.06.06-1.8-1.8.06-.06A1.7 1.7 0 0 0 8.1 16a1.7 1.7 0 0 0-1.57-1.05H6.4v-2.5h.09A1.7 1.7 0 0 0 8.1 11.4a1.7 1.7 0 0 0-.34-1.88L7.7 9.46l1.8-1.8.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.05-1.57V6.4H15v.09a1.7 1.7 0 0 0 1.05 1.57 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.8 1.8-.06.06A1.7 1.7 0 0 0 19.4 11.4a1.7 1.7 0 0 0 1.57 1.05H21v2.5h-.09A1.7 1.7 0 0 0 19.4 15"/>',arrow:'<path d="m9 18 6-6-6-6"/>',plus:'<path d="M12 5v14M5 12h14"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',check:'<path d="m5 12 4 4L19 6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'};
 const icon=(n)=>`<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icons[n]||icons.arrow}</svg>`;
 const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -27,7 +28,7 @@ const save=()=>{if(!account.authenticated||!app.activeUid||app.needLegacyChoice|
 const applyTheme=()=>{let t=state.theme==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):state.theme;document.documentElement.dataset.theme=t;document.querySelector('meta[name=theme-color]').content=t==='dark'?'#111716':'#f2f4f1'};
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
 const navs=[['home','Inicio'],['activity','Actividad'],['progress','Progreso'],['habits','Hábitos']];
-const mainView=v=>({home:'home',activity:'activity',routine:'activity',routineEdit:'activity',exerciseLibrary:'activity',session:'activity',otherForm:'activity',progress:'progress',record:'progress',sessionSummary:'progress',habits:'habits',habitEdit:'habits',settings:'settings',account:'account',onboard:'home'}[v]||'home');
+const mainView=v=>({home:'home',activity:'activity',routine:'activity',routineEdit:'activity',routineShare:'activity',exerciseLibrary:'activity',session:'activity',otherForm:'activity',progress:'progress',record:'progress',sessionSummary:'progress',habits:'habits',habitEdit:'habits',settings:'settings',account:'account',onboard:'home'}[v]||'home');
 const go=v=>{if(!account.authenticated||app.needLegacyChoice)return;if(hasAccountConflict())v='account';app.view=v;window.scrollTo({top:0,behavior:'instant'});render();
   // Al navegar a una pantalla de lectura, traer los datos nuevos de la cuenta.
   // La edición y los entrenamientos activos no deben interrumpirse.
@@ -54,15 +55,91 @@ function renderHome(){const sw=sessionsWeek();const next=state.routines[0];const
 function getDueToday(x){return x.days.includes(new Date().getDay())}
 function renderHabitMini(){let list=state.habits.filter(x=>!x.paused&&getDueToday(x));return list.length?list.map(x=>`<div class="listrow"><div class="bubble">✦</div><div class="grow"><strong>${h(x.name)}</strong><div class="micro">Hoy</div></div><button class="habit-done ${state.checks[`${x.id}:${dateISO()}`]?'on':''}" data-action="toggleHabit" data-value="${x.id}" aria-label="Completar ${h(x.name)}">${state.checks[`${x.id}:${dateISO()}`]?'✓':'○'}</button></div>`).join(''):`<div class="empty"><div class="emoji">☼</div>No hay hábitos programados hoy.</div>`}
 const categories=[['walk','Caminata','🚶'],['run','Running','🏃'],['cycle','Bicicleta','🚴'],['sport','Deporte','🏐'],['other','Otra','✦']];
-function renderActivity(){return `${title('Tu movimiento, a tu manera.','Entrená con una rutina o registrá otra actividad. Todo cuenta.') }<div class="tabbar" role="group" aria-label="Tipo de actividad"><button class="tab ${app.tab==='gym'?'active':''}" data-action="tab" data-value="gym" aria-pressed="${app.tab==='gym'}">Gimnasio</button><button class="tab ${app.tab==='other'?'active':''}" data-action="tab" data-value="other" aria-pressed="${app.tab==='other'}">Otras actividades</button></div>${app.tab==='gym'?`<div class="row between wrap" style="margin:8px 0 17px"><h2>Mis rutinas</h2>${button('+ Crear rutina','editRoutine','new','small')}</div>${readRoutineEditor(app.activeUid)?isOfflineNow(account)?`<div class="offline-alert waiting" role="status"><strong>Rutina guardada sin conexión.</strong><span>Podés continuar desde donde la dejaste.</span>${button('Retomar borrador','resumeRoutineDraft','','small')}</div>`:`<div class="row wrap" style="margin:0 0 16px">${button('Continuar edición guardada','resumeRoutineDraft','','small outline')}</div>`:''}${state.routines.length?`<div class="grid2">${state.routines.map((r,i)=>`<div class="card" style="padding:0;overflow:hidden"><div class="image-strip" style="${i%2?'background-image:linear-gradient(90deg,#17201ed9,#17201e20),url(https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=900&q=80),linear-gradient(130deg,#264a45,#17201e)':''}">RUTINA ${String(i+1).padStart(2,'0')}</div><div style="padding:20px"><h3>${h(r.name)}</h3><p class="micro">${r.exercises.length} ejercicios · ${r.exercises.reduce((a,e)=>a+Number(e.sets),0)} series</p><div class="row wrap">${button('Ver rutina ↗','detailRoutine',r.id,'small')}${button('Empezar','start',r.id,'small ghost')}</div></div></div>`).join('')}</div>`:`<div class="card empty"><div class="emoji">🏋️</div><h3>Tu primera rutina empieza acá.</h3><p>No te mostramos una sesión para iniciar hasta que tengas una rutina real.</p>${button('Crear mi rutina','editRoutine','new')}</div>`}<div class="section-head"><h2>Biblioteca de ejercicios</h2></div><div class="card"><div class="row between wrap"><div><h3 style="margin:0 0 5px">Encontrá tu próximo ejercicio</h3><p class="micro" style="margin:0">Seleccioná, organizá y personalizá tu entrenamiento.</p></div>${button('Explorar ejercicios','library','','small outline')}</div></div>`:`<div class="photo-card" style="min-height:196px;--photo:url('https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=900&q=80'),linear-gradient(130deg,#264a45,#17201e)"><div class="eyebrow">MOVIMIENTO SIN ETIQUETAS</div><h3>Elegí la actividad, después registrá lo importante.</h3></div><div class="section-head"><h2>¿Qué hiciste hoy?</h2></div><div class="grid3" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">${categories.map(([key,label,emoji])=>`<button class="card" data-action="other" data-value="${key}" style="text-align:left;min-height:120px"><span style="font-size:27px">${emoji}</span><h3 style="font-size:17px;margin:13px 0 0">${label}</h3><span class="micro">Registrar ↗</span></button>`).join('')}</div>`}`}
+function renderActivity(){return `${title('Tu movimiento, a tu manera.','Entrená con una rutina o registrá otra actividad. Todo cuenta.') }<div class="tabbar" role="group" aria-label="Tipo de actividad"><button class="tab ${app.tab==='gym'?'active':''}" data-action="tab" data-value="gym" aria-pressed="${app.tab==='gym'}">Gimnasio</button><button class="tab ${app.tab==='other'?'active':''}" data-action="tab" data-value="other" aria-pressed="${app.tab==='other'}">Otras actividades</button></div>${app.tab==='gym'?`<div class="row between wrap" style="margin:8px 0 17px"><h2>Mis rutinas</h2><div class="row wrap">${button('+ Crear rutina','editRoutine','new','small')}${button('Agregar por código','importByCode','','small outline')}</div></div>${readRoutineEditor(app.activeUid)?isOfflineNow(account)?`<div class="offline-alert waiting" role="status"><strong>Rutina guardada sin conexión.</strong><span>Podés continuar desde donde la dejaste.</span>${button('Retomar borrador','resumeRoutineDraft','','small')}</div>`:`<div class="row wrap" style="margin:0 0 16px">${button('Continuar edición guardada','resumeRoutineDraft','','small outline')}</div>`:''}${state.routines.length?`<div class="grid2">${state.routines.map((r,i)=>`<div class="card" style="padding:0;overflow:hidden"><div class="image-strip" style="${i%2?'background-image:linear-gradient(90deg,#17201ed9,#17201e20),url(https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=900&q=80),linear-gradient(130deg,#264a45,#17201e)':''}">RUTINA ${String(i+1).padStart(2,'0')}</div><div style="padding:20px"><h3>${h(r.name)}</h3><p class="micro">${r.exercises.length} ejercicios · ${r.exercises.reduce((a,e)=>a+Number(e.sets),0)} series</p><div class="row wrap">${button('Ver rutina ↗','detailRoutine',r.id,'small')}${button('Empezar','start',r.id,'small ghost')}</div></div></div>`).join('')}</div>`:`<div class="card empty"><div class="emoji">🏋️</div><h3>Tu primera rutina empieza acá.</h3><p>No te mostramos una sesión para iniciar hasta que tengas una rutina real.</p>${button('Crear mi rutina','editRoutine','new')}</div>`}<div class="section-head"><h2>Biblioteca de ejercicios</h2></div><div class="card"><div class="row between wrap"><div><h3 style="margin:0 0 5px">Encontrá tu próximo ejercicio</h3><p class="micro" style="margin:0">Seleccioná, organizá y personalizá tu entrenamiento.</p></div>${button('Explorar ejercicios','library','','small outline')}</div></div>`:`<div class="photo-card" style="min-height:196px;--photo:url('https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=900&q=80'),linear-gradient(130deg,#264a45,#17201e)"><div class="eyebrow">MOVIMIENTO SIN ETIQUETAS</div><h3>Elegí la actividad, después registrá lo importante.</h3></div><div class="section-head"><h2>¿Qué hiciste hoy?</h2></div><div class="grid3" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">${categories.map(([key,label,emoji])=>`<button class="card" data-action="other" data-value="${key}" style="text-align:left;min-height:120px"><span style="font-size:27px">${emoji}</span><h3 style="font-size:17px;margin:13px 0 0">${label}</h3><span class="micro">Registrar ↗</span></button>`).join('')}</div>`}`}
 const lib=['Press de banca','Sentadilla','Peso muerto','Remo con mancuerna','Press militar','Jalón al pecho','Prensa de piernas','Curl de bíceps','Plancha','Elevación lateral','Hip thrust','Dominadas'];
 function renderLibrary(){return `<div class="detail-top">${back(app.editor?'routineEdit':'activity')}<span class="micro">BIBLIOTECA</span></div>${title('Biblioteca de ejercicios','Encontrá movimientos por nombre o añadí uno propio.')}
 ${app.editor?`<section class="card custom-exercise-top" aria-label="Añadir ejercicio personalizado"><div class="field" style="margin:0"><label for="customexercise">Crear ejercicio personalizado</label><div class="row wrap custom-exercise-row"><input id="customexercise" maxlength="80" autocomplete="off" placeholder="Ej. Remo unilateral en polea" aria-describedby="customexercise-help"/><button class="btn" data-action="addCustomExercise">+ Añadir</button></div><p class="fieldhint" id="customexercise-help">Escribilo acá sin tener que bajar por toda la biblioteca.</p></div></section>`:''}
 <div class="field library-search"><label for="libsearch">Buscar en la biblioteca</label><div class="row wrap"><input id="libsearch" placeholder="Ej. Sentadilla" autocomplete="off" value="${h(app.exerciseSearch)}"/><button class="btn outline" data-action="searchLibrary">Buscar</button></div></div>
 <div class="card library-results">${lib.filter(e=>e.toLowerCase().includes(app.exerciseSearch.toLowerCase())).map(e=>`<div class="listrow"><div class="bubble">✦</div><div class="grow"><strong>${h(e)}</strong><div class="micro">Fuerza · biblioteca base</div></div>${app.editor?button('+ Añadir','addExercise',e,'small'):button('Ver rutinas','go','activity','small outline')}</div>`).join('')||'<div class="empty">No encontramos coincidencias. Probá con otra búsqueda o agregalo arriba como personalizado.</div>'}</div>`}
 
-function renderRoutine(){const r=state.routines.find(x=>x.id===app.routine);if(!r)return renderActivity();return `<div class="detail-top">${back()}<span class="micro">DETALLE DE RUTINA</span></div><div class="photo-card" style="min-height:240px;--photo:url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1100&q=80'),linear-gradient(130deg,#264a45,#17201e)"><div class="eyebrow">TU PRÓXIMA SESIÓN</div><h2 style="color:#fff">${h(r.name)}</h2><div class="row wrap">${button('▶ Empezar entrenamiento','start',r.id,'small')}</div></div><div class="section-head"><h2>Plan de entrenamiento</h2>${button('Editar rutina','editRoutine',r.id,'small outline')}</div><div class="card">${r.exercises.map((e,i)=>`<div class="listrow"><div class="bubble">${String(i+1).padStart(2,'0')}</div><div class="grow"><strong>${h(e.name)}</strong><div class="micro">${e.sets} series · ${e.reps} repeticiones objetivo</div></div></div>`).join('')}</div><div class="row wrap" style="margin-top:16px">${button('Empezar ahora','start',r.id,'wide')}${button('Duplicar','duplicateRoutine',r.id,'outline')}${button('Eliminar','deleteRoutine',r.id,'outline')}</div>`}
-function renderRoutineEdit(){const e=app.editor||{id:null,name:'',exercises:[]};return `<div class="detail-top">${back(e.id?'routine':'activity')}<span class="micro">${e.id?'EDITAR':'NUEVA'} RUTINA</span></div>${title(e.id?'Editá tu rutina':'Creá una rutina propia','Planificá el entrenamiento. Registrarlo será otra acción, cuando lo realices.') }<div class="card"><div class="field"><label for="rname">Nombre de la rutina *</label><input id="rname" maxlength="80" value="${h(e.name)}" placeholder="Ej. Tren superior A"/></div><div class="section-head"><h2>Ejercicios (${e.exercises.length})</h2>${button('+ Añadir ejercicio','library','','small outline')}</div>${e.exercises.length?e.exercises.map((item,i)=>`<div class="exercise-row" data-exrow="${i}"><div class="row between"><strong>${h(item.name)}</strong><button class="btn small outline" data-action="removeExercise" data-value="${i}">Quitar</button></div><div class="inline2" style="margin-top:12px"><div><label>Series</label><input data-field="sets" type="number" min="1" max="15" value="${item.sets}"/></div><div><label>Reps objetivo</label><input data-field="reps" type="number" min="1" max="100" value="${item.reps}"/></div></div></div>`).join(''):`<div class="empty">Todavía no agregaste ejercicios.<br/>Usá la biblioteca para empezar.</div>`}${isOfflineNow(account)?'<div class="offline-draft-note">◌ Sin conexión: guardá esta rutina como borrador local. Se sincronizará después.</div>':''}<div class="row wrap" style="margin-top:17px">${button(isOfflineNow(account)?'Guardar borrador':'Guardar rutina','saveRoutine')} ${button('Cancelar','cancelEdit','','outline')}</div></div>`}
+
+function renderRoutineShare(){
+  const s=app.share;
+  if(!s)return `${title('Compartir e importar rutinas','Seleccioná una rutina o ingresá un código.')}${button('Volver a mis rutinas','go','activity','outline')}`;
+  const busy=!!s.busy;
+  if(s.mode==='export')return `<div class="detail-top">${back('routine')}<span class="micro">PERCÍ SHARE</span></div>${title('Compartí tu rutina','La otra persona podrá importar una copia independiente. No se comparte tu historial, pesos registrados ni datos personales.')}
+    <div class="card"><h3>${h(s.name||'Mi rutina')}</h3>${s.code?`<p class="micro">Código de rutina · válido durante 90 días</p><div class="card" style="background:var(--surface-alt,transparent);margin:14px 0"><strong style="font-size:clamp(18px,3vw,29px);letter-spacing:.08em;overflow-wrap:anywhere">${h(s.code)}</strong></div><div class="row wrap">${button('Copiar código','copyShareCode','','small')}${button('Revocar código','revokeShareCode','','small outline')}</div>`:`<p class="micro">${busy?'Generando código seguro…':'Todavía no generamos el código.'}</p>`}${s.error?`<p class="fieldhint" role="alert">${h(s.error)}</p>`:''}${!s.code&&!busy?button('Reintentar','shareRoutine',s.routineId,'outline'):''}</div>`;
+  const r=s.preview;
+  return `<div class="detail-top">${back('activity')}<span class="micro">PERCÍ SHARE</span></div>${title('Importar por código','Pegá el código que te compartieron. Antes de guardar vas a ver todos los ejercicios.')}
+    <div class="card"><div class="field"><label for="routineShareCode">Código de rutina</label><input id="routineShareCode" maxlength="40" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="PERC-..." value="${h(s.code||'')}"/></div><div class="row wrap">${button(busy?'Buscando…':'Buscar rutina','lookupShareCode','','small')}${button('Cancelar','go','activity','small outline')}</div>${s.error?`<p class="fieldhint" role="alert">${h(s.error)}</p>`:''}</div>
+    ${r?`<div class="card" style="margin-top:16px"><div class="eyebrow">VISTA PREVIA</div><h2>${h(r.name)}</h2><p class="micro">${r.exercises.length} ejercicios. Se importará una copia independiente, sin historial ni pesos anteriores.</p>${r.exercises.map((e,i)=>`<div class="listrow"><div class="bubble">${String(i+1).padStart(2,'0')}</div><div class="grow"><strong>${h(e.name)}</strong><div class="micro">${e.sets} series · ${e.reps} repeticiones</div></div></div>`).join('')}<div class="row wrap" style="margin-top:16px">${button('Agregar a mis rutinas','confirmShareImport','','wide')}</div></div>`:''}`;
+}
+async function routineShareRequest(payload){
+  const response=await fetch('/api/routine/share',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload)});
+  const data=await response.json().catch(()=>({error:'Respuesta inesperada del servidor.'}));
+  if(!response.ok)throw Error(data.error||'No pudimos completar la operación.');
+  return data;
+}
+function beginShareRoutine(routineId){
+  const r=state.routines.find(x=>x.id===routineId);
+  if(!r)return;
+  const uid=app.activeUid;
+  if(isOfflineNow(account)){toast('Conectate a Internet para generar un código de rutina.');return;}
+  app.share={mode:'export',routineId:r.id,name:r.name,code:'',busy:true,error:''};
+  go('routineShare');
+  let template;
+  try{template=cleanSharedRoutine(r);}catch(err){app.share.busy=false;app.share.error=err.message;render();return;}
+  routineShareRequest({action:'create',sourceId:r.id,routine:template})
+    .then(data=>{if(uid!==app.activeUid||app.share?.mode!=='export'||app.share.routineId!==r.id)return;
+      if(!isValidShareCode(data.code))throw Error('El servidor devolvió un código inválido.');
+      app.share.code=data.code;app.share.busy=false;render();})
+    .catch(err=>{if(uid!==app.activeUid||app.share?.mode!=='export'||app.share.routineId!==r.id)return;
+      app.share.busy=false;app.share.error=err.message||'No pudimos compartir la rutina.';render();});
+}
+function lookupShareRoutine(){
+  const s=app.share;
+  if(!s||s.mode!=='import'||s.busy)return;
+  const code=(get('routineShareCode')?.value||s.code||'').trim();
+  s.code=code;s.error='';s.preview=null;
+  if(!isValidShareCode(code)){s.error='El código no tiene un formato válido. Copialo exactamente.';render();return;}
+  if(isOfflineNow(account)){s.error='Conectate a Internet para buscar la rutina.';render();return;}
+  const uid=app.activeUid;
+  s.busy=true;render();
+  routineShareRequest({action:'lookup',code})
+    .then(data=>{if(uid!==app.activeUid||app.share!==s||s.code!==code)return;
+      s.preview=cleanSharedRoutine(data.routine);s.busy=false;render();})
+    .catch(err=>{if(uid!==app.activeUid||app.share!==s||s.code!==code)return;
+      s.error=err.message||'No encontramos la rutina.';s.busy=false;render();});
+}
+function revokeShareRoutine(){
+  const s=app.share;
+  if(!s||s.mode!=='export'||!s.code||s.busy)return;
+  if(!window.confirm('¿Revocar este código? Quien ya importó una rutina conservará su copia.'))return;
+  const uid=app.activeUid,code=s.code;
+  s.busy=true;render();
+  routineShareRequest({action:'revoke',code})
+    .then(data=>{if(uid!==app.activeUid||app.share!==s)return;
+      s.busy=false;if(!data.revoked)throw Error('No pudimos revocar este código.');
+      s.code='';s.error='Código revocado. Podés generar uno nuevo.';render();})
+    .catch(err=>{if(uid!==app.activeUid||app.share!==s)return;
+      s.busy=false;s.error=err.message||'No pudimos revocar el código.';render();});
+}
+function importSharedRoutine(){
+  const s=app.share;
+  if(!s||s.mode!=='import'||!s.preview)return;
+  let template;
+  try{template=cleanSharedRoutine(s.preview);}catch(err){s.error=err.message;render();return;}
+  if(state.routines.some(x=>routineTemplateIsEqual(x,template))){
+    if(!window.confirm('Ya tenés una rutina exactamente igual. ¿Querés importarla igualmente como otra copia?'))return;
+  }
+  const r={id:id(),name:template.name,exercises:template.exercises.map(x=>({...x}))};
+  state.routines.push(r);
+  if(!save()){state.routines=state.routines.filter(x=>x.id!==r.id);toast('No se pudo guardar. Intentá nuevamente.');return;}
+  app.share=null;app.routine=r.id;go('routine');toast('Rutina importada a tu cuenta.');
+}
+
+function renderRoutine(){const r=state.routines.find(x=>x.id===app.routine);if(!r)return renderActivity();return `<div class="detail-top">${back()}<span class="micro">DETALLE DE RUTINA</span></div><div class="photo-card" style="min-height:240px;--photo:url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1100&q=80'),linear-gradient(130deg,#264a45,#17201e)"><div class="eyebrow">TU PRÓXIMA SESIÓN</div><h2 style="color:#fff">${h(r.name)}</h2><div class="row wrap">${button('▶ Empezar entrenamiento','start',r.id,'small')}</div></div><div class="section-head"><h2>Plan de entrenamiento</h2>${button('Editar rutina','editRoutine',r.id,'small outline')}</div><div class="card">${r.exercises.map((e,i)=>`<div class="listrow"><div class="bubble">${String(i+1).padStart(2,'0')}</div><div class="grow"><strong>${h(e.name)}</strong><div class="micro">${e.sets} series · ${e.reps} repeticiones objetivo</div></div></div>`).join('')}</div><div class="row wrap" style="margin-top:16px">${button('Empezar ahora','start',r.id,'wide')}${button('Compartir rutina','shareRoutine',r.id,'outline')}${button('Duplicar','duplicateRoutine',r.id,'outline')}${button('Eliminar','deleteRoutine',r.id,'outline')}</div>`}
+function renderRoutineEdit(){const e=app.editor||{id:null,name:'',exercises:[]};return `<div class="detail-top">${back(e.id?'routine':'activity')}<span class="micro">${e.id?'EDITAR':'NUEVA'} RUTINA</span></div>${title(e.id?'Editá tu rutina':'Creá una rutina propia','Planificá el entrenamiento. Registrarlo será otra acción, cuando lo realices.') }${!e.id?`<div class="row wrap" style="margin-bottom:14px">${button('Agregar por código de rutina','importByCode','','small outline')}</div>`:''}<div class="card"><div class="field"><label for="rname">Nombre de la rutina *</label><input id="rname" maxlength="80" value="${h(e.name)}" placeholder="Ej. Tren superior A"/></div><div class="section-head"><h2>Ejercicios (${e.exercises.length})</h2>${button('+ Añadir ejercicio','library','','small outline')}</div>${e.exercises.length?e.exercises.map((item,i)=>`<div class="exercise-row" data-exrow="${i}"><div class="row between"><strong>${h(item.name)}</strong><button class="btn small outline" data-action="removeExercise" data-value="${i}">Quitar</button></div><div class="inline2" style="margin-top:12px"><div><label>Series</label><input data-field="sets" type="number" min="1" max="15" value="${item.sets}"/></div><div><label>Reps objetivo</label><input data-field="reps" type="number" min="1" max="100" value="${item.reps}"/></div></div></div>`).join(''):`<div class="empty">Todavía no agregaste ejercicios.<br/>Usá la biblioteca para empezar.</div>`}${isOfflineNow(account)?'<div class="offline-draft-note">◌ Sin conexión: guardá esta rutina como borrador local. Se sincronizará después.</div>':''}<div class="row wrap" style="margin-top:17px">${button(isOfflineNow(account)?'Guardar borrador':'Guardar rutina','saveRoutine')} ${button('Cancelar','cancelEdit','','outline')}</div></div>`}
 const asKg=value=>Number(value||0).toLocaleString('es-AR',{maximumFractionDigits:2});
 function renderRestPanel(d){
   const enabled=d.restEnabled===true,seconds=[60,90,120].includes(Number(d.restSeconds))?Number(d.restSeconds):90;
@@ -124,11 +201,12 @@ function render(){
   if(app.cloudConflict){root.innerHTML=renderCloudConflict();return;}
   if(!app.activeUid){root.innerHTML=renderAuthGate();return;}
   let view=app.view;
-  let out=({home:renderHome,activity:renderActivity,progress:renderProgress,habits:renderHabits,settings:renderSettings,account:renderAccount,routine:renderRoutine,routineEdit:renderRoutineEdit,exerciseLibrary:renderLibrary,session:renderSession,otherForm:renderOtherForm,record:renderRecord,sessionSummary:renderSessionSummary,habitEdit:renderHabitEdit,onboard:renderOnboard}[view]||renderHome)();
+  let out=({home:renderHome,activity:renderActivity,progress:renderProgress,habits:renderHabits,settings:renderSettings,account:renderAccount,routine:renderRoutine,routineEdit:renderRoutineEdit,exerciseLibrary:renderLibrary,session:renderSession,otherForm:renderOtherForm,record:renderRecord,sessionSummary:renderSessionSummary,habitEdit:renderHabitEdit,routineShare:renderRoutineShare,onboard:renderOnboard}[view]||renderHome)();
   root.innerHTML=shell((isOfflineNow(account)&&app.cloudNotice?`<div class="notice" role="status" style="margin-bottom:15px">${h(app.cloudNotice)}</div>`:'')+out);
   if(pendingPwaUpdate)applyPendingPwaUpdate();
 }
 function activateAccountData(){
+  if(!account.authenticated || account.user?.id!==app.activeUid)app.share=null;
   const id=account.user?.id;
   if(!account.authenticated||!id){
     app.activeUid=null;app.needLegacyChoice=false;app.hydrating=false;app.cloudConflict=null;app.cloudNotice='';
@@ -424,6 +502,15 @@ case 'focus':state.focus=value;save();render();break;
 case 'finishOnboard':state.onboardSeen=true;save();go('home');break;
 case 'onboard':go('onboard');break;
 case 'detailRoutine':app.routine=value;go('routine');break;
+case 'importByCode':app.share={mode:'import',code:'',preview:null,busy:false,error:''};go('routineShare');break;
+case 'shareRoutine':beginShareRoutine(value);break;
+case 'lookupShareCode':lookupShareRoutine();break;
+case 'confirmShareImport':importSharedRoutine();break;
+case 'revokeShareCode':revokeShareRoutine();break;
+case 'copyShareCode':{const code=app.share?.code;if(!code)break;
+  if(navigator.clipboard?.writeText)navigator.clipboard.writeText(code).then(()=>toast('Código copiado'),()=>window.prompt('Copiá este código:',code));
+  else window.prompt('Copiá este código:',code);break;}
+
 case 'editRoutine':{if(isOfflineNow(account)){showModal('Sin conexión · Modo borrador','Podés crear o editar tu rutina sin internet. Cada cambio quedará en este dispositivo hasta que puedas sincronizarlo.','beginOfflineRoutine',value,false,'','Crear borrador');break;}let r=state.routines.find(x=>x.id===value);app.editor=r?JSON.parse(JSON.stringify(r)):{id:null,name:'',exercises:[]};app.routine=r?.id||null;saveRoutineEditor(app.activeUid,app.editor);go('routineEdit');break}
 case 'beginOfflineRoutine':{app.modal=null;let r=state.routines.find(x=>x.id===value);app.editor=r?JSON.parse(JSON.stringify(r)):{id:null,name:'',exercises:[]};app.routine=r?.id||null;saveRoutineEditor(app.activeUid,app.editor);go('routineEdit');break}
 case 'resumeRoutineDraft':{const d=readRoutineEditor(app.activeUid);if(!d){toast('No encontramos el borrador.');break}app.editor=d;app.routine=d.id||null;go('routineEdit');break}
@@ -570,6 +657,7 @@ document.addEventListener('keydown',e=>{
 });
 document.addEventListener('input',e=>{
   if(!account.authenticated||!app.activeUid||(app.hydrating&&!app.silentHydration)||app.cloudConflict)return;
+  if(e.target.id==='routineShareCode'&&app.share?.mode==='import'){app.share.code=e.target.value;app.share.preview=null;return;}
   if(app.view==='routineEdit' && (e.target.id==='rname'||e.target.matches('[data-exrow] input'))){persistEditor();return;}
   const row=e.target.closest('[data-set]');
   if(app.view==='session'&&row&&state.draft && (e.target.matches('[data-field=weight]')||e.target.matches('[data-field=reps]'))){

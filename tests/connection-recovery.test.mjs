@@ -23,7 +23,7 @@ globalThis.fetch=async(path)=>{
   await new Promise(resolve=>{fulfillFetch=resolve});
   return {ok:true,status:200,json:async()=>({authenticated:true,configured:true,user:{id:uid,email:'xecloto@gmail.com',name:'QA'}})};
 };
-const {account,onAccountChange,probeOfflineAccount}=await import('../public/src/account.js?v=1.6.4');
+const {account,onAccountChange,probeOfflineAccount}=await import('../public/src/account.js?v=1.6.5');
 
 test('iPhone: recuperar sesión no depende de que Safari dispare evento online',async()=>{
   Object.assign(account,{ready:true,authenticated:true,user:{id:uid,email:'xecloto@gmail.com'},offline:true});
@@ -58,7 +58,7 @@ test('sin sesión autenticada no se realizan lecturas de reconexión',async()=>{
   assert.equal(fetchCount,before);
 });
 
-test('v1.6.4: iPhone reintenta conexión al volver del background sin refresh manual',()=>{
+test('v1.6.5: iPhone reintenta conexión al volver del background sin refresh manual',()=>{
   const app=fs.readFileSync(new URL('../public/src/app.js',import.meta.url),'utf8');
   const auth=fs.readFileSync(new URL('../public/src/account.js',import.meta.url),'utf8');
   assert.match(app,/function refreshConnectionAware\(minAgeMs=6000\)/);
@@ -74,7 +74,7 @@ test('v1.6.4: iPhone reintenta conexión al volver del background sin refresh ma
 });
 
 test('Safari conserva navigator.onLine=false, pero servidor ya confirmó acceso',async()=>{
-  const {isOfflineNow}=await import('../public/src/data/offline-outbox.js?v=1.6.4');
+  const {isOfflineNow}=await import('../public/src/data/offline-outbox.js?v=1.6.5');
   const prior=globalThis.navigator;
   try{
     Object.defineProperty(globalThis,'navigator',{configurable:true,value:{onLine:false}});
