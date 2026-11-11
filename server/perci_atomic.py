@@ -12,25 +12,52 @@ from server import perci_server as core
 MAX_RETRIES = 4
 QA_FLAG = 'PERCI_ATOMIC_QA_ENABLED'
 QA_REF = 'PERCI_ATOMIC_QA_PROJECT_REF'
+DEV_FLAG = 'PERCI_ATOMIC_DEV_ENABLED'
+DEV_REF = 'PERCI_ATOMIC_DEV_PROJECT_REF'
+DEV_VERCEL_PROJECT = 'prj_vsYW5BNPSo3gjH2N7paREVKiEvln'
+QA_SUPABASE_PROJECT = 'vafurtauwarukdcopjnh'
 
 
 def enabled():
-    flag = os.environ.get(QA_FLAG)
-    if flag is None:
+    qa_flag = os.environ.get(QA_FLAG)
+    dev_flag = os.environ.get(DEV_FLAG)
+
+    if qa_flag is None and dev_flag is None:
         return False
-    if flag != 'YES_QA_ONLY':
-        raise core.ApiError('Configuración atómica QA inválida; no se guardaron cambios.', 503)
-    if os.environ.get('VERCEL_ENV', '').lower() == 'production':
-        raise core.ApiError('Sincronización QA no habilitada en despliegues de producción.', 503)
-    expected = os.environ.get(QA_REF, '')
+
+    if qa_flag is not None and dev_flag is not None:
+        raise core.ApiError('Modos atómicos incompatibles.', 503)
+
+    if qa_flag is not None:
+        if qa_flag != 'YES_QA_ONLY':
+            raise core.ApiError('Configuración atómica QA inválida.', 503)
+        if os.environ.get('VERCEL_ENV', '').lower() == 'production':
+            raise core.ApiError('QA no puede operar en Production.', 503)
+        expected = os.environ.get(QA_REF, '')
+        mode = 'QA'
+    else:
+        if dev_flag != 'YES_DEV_ATOMIC':
+            raise core.ApiError('Configuración atómica DEV inválida.', 503)
+        if os.environ.get('VERCEL_ENV', '').lower() != 'production':
+            raise core.ApiError('DEV atómico requiere Production.', 503)
+        if os.environ.get('VERCEL_PROJECT_ID') != DEV_VERCEL_PROJECT:
+            raise core.ApiError('Proyecto Vercel DEV no autorizado.', 503)
+        expected = os.environ.get(DEV_REF, '')
+        if expected == QA_SUPABASE_PROJECT:
+            raise core.ApiError('No se puede utilizar Supabase QA en DEV.', 503)
+        mode = 'DEV'
+
     if not re.fullmatch(r'[a-z0-9-]{8,32}', expected):
-        raise core.ApiError('Referencia de Supabase QA no configurada.', 503)
+        raise core.ApiError(f'Referencia Supabase {mode} inválida.', 503)
+
     config = core.CONFIG
-    if not config:
-        raise core.ApiError('Supabase QA no configurado.', 503)
+    if not config or not isinstance(config.get('url'), str):
+        raise core.ApiError(f'Supabase {mode} no configurado.', 503)
+
     hostname = urllib.parse.urlsplit(config['url']).hostname
     if hostname != f'{expected}.supabase.co':
-        raise core.ApiError('El destino no coincide con el proyecto QA autorizado.', 503)
+        raise core.ApiError(f'Destino Supabase {mode} no autorizado.', 503)
+
     return True
 
 
