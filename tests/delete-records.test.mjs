@@ -61,7 +61,10 @@ test('la interfaz pregunta antes de eliminar y no reabre cartel de borrados de r
   const app=fs.readFileSync(new URL('../public/src/app.js',import.meta.url),'utf8');
   assert.match(app,/case 'saveAsRecordDraft'/);
   assert.match(app,/Eliminar definitivamente/);
-  assert.match(app,/deleteCloudEntities/);
+  // En v1.7.6 el borrado forma parte del mismo commit transaccional.
+  assert.match(app,/for\(const item of result\.deletions\)grouped\[item\.kind\]\.push\(item\.id\)/);
+  assert.match(app,/const committed=await syncCloudSnapshot\(\{\.\.\.result\.snapshot,draft:null\},remote,deletions\)/);
+  assert.doesNotMatch(app,/await deleteCloudEntities\(/);
   assert.match(app,/renderSavedRecordDrafts/);
 });
 

@@ -12,6 +12,8 @@ import os
 import re
 import urllib.parse
 from server import perci_server as core
+from server import perci_share
+from server import perci_atomic as atomic
 
 SESSION_TTL = core.SESSION_TTL
 MAX_BODY = core.MAX_BODY
@@ -20,7 +22,7 @@ REFRESH_COOKIE = 'perci_rt'
 WEB_ROOT = Path(__file__).resolve().parents[1] / 'public'
 ENDPOINTS = {
     '/api/status', '/api/auth/session', '/api/auth/login',
-    '/api/auth/signup', '/api/auth/logout', '/api/cloud/data', '/api/cloud/sync', '/api/cloud/delete'
+    '/api/auth/signup', '/api/auth/logout', '/api/cloud/data', '/api/cloud/sync', '/api/cloud/delete', '/api/routine/share'
 }
 
 
@@ -166,7 +168,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                     token, user, cookies = self.authenticated()
                     if not user:
                         raise core.ApiError('Iniciá sesión para recuperar tus datos.', 401)
-                    return self.send_json(core.download_data(token, user['id']), cookies=cookies)
+                    return self.send_json(atomic.download_data(token, user['id']), cookies=cookies)
                 raise core.ApiError('Método no permitido.', 405)
             body = self.check_post()
             if path == '/api/auth/signup':
@@ -206,15 +208,32 @@ class ApiHandler(BaseHTTPRequestHandler):
                     except core.ApiError:
                         pass
                 return self.send_json({'authenticated': False}, cookies=self.logout_cookies())
+            if path == '/api/routine/share':
+                token, user, cookies = self.authenticated()
+                if not user:
+                    raise core.ApiError('Iniciá sesión para compartir o importar rutinas.', 401)
+                return self.send_json(perci_share.handle(core, token, body), cookies=cookies)
             if path == '/api/cloud/sync':
                 token, user, cookies = self.authenticated()
                 if not user:
                     raise core.ApiError('Iniciá sesión para guardar tus datos.', 401)
+                if atomic.enabled():
+                    response = atomic.commit(body.get('snapshot'), token, user['id'],
+                                             expected=body.get('expected'),
+                                             deletions=body.get('deletions', {}),
+                                             atomic=body.get('atomic'))
+                    return self.send_json(response, cookies=cookies)
+                # No aceptar solicitudes nuevas en servidor legacy: no puede
+                # confirmar sus borrados dentro de una única transacción.
+                if body.get('atomic') is True or 'deletions' in body:
+                    raise core.ApiError('Este servidor aún no está habilitado para sincronización atómica.', 503)
                 return self.send_json(core.upload_data(body.get('snapshot'), token, user['id'], expected=body.get('expected')), cookies=cookies)
             if path == '/api/cloud/delete':
                 token, user, cookies = self.authenticated()
                 if not user:
                     raise core.ApiError('Iniciá sesión para eliminar tus datos.', 401)
+                if atomic.enabled():
+                    raise core.ApiError('Actualizá Percí: los borrados deben confirmarse en el mismo commit.', 409)
                 return self.send_json(core.delete_cloud_entities(body, token, user['id']), cookies=cookies)
             raise core.ApiError('Método no permitido.', 405)
         except (ValueError, TypeError, json.JSONDecodeError):

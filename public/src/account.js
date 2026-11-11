@@ -1,4 +1,4 @@
-import {queueSnapshot,readOutbox,isOfflineNow} from './data/offline-outbox.js?v=1.6.4';
+import {queueSnapshot,readOutbox,isOfflineNow} from './data/offline-outbox.js?v=1.7.6';
 /** Percí v1.2: cuenta obligatoria, sesión del servidor + acceso offline previamente autorizado.
  * La credencial offline solo recuerda un usuario autenticado en este dispositivo;
  * NO sustituye cifrado local ni autentica contra Supabase sin conexión.
@@ -192,6 +192,6 @@ export function probeOfflineAccount(){
 window.addEventListener('online',()=>{probeOfflineAccount().catch(()=>{});});
 window.addEventListener('offline',()=>{if(account.authenticated) update({offline:true,verifiedOnline:false,verifiedOnlineAt:0,message:'Sin conexión. Los cambios quedan como borradores en este dispositivo.'});});
 /** Solo el orquestador de app.js puede llamarlo, después de comparar tres vías. */
-export const syncCloudSnapshot=(snapshot, expected)=>request('/api/cloud/sync',{snapshot, expected});
+export const syncCloudSnapshot=(snapshot, expected, deletions={})=>request('/api/cloud/sync',{snapshot,expected,deletions,atomic:true});
 export const deleteCloudRecords=records=>request('/api/cloud/delete',{records});
 export const deleteCloudEntities=deletions=>request('/api/cloud/delete',deletions);

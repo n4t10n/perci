@@ -2,7 +2,7 @@
  * No contiene tokens ni contraseñas. El estado offline en localStorage NO está cifrado.
  * Los borradores de sesión / editor no se envían al servidor hasta quedar completos.
  */
-import {cleanImportedState} from './import-cleanup.js?v=1.6.4';
+import {cleanImportedState} from './import-cleanup.js?v=1.7.6';
 
 const copy=value=>JSON.parse(JSON.stringify(value));
 const items=['routines','records','habits'];
@@ -206,7 +206,8 @@ export function verifyRemoteSnapshot(expected,actual,deletions=[]){
  * Si hubo cambios locales diferentes, los deja para revisión de conflicto.
  */
 export function applyRemoteEntityDeletes(base,local,remote){
-  if(!base)return {snapshot:local,removed:[]};
+  // Una cuenta que entra por primera vez no tiene baseline remoto. Siempre devolver el contrato completo.
+  if(!base)return {snapshot:local,removed:[],conflicts:[]};
   const before=normalized(base),here=normalized(local),there=normalized(remote);
   const removed=[],conflicts=[],snapshot=copy(here);
   for(const kind of items){
