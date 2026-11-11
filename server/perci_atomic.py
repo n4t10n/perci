@@ -128,7 +128,7 @@ def commit(snapshot, token, user, *, expected, deletions, atomic):
         # No fallback: newer clients may bundle deletes into one atomic commit.
         raise core.ApiError('Esta versión necesita el servidor QA transaccional. Conservamos los cambios locales.', 503)
     if atomic is not True or not isinstance(expected, dict):
-        raise core.ApiError('Actualizá Percí antes de sincronizar. No se modificaron datos.', 409)
+        raise core.ApiError('Actualizá Percí antes de sincronizar. No se modificaron datos.', 412)
     expected_revision = expected.get('revision')
     if type(expected_revision) is not int or expected_revision < 0:
         raise core.ApiError('Falta la revisión remota. Volvé a comparar los cambios.', 409)

@@ -115,12 +115,35 @@ class TestAtomicAPI(unittest.TestCase):
                 atomic.commit(EMPTY,'jwt-A',UID,expected={'revision':0},deletions=invalid,atomic=True)
             mockcore.supabase.assert_not_called()
 
-    def test_missing_revision_or_old_client_is_refused(self):
-        for expected, version in [(None,True),({'revision':True},True),
-                                  ({'revision':-1},True),({'revision':0},False)]:
-            with self.assertRaises(APIError) as e:
-                atomic.commit(EMPTY,'jwt-A',UID,expected=expected,deletions={},atomic=version)
-            self.assertEqual(e.exception.status,409)
+    def test_invalid_revision_is_refused(self):
+        cases = [
+            (None, 412),
+            ({'revision': True}, 409),
+            ({'revision': -1}, 409),
+        ]
+        for expected, status in cases:
+            with self.subTest(expected=expected):
+                with self.assertRaises(APIError) as e:
+                    atomic.commit(
+                        EMPTY, 'jwt-A', UID,
+                        expected=expected,
+                        deletions={},
+                        atomic=True
+                    )
+                self.assertEqual(e.exception.status, status)
+        mockcore.supabase.assert_not_called()
+
+    def test_old_client_is_refused_without_writing(self):
+        for version in (False, None):
+            with self.subTest(atomic=version):
+                with self.assertRaises(APIError) as e:
+                    atomic.commit(
+                        EMPTY, 'jwt-A', UID,
+                        expected={'revision': 0},
+                        deletions={},
+                        atomic=version
+                    )
+                self.assertEqual(e.exception.status, 412)
         mockcore.supabase.assert_not_called()
 
     def test_commit_sends_one_rpc_with_jwt_and_deletions(self):

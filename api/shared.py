@@ -233,7 +233,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                 if not user:
                     raise core.ApiError('Iniciá sesión para eliminar tus datos.', 401)
                 if atomic.enabled():
-                    raise core.ApiError('Actualizá Percí: los borrados deben confirmarse en el mismo commit.', 409)
+                    raise core.ApiError('Actualizá Percí: los borrados deben confirmarse en el mismo commit.', 412)
                 return self.send_json(core.delete_cloud_entities(body, token, user['id']), cookies=cookies)
             raise core.ApiError('Método no permitido.', 405)
         except (ValueError, TypeError, json.JSONDecodeError):
