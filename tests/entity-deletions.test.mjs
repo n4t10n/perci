@@ -74,13 +74,18 @@ test('v1.4: borrados sin conexión sobreviven cierre y mantienen la cola previa'
   assert.equal(readOutbox(uidA).revision,1);
   assert.deepEqual(listEntityDeletes(uidA).routines,['r1']);
 });
-test('v1.4: la UI confirma antes de borrar y envía entidades con la cuenta autenticada',()=>{
+test('v1.7.6: la UI confirma borrados y los incluye en el commit atómico de la cuenta',()=>{
   const app=fs.readFileSync(new URL('../public/src/app.js',import.meta.url),'utf8');
   const api=fs.readFileSync(new URL('../api/shared.py',import.meta.url),'utf8');
   assert.match(app,/case 'confirmDeleteRoutine':deletePersonalEntity\('routines',value\)/);
   assert.match(app,/case 'confirmDeleteHabit':deletePersonalEntity\('habits',value\)/);
-  assert.match(app,/deleteCloudEntities/);
-  assert.match(api,/core\.delete_cloud_entities\(body, token, user\['id'\]\)/);
+  // Se envían las eliminaciones junto con el snapshot, nunca con un DELETE posterior.
+  assert.match(app,/const committed=await syncCloudSnapshot\(\{\.\.\.result\.snapshot,draft:null\},remote,deletions\)/);
+  assert.doesNotMatch(app,/await deleteCloudEntities\(/);
+  assert.match(api,/deletions=body\.get\('deletions', \{\}\)/);
+  assert.match(api,/atomic\.commit\(body\.get\('snapshot'\), token, user\['id'\]/);
+  // Endpoint legacy de borrados debe rechazar la petición en modo atómico.
+  assert.match(api,/if atomic\.enabled\(\):\s+raise core\.ApiError\('Actualizá Percí:/);
 });
 
 test('v1.4: conflicto si otro dispositivo completó el hábito antes del borrado local',()=>{

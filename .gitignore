@@ -17,3 +17,7 @@ perci_prototipo_datos.json
 *backup*.json
 *respaldo*.json
 .DS_Store
+.vercel
+.env*
+
+.perci-share-v176-backup/
