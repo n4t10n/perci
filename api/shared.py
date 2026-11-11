@@ -158,7 +158,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                 raise core.ApiError('Ruta inexistente.', 404)
             if method == 'GET':
                 if path == '/api/status':
-                    return self.send_json({'configured': bool(core.CONFIG), 'cookieAuth': True})
+                    return self.send_json({'configured': bool(core.CONFIG), 'cookieAuth': True, 'atomicEnabled': atomic.enabled()})
                 if path == '/api/auth/session':
                     token, user, cookies = self.authenticated()
                     return self.send_json({'configured': bool(core.CONFIG),
