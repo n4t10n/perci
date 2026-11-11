@@ -265,13 +265,34 @@ function decideLegacy(copyLegacy){
 // Percí v1.5: actualizar el código de la PWA sin interrumpir ediciones.
 let pendingPwaUpdate=false;
 let pwaReloadQueued=false;
-function applyPendingPwaUpdate(){
-  if(!pendingPwaUpdate||pwaReloadQueued||!account.ready||app.hydrating||account.busy||
+
+function canApplyPendingPwaUpdate(){
+  if(!pendingPwaUpdate||!account.ready||app.hydrating||account.busy||
+     account.syncPaused||account.syncFailed||
      app.cloudConflict||app.modal||app.needLegacyChoice||state.draft||
-     ['routineEdit','habitEdit','session','sessionSummary','record','otherForm'].includes(app.view))return;
-  pwaReloadQueued=true;
-  queueMicrotask(()=>window.location.reload());
+     isOfflineNow(account)||
+     ['routineEdit','habitEdit','session','sessionSummary','record','otherForm'].includes(app.view))return false;
+
+  const uid=app.activeUid||account.user?.id;
+  if(account.authenticated&&(!uid||uid!==account.user?.id))return false;
+
+  if(uid&&(readOutbox(uid)||hasDeleteIntents(allDeleteIntents(uid))))return false;
+
+  return true;
 }
+
+function applyPendingPwaUpdate(){
+  if(pwaReloadQueued||!canApplyPendingPwaUpdate())return;
+  pwaReloadQueued=true;
+  queueMicrotask(()=>{
+    if(!canApplyPendingPwaUpdate()){
+      pwaReloadQueued=false;
+      return;
+    }
+    window.location.reload();
+  });
+}
+
 document.addEventListener('perci:pwa-updated',()=>{pendingPwaUpdate=true;applyPendingPwaUpdate();});
 let hydrationGeneration=0;
 // Una actualización solicitada durante otra lectura no se pierde.
