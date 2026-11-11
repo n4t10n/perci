@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {previousExerciseSet,sessionStats,nextPendingSet,restRemaining,restClock,listTrackedExercises,exerciseHistory} from '../public/src/domain/training-insights.js';
+import {getWorkoutDate} from '../public/src/domain/routine-session-tools.js';
+import {dateISO} from '../public/src/domain/initial-state.js';
 const source=readFileSync(new URL('../public/src/app.js',import.meta.url),'utf8');
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const button=(label,action,value='',cls='')=>`<button data-action="${action}" data-value="${esc(value)}" class="btn ${cls}">${label}</button>`;
@@ -13,7 +15,7 @@ const record={id:'old',type:'gym',date:'2026-11-04',setDetails:[
 const sample={records:[record],draft:{id:'draft1',routineId:'r1',snapshot:[{name:'Press de banca',sets:3,reps:10}],startedAt:Date.now()-60000,sets:{'0-0':{weight:40,reps:10,done:false}},restEnabled:true,restSeconds:90,restUntil:Date.now()+90000},routines:[{id:'r1',name:'Torso A',exercises:[{name:'Press de banca',sets:3,reps:10}]}]};
 const app={completedRecord:'old',progressExercise:''};
 const account={offline:false};
-const deps={state:sample,app,account,sessionStats,nextPendingSet,restRemaining,restClock,previousExerciseSet,listTrackedExercises,exerciseHistory,isOfflineNow:()=>false,h:esc,button,back,renderProgress:()=>'<p>Progress</p>'};
+const deps={state:sample,app,account,sessionStats,nextPendingSet,restRemaining,restClock,previousExerciseSet,listTrackedExercises,exerciseHistory,isOfflineNow:()=>false,getWorkoutDate,dateISO,h:esc,button,back,renderProgress:()=>'<p>Progress</p>'};
 function getRenderer(name,fragment){
  const keys=Object.keys(deps),values=Object.values(deps);
  return new Function(...keys,`${fragment};return ${name};`)(...values);

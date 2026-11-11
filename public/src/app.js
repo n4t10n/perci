@@ -13,6 +13,7 @@ import {canAutoRefreshCloud,shouldRefreshOnNavigation} from './data/auto-refresh
 import {planFirstDeviceRestore} from './data/first-device-hydration.js?v=1.7.6';
 import {listTrackedExercises,exerciseHistory,previousExerciseSet,sessionStats,nextPendingSet,restRemaining,restClock} from './domain/training-insights.js?v=1.7.6';
 import {cleanSharedRoutine,isValidShareCode,routineTemplateIsEqual} from './domain/routine-share.js?v=1.7.6';
+import {reorderRoutineExercises,isWorkoutDate,getWorkoutDate} from './domain/routine-session-tools.js?v=1.7.6';
 
 
 (()=>{'use strict';
@@ -21,7 +22,7 @@ import {cleanSharedRoutine,isValidShareCode,routineTemplateIsEqual} from './doma
 
 let state;try{state=storage.read()||seed();if(!Array.isArray(state.records)||!Array.isArray(state.routines)||!Array.isArray(state.habits))throw Error('Formato inválido')}catch(e){state=seed()}
 const freshState=()=>({...seed(),version:3,demo:false,routines:[],records:[],habits:[],checks:{},draft:null});
-const app={activeUid:null,needLegacyChoice:false,hydrating:false,silentHydration:false,cloudConflict:null,cloudNotice:'',view:getInitialView(state),tab:'gym',activity:'walk',filter:'all',record:null,routine:null,editor:null,habit:null,exerciseSearch:'',progressExercise:'',completedRecord:null,modal:null,toast:'',share:null};
+const app={activeUid:null,needLegacyChoice:false,hydrating:false,silentHydration:false,cloudConflict:null,cloudNotice:'',view:getInitialView(state),tab:'gym',activity:'walk',filter:'all',record:null,routine:null,routineListOrigin:'activity',editor:null,renamingExercise:null,habit:null,exerciseSearch:'',progressExercise:'',completedRecord:null,modal:null,toast:'',share:null};
 const icons={account:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>',activity:'<path d="M6.5 6.5 17.5 17.5M4 9l5-5M2 7l5-5M15 20l5-5M17 22l5-5"/>',progress:'<path d="M3 19V5m0 14h18M7 16l5-5 4 3 5-7"/>',habits:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 10h18m-13 5 2 2 4-4"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.8 1.8-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.05 1.57V21h-2.5v-.08a1.7 1.7 0 0 0-1.05-1.57 1.7 1.7 0 0 0-1.88.34l-.06.06-1.8-1.8.06-.06A1.7 1.7 0 0 0 8.1 16a1.7 1.7 0 0 0-1.57-1.05H6.4v-2.5h.09A1.7 1.7 0 0 0 8.1 11.4a1.7 1.7 0 0 0-.34-1.88L7.7 9.46l1.8-1.8.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.05-1.57V6.4H15v.09a1.7 1.7 0 0 0 1.05 1.57 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.8 1.8-.06.06A1.7 1.7 0 0 0 19.4 11.4a1.7 1.7 0 0 0 1.57 1.05H21v2.5h-.09A1.7 1.7 0 0 0 19.4 15"/>',arrow:'<path d="m9 18 6-6-6-6"/>',plus:'<path d="M12 5v14M5 12h14"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',check:'<path d="m5 12 4 4L19 6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'};
 const icon=(n)=>`<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icons[n]||icons.arrow}</svg>`;
 const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -29,7 +30,7 @@ const save=()=>{if(!account.authenticated||!app.activeUid||app.needLegacyChoice|
 const applyTheme=()=>{let t=state.theme==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):state.theme;document.documentElement.dataset.theme=t;document.querySelector('meta[name=theme-color]').content=t==='dark'?'#111716':'#f2f4f1'};
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
 const navs=[['home','Inicio'],['activity','Actividad'],['progress','Progreso'],['habits','Hábitos']];
-const mainView=v=>({home:'home',activity:'activity',routine:'activity',routineEdit:'activity',routineShare:'activity',exerciseLibrary:'activity',session:'activity',otherForm:'activity',progress:'progress',record:'progress',sessionSummary:'progress',habits:'habits',habitEdit:'habits',settings:'settings',account:'account',onboard:'home'}[v]||'home');
+const mainView=v=>({home:'home',activity:'activity',routine:'activity',routinesOverview:'activity',routineEdit:'activity',routineShare:'activity',exerciseLibrary:'activity',session:'activity',otherForm:'activity',progress:'progress',record:'progress',sessionSummary:'progress',habits:'habits',habitEdit:'habits',settings:'settings',account:'account',onboard:'home'}[v]||'home');
 const go=v=>{if(!account.authenticated||app.needLegacyChoice)return;if(hasAccountConflict())v='account';app.view=v;window.scrollTo({top:0,behavior:'instant'});render();
   // Al navegar a una pantalla de lectura, traer los datos nuevos de la cuenta.
   // La edición y los entrenamientos activos no deben interrumpirse.
@@ -56,7 +57,18 @@ function renderHome(){const sw=sessionsWeek();const next=state.routines[0];const
 function getDueToday(x){return x.days.includes(new Date().getDay())}
 function renderHabitMini(){let list=state.habits.filter(x=>!x.paused&&getDueToday(x));return list.length?list.map(x=>`<div class="listrow"><div class="bubble">✦</div><div class="grow"><strong>${h(x.name)}</strong><div class="micro">Hoy</div></div><button class="habit-done ${state.checks[`${x.id}:${dateISO()}`]?'on':''}" data-action="toggleHabit" data-value="${x.id}" aria-label="Completar ${h(x.name)}">${state.checks[`${x.id}:${dateISO()}`]?'✓':'○'}</button></div>`).join(''):`<div class="empty"><div class="emoji">☼</div>No hay hábitos programados hoy.</div>`}
 const categories=[['walk','Caminata','🚶'],['run','Running','🏃'],['cycle','Bicicleta','🚴'],['sport','Deporte','🏐'],['other','Otra','✦']];
-function renderActivity(){return `${title('Tu movimiento, a tu manera.','Entrená con una rutina o registrá otra actividad. Todo cuenta.') }<div class="tabbar" role="group" aria-label="Tipo de actividad"><button class="tab ${app.tab==='gym'?'active':''}" data-action="tab" data-value="gym" aria-pressed="${app.tab==='gym'}">Gimnasio</button><button class="tab ${app.tab==='other'?'active':''}" data-action="tab" data-value="other" aria-pressed="${app.tab==='other'}">Otras actividades</button></div>${app.tab==='gym'?`<div class="row between wrap" style="margin:8px 0 17px"><h2>Mis rutinas</h2><div class="row wrap">${button('+ Crear rutina','editRoutine','new','small')}${button('Agregar por código','importByCode','','small outline')}</div></div>${readRoutineEditor(app.activeUid)?isOfflineNow(account)?`<div class="offline-alert waiting" role="status"><strong>Rutina guardada sin conexión.</strong><span>Podés continuar desde donde la dejaste.</span>${button('Retomar borrador','resumeRoutineDraft','','small')}</div>`:`<div class="row wrap" style="margin:0 0 16px">${button('Continuar edición guardada','resumeRoutineDraft','','small outline')}</div>`:''}${state.routines.length?`<div class="grid2">${state.routines.map((r,i)=>`<div class="card" style="padding:0;overflow:hidden"><div class="image-strip" style="${i%2?'background-image:linear-gradient(90deg,#17201ed9,#17201e20),url(https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=900&q=80),linear-gradient(130deg,#264a45,#17201e)':''}">RUTINA ${String(i+1).padStart(2,'0')}</div><div style="padding:20px"><h3>${h(r.name)}</h3><p class="micro">${r.exercises.length} ejercicios · ${r.exercises.reduce((a,e)=>a+Number(e.sets),0)} series</p><div class="row wrap">${button('Ver rutina ↗','detailRoutine',r.id,'small')}${button('Empezar','start',r.id,'small ghost')}</div></div></div>`).join('')}</div>`:`<div class="card empty"><div class="emoji">🏋️</div><h3>Tu primera rutina empieza acá.</h3><p>No te mostramos una sesión para iniciar hasta que tengas una rutina real.</p>${button('Crear mi rutina','editRoutine','new')}</div>`}<div class="section-head"><h2>Biblioteca de ejercicios</h2></div><div class="card"><div class="row between wrap"><div><h3 style="margin:0 0 5px">Encontrá tu próximo ejercicio</h3><p class="micro" style="margin:0">Seleccioná, organizá y personalizá tu entrenamiento.</p></div>${button('Explorar ejercicios','library','','small outline')}</div></div>`:`<div class="photo-card" style="min-height:196px;--photo:url('https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=900&q=80'),linear-gradient(130deg,#264a45,#17201e)"><div class="eyebrow">MOVIMIENTO SIN ETIQUETAS</div><h3>Elegí la actividad, después registrá lo importante.</h3></div><div class="section-head"><h2>¿Qué hiciste hoy?</h2></div><div class="grid3" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">${categories.map(([key,label,emoji])=>`<button class="card" data-action="other" data-value="${key}" style="text-align:left;min-height:120px"><span style="font-size:27px">${emoji}</span><h3 style="font-size:17px;margin:13px 0 0">${label}</h3><span class="micro">Registrar ↗</span></button>`).join('')}</div>`}`}
+function renderRoutineOverview(){
+  if(!state.routines.length)return `<div class="card empty"><div class="emoji">🏋️</div><h3>Tu primera rutina empieza acá.</h3><p>No te mostramos una sesión para iniciar hasta que tengas una rutina real.</p>${button('Crear mi rutina','editRoutine','new')}</div>`;
+  return `<section class="routine-overview" aria-label="Todas mis rutinas">${state.routines.map((r,i)=>`<article class="card routine-overview-card">
+    <div class="routine-overview-hero" style="${i%2?'--routine-photo:url(https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=900&q=80)':''}"><div class="routine-overview-number" aria-hidden="true">${String(i+1).padStart(2,'0')}</div><div class="routine-overview-heading-text"><h3>${h(r.name)}</h3><p class="micro">${r.exercises.length} ejercicios · ${r.exercises.reduce((sum,e)=>sum+Number(e.sets||0),0)} series</p></div></div>
+    <ol class="routine-overview-exercises" aria-label="Ejercicios de ${h(r.name)}">${r.exercises.map((e,j)=>`<li><span class="routine-exercise-number" aria-hidden="true">${j+1}</span><div><strong>${h(e.name)}</strong><span class="micro">${Number(e.sets)} series · ${Number(e.reps)} reps</span></div></li>`).join('')||'<li class="micro">Sin ejercicios todavía.</li>'}</ol>
+    <div class="routine-overview-actions">${button('Empezar','start',r.id,'small')}${button('Ver detalle','detailRoutine',r.id,'small outline')}${button('Editar','editRoutine',r.id,'small ghost')}</div>
+  </article>`).join('')}</section>`;
+}
+function renderActivity(){return `${title('Tu movimiento, a tu manera.','Entrená con una rutina o registrá otra actividad. Todo cuenta.') }<div class="tabbar" role="group" aria-label="Tipo de actividad"><button class="tab ${app.tab==='gym'?'active':''}" data-action="tab" data-value="gym" aria-pressed="${app.tab==='gym'}">Gimnasio</button><button class="tab ${app.tab==='other'?'active':''}" data-action="tab" data-value="other" aria-pressed="${app.tab==='other'}">Otras actividades</button></div>${app.tab==='gym'?`<div class="row between wrap" style="margin:8px 0 17px"><h2>Mis rutinas</h2><div class="row wrap">${button('+ Crear rutina','editRoutine','new','small')}${button('Agregar por código','importByCode','','small outline')}</div></div>${readRoutineEditor(app.activeUid)?isOfflineNow(account)?`<div class="offline-alert waiting" role="status"><strong>Rutina guardada sin conexión.</strong><span>Podés continuar desde donde la dejaste.</span>${button('Retomar borrador','resumeRoutineDraft','','small')}</div>`:`<div class="row wrap" style="margin:0 0 16px">${button('Continuar edición guardada','resumeRoutineDraft','','small outline')}</div>`:''}${state.routines.length?`<div class="grid2">${state.routines.map((r,i)=>`<div class="card" style="padding:0;overflow:hidden"><div class="image-strip" style="${i%2?'background-image:linear-gradient(90deg,#17201ed9,#17201e20),url(https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=900&q=80),linear-gradient(130deg,#264a45,#17201e)':''}">RUTINA ${String(i+1).padStart(2,'0')}</div><div style="padding:20px"><h3>${h(r.name)}</h3><p class="micro">${r.exercises.length} ejercicios · ${r.exercises.reduce((a,e)=>a+Number(e.sets),0)} series</p><div class="row wrap">${button('Ver rutina ↗','detailRoutine',r.id,'small')}${button('Empezar','start',r.id,'small ghost')}</div></div></div>`).join('')}</div><div class="routine-all-link">${button('Ver más de todas las rutinas','go','routinesOverview','outline')}</div>`:`<div class="card empty"><div class="emoji">🏋️</div><h3>Tu primera rutina empieza acá.</h3><p>No te mostramos una sesión para iniciar hasta que tengas una rutina real.</p>${button('Crear mi rutina','editRoutine','new')}</div>`}<div class="section-head"><h2>Biblioteca de ejercicios</h2></div><div class="card"><div class="row between wrap"><div><h3 style="margin:0 0 5px">Encontrá tu próximo ejercicio</h3><p class="micro" style="margin:0">Seleccioná, organizá y personalizá tu entrenamiento.</p></div>${button('Explorar ejercicios','library','','small outline')}</div></div>`:`<div class="photo-card" style="min-height:196px;--photo:url('https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=900&q=80'),linear-gradient(130deg,#264a45,#17201e)"><div class="eyebrow">MOVIMIENTO SIN ETIQUETAS</div><h3>Elegí la actividad, después registrá lo importante.</h3></div><div class="section-head"><h2>¿Qué hiciste hoy?</h2></div><div class="grid3" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">${categories.map(([key,label,emoji])=>`<button class="card" data-action="other" data-value="${key}" style="text-align:left;min-height:120px"><span style="font-size:27px">${emoji}</span><h3 style="font-size:17px;margin:13px 0 0">${label}</h3><span class="micro">Registrar ↗</span></button>`).join('')}</div>`}`}
+function renderAllRoutines(){
+  return `<div class="detail-top">${back('activity')}<span class="micro">MIS RUTINAS / VISTA COMPLETA</span></div>${title('Todas mis rutinas','Revisá tus ejercicios, series y repeticiones sin abrir cada rutina.')}${renderRoutineOverview()}`;
+}
 const lib=['Press de banca','Sentadilla','Peso muerto','Remo con mancuerna','Press militar','Jalón al pecho','Prensa de piernas','Curl de bíceps','Plancha','Elevación lateral','Hip thrust','Dominadas'];
 function renderLibrary(){return `<div class="detail-top">${back(app.editor?'routineEdit':'activity')}<span class="micro">BIBLIOTECA</span></div>${title('Biblioteca de ejercicios','Encontrá movimientos por nombre o añadí uno propio.')}
 ${app.editor?`<section class="card custom-exercise-top" aria-label="Añadir ejercicio personalizado"><div class="field" style="margin:0"><label for="customexercise">Crear ejercicio personalizado</label><div class="row wrap custom-exercise-row"><input id="customexercise" maxlength="80" autocomplete="off" placeholder="Ej. Remo unilateral en polea" aria-describedby="customexercise-help"/><button class="btn" data-action="addCustomExercise">+ Añadir</button></div><p class="fieldhint" id="customexercise-help">Escribilo acá sin tener que bajar por toda la biblioteca.</p></div></section>`:''}
@@ -139,8 +151,8 @@ function importSharedRoutine(){
   app.share=null;app.routine=r.id;go('routine');toast('Rutina importada a tu cuenta.');
 }
 
-function renderRoutine(){const r=state.routines.find(x=>x.id===app.routine);if(!r)return renderActivity();return `<div class="detail-top">${back()}<span class="micro">DETALLE DE RUTINA</span></div><div class="photo-card" style="min-height:240px;--photo:url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1100&q=80'),linear-gradient(130deg,#264a45,#17201e)"><div class="eyebrow">TU PRÓXIMA SESIÓN</div><h2 style="color:#fff">${h(r.name)}</h2><div class="row wrap">${button('▶ Empezar entrenamiento','start',r.id,'small')}</div></div><div class="section-head"><h2>Plan de entrenamiento</h2>${button('Editar rutina','editRoutine',r.id,'small outline')}</div><div class="card">${r.exercises.map((e,i)=>`<div class="listrow"><div class="bubble">${String(i+1).padStart(2,'0')}</div><div class="grow"><strong>${h(e.name)}</strong><div class="micro">${e.sets} series · ${e.reps} repeticiones objetivo</div></div></div>`).join('')}</div><div class="row wrap" style="margin-top:16px">${button('Empezar ahora','start',r.id,'wide')}${button('Compartir rutina','shareRoutine',r.id,'outline')}${button('Duplicar','duplicateRoutine',r.id,'outline')}${button('Eliminar','deleteRoutine',r.id,'outline')}</div>`}
-function renderRoutineEdit(){const e=app.editor||{id:null,name:'',exercises:[]};return `<div class="detail-top">${back(e.id?'routine':'activity')}<span class="micro">${e.id?'EDITAR':'NUEVA'} RUTINA</span></div>${title(e.id?'Editá tu rutina':'Creá una rutina propia','Planificá el entrenamiento. Registrarlo será otra acción, cuando lo realices.') }${!e.id?`<div class="row wrap" style="margin-bottom:14px">${button('Agregar por código de rutina','importByCode','','small outline')}</div>`:''}<div class="card"><div class="field"><label for="rname">Nombre de la rutina *</label><input id="rname" maxlength="80" value="${h(e.name)}" placeholder="Ej. Tren superior A"/></div><div class="section-head"><h2>Ejercicios (${e.exercises.length})</h2>${button('+ Añadir ejercicio','library','','small outline')}</div>${e.exercises.length?e.exercises.map((item,i)=>`<div class="exercise-row" data-exrow="${i}"><div class="row between"><strong>${h(item.name)}</strong><button class="btn small outline" data-action="removeExercise" data-value="${i}">Quitar</button></div><div class="inline2" style="margin-top:12px"><div><label>Series</label><input data-field="sets" type="number" min="1" max="15" value="${item.sets}"/></div><div><label>Reps objetivo</label><input data-field="reps" type="number" min="1" max="100" value="${item.reps}"/></div></div></div>`).join(''):`<div class="empty">Todavía no agregaste ejercicios.<br/>Usá la biblioteca para empezar.</div>`}${isOfflineNow(account)?'<div class="offline-draft-note">◌ Sin conexión: guardá esta rutina como borrador local. Se sincronizará después.</div>':''}<div class="row wrap" style="margin-top:17px">${button(isOfflineNow(account)?'Guardar borrador':'Guardar rutina','saveRoutine')} ${button('Cancelar','cancelEdit','','outline')}</div></div>`}
+function renderRoutine(){const r=state.routines.find(x=>x.id===app.routine);if(!r)return renderActivity();return `<div class="detail-top">${back(app.routineListOrigin||'activity')}<span class="micro">DETALLE DE RUTINA</span></div><div class="photo-card" style="min-height:240px;--photo:url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1100&q=80'),linear-gradient(130deg,#264a45,#17201e)"><div class="eyebrow">TU PRÓXIMA SESIÓN</div><h2 style="color:#fff">${h(r.name)}</h2><div class="row wrap">${button('▶ Empezar entrenamiento','start',r.id,'small')}</div></div><div class="section-head"><h2>Plan de entrenamiento</h2>${button('Editar rutina','editRoutine',r.id,'small outline')}</div><div class="card">${r.exercises.map((e,i)=>`<div class="listrow"><div class="bubble">${String(i+1).padStart(2,'0')}</div><div class="grow"><strong>${h(e.name)}</strong><div class="micro">${e.sets} series · ${e.reps} repeticiones objetivo</div></div></div>`).join('')}</div><div class="row wrap" style="margin-top:16px">${button('Empezar ahora','start',r.id,'wide')}${button('Compartir rutina','shareRoutine',r.id,'outline')}${button('Duplicar','duplicateRoutine',r.id,'outline')}${button('Eliminar','deleteRoutine',r.id,'outline')}</div>`}
+function renderRoutineEdit(){const e=app.editor||{id:null,name:'',exercises:[]};return `<div class="detail-top">${back(e.id?'routine':'activity')}<span class="micro">${e.id?'EDITAR':'NUEVA'} RUTINA</span></div>${title(e.id?'Editá tu rutina':'Creá una rutina propia','Planificá el entrenamiento. Registrarlo será otra acción, cuando lo realices.') }${!e.id?`<div class="row wrap" style="margin-bottom:14px">${button('Agregar por código de rutina','importByCode','','small outline')}</div>`:''}<div class="card"><div class="field"><label for="rname">Nombre de la rutina *</label><input id="rname" maxlength="80" value="${h(e.name)}" placeholder="Ej. Tren superior A"/></div><div class="section-head"><h2>Ejercicios (${e.exercises.length})</h2>${button('+ Añadir ejercicio','library','','small outline')}</div><p class="micro exercise-order-hint">Arrastrá ⋮⋮ o usá las flechas para cambiar el orden. Los cambios quedan en tu borrador hasta guardar la rutina.</p>${e.exercises.length?e.exercises.map((item,i)=>`<div class="exercise-row" data-exrow="${i}"><div class="exercise-reorder-bar"><span class="exercise-order-index">Ejercicio ${i+1}</span><div class="exercise-reorder-controls"><span class="exercise-drag-handle" data-exercise-drag="${i}" title="Arrastrar para ordenar" aria-label="Arrastrar ${h(item.name)}">⋮⋮</span><button type="button" class="exercise-arrow" data-action="reorderExercise" data-value="${i}:${i-1}" aria-label="Subir ${h(item.name)}" ${i===0?'disabled':''}>↑</button><button type="button" class="exercise-arrow" data-action="reorderExercise" data-value="${i}:${i+1}" aria-label="Bajar ${h(item.name)}" ${i===e.exercises.length-1?'disabled':''}>↓</button></div></div><div class="row between wrap"><strong>${h(item.name)}</strong><div class="row wrap exercise-edit-controls">${button(app.renamingExercise===i?'Listo':'Renombrar','renameExercise',i,'small outline')}<button class="btn small outline" data-action="removeExercise" data-value="${i}">Quitar</button></div></div>${app.renamingExercise===i?`<div class="field exercise-name-edit"><label for="exercise-name-${i}">Nombre del ejercicio</label><input id="exercise-name-${i}" data-field="exerciseName" type="text" maxlength="80" autocomplete="off" value="${h(item.name)}" placeholder="Ej. Remo unilateral"/><p class="fieldhint">Se actualiza solo en esta rutina cuando la guardes. El historial de sesiones anteriores no cambia.</p></div>`:''}<div class="inline2" style="margin-top:12px"><div><label>Series</label><input data-field="sets" type="number" min="1" max="15" value="${item.sets}"/></div><div><label>Reps objetivo</label><input data-field="reps" type="number" min="1" max="100" value="${item.reps}"/></div></div></div>`).join(''):`<div class="empty">Todavía no agregaste ejercicios.<br/>Usá la biblioteca para empezar.</div>`}${isOfflineNow(account)?'<div class="offline-draft-note">◌ Sin conexión: guardá esta rutina como borrador local. Se sincronizará después.</div>':''}<div class="row wrap" style="margin-top:17px">${button(isOfflineNow(account)?'Guardar borrador':'Guardar rutina','saveRoutine')} ${button('Cancelar','cancelEdit','','outline')}</div></div>`}
 const asKg=value=>Number(value||0).toLocaleString('es-AR',{maximumFractionDigits:2});
 function renderRestPanel(d){
   const enabled=d.restEnabled===true,seconds=[60,90,120].includes(Number(d.restSeconds))?Number(d.restSeconds):90;
@@ -154,6 +166,7 @@ function renderSession(){
   const summary=sessionStats(d),completed=summary.completed,total=summary.total;
   const next=nextPendingSet(d);
   return `<div class="detail-top">${back('activity')}<span class="badge good">● ${isOfflineNow(account)?'Borrador sin conexión':'Guardado localmente'}</span></div><div class="sessionhead"><div class="eyebrow">ENTRENAMIENTO EN CURSO</div><h2 style="margin:10px 0">${h(r.name)}</h2><p class="micro">Registrá cada serie. Podés salir y continuar más tarde.</p><div class="row between wrap"><strong>${completed} / ${total} series confirmadas</strong><span class="micro">${Math.round(completed/Math.max(1,total)*100)}% completado</span></div><div class="progressline" style="margin-top:10px"><span style="width:${completed/Math.max(1,total)*100}%"></span></div><div class="session-live-stats"><span>${asKg(summary.volume)} kg de volumen</span><span>Tiempo transcurrido: ${summary.minutes} min</span></div></div>${renderRestPanel(d)}
+<section class="card workout-date-panel" aria-label="Fecha del entrenamiento"><div><h3>¿Qué día entrenaste?</h3><p class="micro">Por defecto, el día en que empezaste. Podés registrar otra fecha antes de finalizar.</p></div><div class="field workout-date-input"><label for="sessionDate">Fecha</label><input type="date" id="sessionDate" max="${dateISO()}" value="${getWorkoutDate(d,dateISO(),dateISO(new Date(d.startedAt||Date.now())))}" required/></div></section>
 <div class="section-head"><h2>Tu sesión</h2><span class="badge">${isOfflineNow(account)?'Se sincronizará al finalizar y reconectar':'Las series se sincronizan al finalizar'}</span></div>
 ${items.map((item,i)=>`<section class="card session-exercise" aria-label="Ejercicio ${i+1}: ${h(item.name)}"><div class="row between wrap"><div><div class="eyebrow">EJERCICIO ${i+1}/${items.length}</div><h3>${h(item.name)}</h3><div class="micro">Objetivo ${item.reps} reps · ${item.sets} series</div></div><span class="help-icon">${i+1}</span></div>
 ${Array.from({length:Number(item.sets)},(_,j)=>{
@@ -167,7 +180,7 @@ ${Array.from({length:Number(item.sets)},(_,j)=>{
 function renderSessionSummary(){
   const r=state.records.find(x=>x.id===app.completedRecord);
   if(!r || r.type!=='gym')return renderProgress();
-  return `<div class="session-summary"><div class="summary-mark" aria-hidden="true">✓</div><div class="eyebrow">ENTRENAMIENTO GUARDADO</div><h1>${h(r.name)}</h1><p class="sub">Registraste una sesión real. Cada serie suma a tu progreso.</p><div class="tiles summary-tiles"><div class="tile"><div class="val">${r.minutes}</div><div class="micro">Minutos</div></div><div class="tile"><div class="val">${r.setsDone||0}</div><div class="micro">Series</div></div><div class="tile"><div class="val">${asKg(r.volume)}</div><div class="micro">Volumen (kg)</div></div></div><div class="card"><h3>Series realizadas</h3>${(r.setDetails||[]).map(x=>`<div class="listrow"><div class="grow"><strong>${h(x.exerciseName)}</strong><div class="micro">Serie ${x.setNumber} · ${asKg(x.weight)} kg × ${x.reps} reps</div></div><span class="badge good">✓</span></div>`).join('')}</div><p class="micro">${isOfflineNow(account)?'Guardado localmente. Se sincronizará al recuperar conexión.':'La sincronización con tu cuenta continúa automáticamente.'}</p><div class="row wrap summary-actions">${button('Ver progreso','go','progress')}${button('Volver a Actividad','go','activity','outline')}</div></div>`;
+  return `<div class="session-summary"><div class="summary-mark" aria-hidden="true">✓</div><div class="eyebrow">ENTRENAMIENTO GUARDADO</div><h1>${h(r.name)}</h1><p class="sub">Entrenamiento del ${new Date(r.date+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric'})}. Cada serie suma a tu progreso.</p><div class="tiles summary-tiles"><div class="tile"><div class="val">${r.minutes}</div><div class="micro">Minutos</div></div><div class="tile"><div class="val">${r.setsDone||0}</div><div class="micro">Series</div></div><div class="tile"><div class="val">${asKg(r.volume)}</div><div class="micro">Volumen (kg)</div></div></div><div class="card"><h3>Series realizadas</h3>${(r.setDetails||[]).map(x=>`<div class="listrow"><div class="grow"><strong>${h(x.exerciseName)}</strong><div class="micro">Serie ${x.setNumber} · ${asKg(x.weight)} kg × ${x.reps} reps</div></div><span class="badge good">✓</span></div>`).join('')}</div><p class="micro">${isOfflineNow(account)?'Guardado localmente. Se sincronizará al recuperar conexión.':'La sincronización con tu cuenta continúa automáticamente.'}</p><div class="row wrap summary-actions">${button('Ver progreso','go','progress')}${button('Corregir fecha','detailRecord',r.id,'outline')}${button('Volver a Actividad','go','activity','outline')}</div></div>`;
 }
 
 function renderOtherForm(){const [key,label,emoji]=categories.find(x=>x[0]===app.activity)||categories[0];const wantsDist=['walk','run','cycle'].includes(key);return `<div class="detail-top">${back('activity')}<span class="micro">REGISTRO DE ACTIVIDAD</span></div>${title(`${emoji} ${label}`,'Solo los datos que importan para esta actividad.') }<div class="card" style="max-width:680px"><div class="field"><label for="adate">Fecha</label><input type="date" id="adate" value="${dateISO()}"/></div>${key==='sport'?'<div class="field"><label for="aname">¿Qué deporte practicaste? *</label><input id="aname" placeholder="Ej. Vóley, fútbol" maxlength="60"/></div>':key==='other'?'<div class="field"><label for="aname">Nombre de la actividad *</label><input id="aname" placeholder="Ej. Yoga, baile" maxlength="60"/></div>':''}<div class="field"><label for="amins">Duración (minutos) *</label><input id="amins" type="number" min="1" max="1440" placeholder="Ej. 40"/></div>${wantsDist?'<div class="field"><label for="adistance">Distancia (km) · opcional</label><input id="adistance" type="number" min="0" max="1000" step="0.01" placeholder="Ej. 4.2"/></div>':''}<div class="field"><label for="anote">Nota · opcional</label><textarea id="anote" maxlength="400" placeholder="¿Cómo te sentiste?"></textarea></div>${isOfflineNow(account)?'<div class="offline-alert"><strong>Sin conexión</strong><span>Tu actividad quedará guardada en este dispositivo.</span></div>':''}<div class="row wrap" style="margin-top:17px">${button('Guardar actividad','saveActivity')} ${button('Cancelar','go','activity','outline')}</div></div>`}
@@ -208,7 +221,7 @@ function render(){
     return;
   }
   let view=app.view;
-  let out=({home:renderHome,activity:renderActivity,progress:renderProgress,habits:renderHabits,settings:renderSettings,account:renderAccount,routine:renderRoutine,routineEdit:renderRoutineEdit,exerciseLibrary:renderLibrary,session:renderSession,otherForm:renderOtherForm,record:renderRecord,sessionSummary:renderSessionSummary,habitEdit:renderHabitEdit,routineShare:renderRoutineShare,onboard:renderOnboard}[view]||renderHome)();
+  let out=({home:renderHome,activity:renderActivity,routinesOverview:renderAllRoutines,progress:renderProgress,habits:renderHabits,settings:renderSettings,account:renderAccount,routine:renderRoutine,routineEdit:renderRoutineEdit,exerciseLibrary:renderLibrary,session:renderSession,otherForm:renderOtherForm,record:renderRecord,sessionSummary:renderSessionSummary,habitEdit:renderHabitEdit,routineShare:renderRoutineShare,onboard:renderOnboard}[view]||renderHome)();
   root.innerHTML=shell((isOfflineNow(account)&&app.cloudNotice?`<div class="notice" role="status" style="margin-bottom:15px">${h(app.cloudNotice)}</div>`:'')+out);
   if(pendingPwaUpdate)applyPendingPwaUpdate();
 }
@@ -528,8 +541,8 @@ const get=id=>document.getElementById(id);
 const showModal=(title,body,confirm,value='',danger=false,extra='',confirmLabel='Confirmar')=>{app.modal={title,body,confirm,value,danger,extra,confirmLabel};render()};
 const validDate=v=>/^\d{4}-\d{2}-\d{2}$/.test(v)&&!isNaN(new Date(v+'T12:00:00').getTime());
 const id=()=>Math.random().toString(36).slice(2,10);
-function persistEditor(){if(!app.editor)return;const name=get('rname');if(name)app.editor.name=name.value;document.querySelectorAll('[data-exrow]').forEach(x=>{const i=Number(x.dataset.exrow);app.editor.exercises[i].sets=Number(x.querySelector('[data-field=sets]').value)||1;app.editor.exercises[i].reps=Number(x.querySelector('[data-field=reps]').value)||1});try{saveRoutineEditor(app.activeUid,app.editor)}catch{toast('No pudimos guardar el borrador. Exportá una copia JSON antes de cerrar.')}}
-function beginSession(routineId){const r=state.routines.find(x=>x.id===routineId);if(!r)return;state.draft={id:id(),routineId:r.id,snapshot:JSON.parse(JSON.stringify(r.exercises)),startedAt:Date.now(),sets:{},restEnabled:false,restSeconds:90,restUntil:null,offlineDraft:isOfflineNow(account)};if(save())go('session');}
+function persistEditor(){if(!app.editor)return;const name=get('rname');if(name)app.editor.name=name.value;document.querySelectorAll('[data-exrow]').forEach(x=>{const i=Number(x.dataset.exrow);const exerciseName=x.querySelector('[data-field=exerciseName]');if(exerciseName)app.editor.exercises[i].name=exerciseName.value;app.editor.exercises[i].sets=Number(x.querySelector('[data-field=sets]').value)||1;app.editor.exercises[i].reps=Number(x.querySelector('[data-field=reps]').value)||1});try{saveRoutineEditor(app.activeUid,app.editor)}catch{toast('No pudimos guardar el borrador. Exportá una copia JSON antes de cerrar.')}}
+function beginSession(routineId){const r=state.routines.find(x=>x.id===routineId);if(!r)return;state.draft={id:id(),routineId:r.id,snapshot:JSON.parse(JSON.stringify(r.exercises)),startedAt:Date.now(),sessionDate:dateISO(),sets:{},restEnabled:false,restSeconds:90,restUntil:null,offlineDraft:isOfflineNow(account)};if(save())go('session');}
 function deleteRecordConfirmed(recordId,keepDraft=false){
   const record=state.records.find(x=>x.id===recordId);
   if(!record)return;
@@ -579,7 +592,7 @@ case 'theme':state.theme=value;save();render();break;
 case 'focus':state.focus=value;save();render();break;
 case 'finishOnboard':state.onboardSeen=true;save();go('home');break;
 case 'onboard':go('onboard');break;
-case 'detailRoutine':app.routine=value;go('routine');break;
+case 'detailRoutine':app.routineListOrigin=app.view==='routinesOverview'?'routinesOverview':'activity';app.routine=value;go('routine');break;
 case 'importByCode':app.share={mode:'import',code:'',preview:null,busy:false,error:''};go('routineShare');break;
 case 'shareRoutine':beginShareRoutine(value);break;
 case 'lookupShareCode':lookupShareRoutine();break;
@@ -589,16 +602,43 @@ case 'copyShareCode':{const code=app.share?.code;if(!code)break;
   if(navigator.clipboard?.writeText)navigator.clipboard.writeText(code).then(()=>toast('Código copiado'),()=>window.prompt('Copiá este código:',code));
   else window.prompt('Copiá este código:',code);break;}
 
-case 'editRoutine':{if(isOfflineNow(account)){showModal('Sin conexión · Modo borrador','Podés crear o editar tu rutina sin internet. Cada cambio quedará en este dispositivo hasta que puedas sincronizarlo.','beginOfflineRoutine',value,false,'','Crear borrador');break;}let r=state.routines.find(x=>x.id===value);app.editor=r?JSON.parse(JSON.stringify(r)):{id:null,name:'',exercises:[]};app.routine=r?.id||null;saveRoutineEditor(app.activeUid,app.editor);go('routineEdit');break}
-case 'beginOfflineRoutine':{app.modal=null;let r=state.routines.find(x=>x.id===value);app.editor=r?JSON.parse(JSON.stringify(r)):{id:null,name:'',exercises:[]};app.routine=r?.id||null;saveRoutineEditor(app.activeUid,app.editor);go('routineEdit');break}
-case 'resumeRoutineDraft':{const d=readRoutineEditor(app.activeUid);if(!d){toast('No encontramos el borrador.');break}app.editor=d;app.routine=d.id||null;go('routineEdit');break}
-case 'cancelEdit':app.editor=null;clearRoutineEditor(app.activeUid);go('activity');break;
+case 'editRoutine':{app.renamingExercise=null;if(isOfflineNow(account)){showModal('Sin conexión · Modo borrador','Podés crear o editar tu rutina sin internet. Cada cambio quedará en este dispositivo hasta que puedas sincronizarlo.','beginOfflineRoutine',value,false,'','Crear borrador');break;}let r=state.routines.find(x=>x.id===value);app.editor=r?JSON.parse(JSON.stringify(r)):{id:null,name:'',exercises:[]};app.routine=r?.id||null;saveRoutineEditor(app.activeUid,app.editor);go('routineEdit');break}
+case 'beginOfflineRoutine':{app.renamingExercise=null;app.modal=null;let r=state.routines.find(x=>x.id===value);app.editor=r?JSON.parse(JSON.stringify(r)):{id:null,name:'',exercises:[]};app.routine=r?.id||null;saveRoutineEditor(app.activeUid,app.editor);go('routineEdit');break}
+case 'resumeRoutineDraft':{app.renamingExercise=null;const d=readRoutineEditor(app.activeUid);if(!d){toast('No encontramos el borrador.');break}app.editor=d;app.routine=d.id||null;go('routineEdit');break}
+case 'cancelEdit':app.renamingExercise=null;app.editor=null;clearRoutineEditor(app.activeUid);go('activity');break;
 case 'library':if(app.view==='routineEdit')persistEditor();app.exerciseSearch='';go('exerciseLibrary');break;
 case 'searchLibrary':app.exerciseSearch=get('libsearch').value.trim();render();break;
-case 'addExercise':app.editor.exercises.push({name:value,sets:3,reps:10});saveRoutineEditor(app.activeUid,app.editor);go('routineEdit');toast('Ejercicio añadido');break;
-case 'addCustomExercise':{let n=get('customexercise')?.value.trim();if(!n){toast('Ingresá un nombre');break}app.editor.exercises.push({name:n.slice(0,80),sets:3,reps:10});saveRoutineEditor(app.activeUid,app.editor);go('routineEdit');break}
-case 'removeExercise':persistEditor();app.editor.exercises.splice(Number(value),1);saveRoutineEditor(app.activeUid,app.editor);render();break;
-case 'saveRoutine':{persistEditor();const e=app.editor;if(!e.name?.trim()){toast('Poné un nombre a la rutina');break}if(!e.exercises.length){toast('Añadí al menos un ejercicio');break}if(e.exercises.some(x=>x.sets<1||x.sets>15||x.reps<1||x.reps>100)){toast('Revisá series y repeticiones');break}const r={id:e.id||id(),name:e.name.trim(),exercises:e.exercises};let k=state.routines.findIndex(x=>x.id===r.id);if(k>=0)state.routines[k]=r;else state.routines.push(r);app.routine=r.id;app.editor=null;if(save()){clearRoutineEditor(app.activeUid);go('routine');toast(isOfflineNow(account)?'Borrador guardado · se sincronizará al volver internet':'Rutina guardada');}break}
+case 'addExercise':app.renamingExercise=null;app.editor.exercises.push({name:value,sets:3,reps:10});saveRoutineEditor(app.activeUid,app.editor);go('routineEdit');toast('Ejercicio añadido');break;
+case 'addCustomExercise':{app.renamingExercise=null;let n=get('customexercise')?.value.trim();if(!n){toast('Ingresá un nombre');break}app.editor.exercises.push({name:n.slice(0,80),sets:3,reps:10});saveRoutineEditor(app.activeUid,app.editor);go('routineEdit');break}
+case 'reorderExercise':{
+  if(!app.editor)break;
+  const indexes=String(value).split(':');
+  if(indexes.length!==2||!indexes.every(x=>/^\d+$/.test(x)))break;
+  const [from,to]=indexes.map(Number);
+  if(from===to||from>=app.editor.exercises.length||to>=app.editor.exercises.length)break;
+  persistEditor();
+  app.editor.exercises=reorderRoutineExercises(app.editor.exercises,from,to);
+  app.renamingExercise=null;
+  try{saveRoutineEditor(app.activeUid,app.editor);}catch{toast('No pudimos guardar el nuevo orden.');break;}
+  render();break;
+}
+case 'renameExercise':{
+  if(!app.editor)break;
+  const i=Number(value);
+  if(!Number.isInteger(i)||i<0||i>=app.editor.exercises.length)break;
+  persistEditor();
+  if(app.renamingExercise===i){
+    const name=String(app.editor.exercises[i].name||'').trim();
+    if(!name){toast('El nombre del ejercicio no puede estar vacío.');break;}
+    if(name.length>80){toast('El nombre debe tener hasta 80 caracteres.');break;}
+    app.editor.exercises[i].name=name;
+    app.renamingExercise=null;
+  }else app.renamingExercise=i;
+  saveRoutineEditor(app.activeUid,app.editor);
+  render();break;
+}
+case 'removeExercise':persistEditor();app.editor.exercises.splice(Number(value),1);app.renamingExercise=null;saveRoutineEditor(app.activeUid,app.editor);render();break;
+case 'saveRoutine':{persistEditor();const e=app.editor;if(!e.name?.trim()){toast('Poné un nombre a la rutina');break}if(!e.exercises.length){toast('Añadí al menos un ejercicio');break}if(e.exercises.some(x=>typeof x.name!=='string'||!x.name.trim()||x.name.trim().length>80)){toast('Revisá el nombre de los ejercicios');break}if(e.exercises.some(x=>x.sets<1||x.sets>15||x.reps<1||x.reps>100)){toast('Revisá series y repeticiones');break}const r={id:e.id||id(),name:e.name.trim(),exercises:e.exercises.map(x=>({...x,name:x.name.trim()}))};let k=state.routines.findIndex(x=>x.id===r.id);if(k>=0)state.routines[k]=r;else state.routines.push(r);app.routine=r.id;app.editor=null;if(save()){clearRoutineEditor(app.activeUid);go('routine');toast(isOfflineNow(account)?'Borrador guardado · se sincronizará al volver internet':'Rutina guardada');}break}
 case 'duplicateRoutine':{let r=state.routines.find(x=>x.id===value);if(!r)break;let c=JSON.parse(JSON.stringify(r));c.id=id();c.name+=' · copia';state.routines.push(c);save();app.routine=c.id;render();toast('Copia creada');break}
 case 'deleteRoutine':showModal('¿Eliminar rutina?','La rutina se eliminará de tu cuenta y de los dispositivos sincronizados. Los entrenamientos que ya completaste permanecerán en el historial.','confirmDeleteRoutine',value,true);break;
 case 'confirmDeleteRoutine':deletePersonalEntity('routines',value);break;
@@ -660,7 +700,7 @@ case 'confirmFinish':{let d=state.draft;if(!d)break;let r=state.routines.find(x=
     const exercise=d.snapshot?.[exercisePosition]||r?.exercises?.[exercisePosition];
     return {exercisePosition,exerciseName:exercise?.name||'Ejercicio',setNumber:index+1,reps:entry.reps,weight:entry.weight,completed:true};
   }).sort((a,b)=>a.exercisePosition-b.exercisePosition||a.setNumber-b.setNumber);
-  const rec={id:id(),type:'gym',name:r?.name||'Entrenamiento de fuerza',date:dateISO(),minutes:Math.max(1,Math.round((Date.now()-d.startedAt)/60000)),setsDone:sets.length,volume:Math.round(vol*100)/100,note:'',setDetails};
+  const rec={id:id(),type:'gym',name:r?.name||'Entrenamiento de fuerza',date:getWorkoutDate(d,dateISO(),dateISO(new Date(d.startedAt||Date.now()))),minutes:Math.max(1,Math.round((Date.now()-d.startedAt)/60000)),setsDone:sets.length,volume:Math.round(vol*100)/100,note:'',setDetails};
   state.records.unshift(rec);state.draft=null;app.modal=null;
   if(save()){
     app.completedRecord=rec.id;
@@ -724,7 +764,63 @@ case 'resetDemo':showModal('¿Restaurar datos de demostración?','Se reemplazar�
 case 'confirmReset':{const t=state.theme,f=state.focus;state={...seed(),theme:t,focus:f,onboardSeen:true};app.modal=null;save();go('home');toast('Demo restaurada');break}
 }}
 document.addEventListener('click',e=>{const syncChoice=e.target.closest('[data-sync-choice]');if(syncChoice){e.preventDefault();chooseCloudConflict(syncChoice.dataset.syncChoice);return;}let el=e.target.closest('[data-action]');if(!el)return;e.preventDefault();handle(el.dataset.action,el.dataset.value||'')});
+
+// Arrastrar desde el asa. En iPhone usamos Pointer Events (no HTML5 Drag & Drop),
+// con flechas accesibles como alternativa para teclado y desplazamientos largos.
+let activeExerciseDrag=null;
+const clearExerciseDrag=()=>{
+  document.querySelectorAll('.exercise-row.drag-target').forEach(el=>el.classList.remove('drag-target'));
+  document.querySelectorAll('.exercise-drag-handle.dragging').forEach(el=>el.classList.remove('dragging'));
+  if(activeExerciseDrag?.handle?.hasPointerCapture?.(activeExerciseDrag.pointerId)){
+    try{activeExerciseDrag.handle.releasePointerCapture(activeExerciseDrag.pointerId);}catch{}
+  }
+  activeExerciseDrag=null;
+};
+document.addEventListener('pointerdown',event=>{
+  const handle=event.target.closest?.('[data-exercise-drag]');
+  if(!handle||app.view!=='routineEdit'||!app.editor||event.isPrimary===false
+      ||(event.pointerType==='mouse'&&event.button!==0))return;
+  const from=Number(handle.dataset.exerciseDrag);
+  if(!Number.isInteger(from)||from<0||from>=app.editor.exercises.length)return;
+  persistEditor();
+  activeExerciseDrag={pointerId:event.pointerId,from,to:from,handle,startX:event.clientX,startY:event.clientY,active:false};
+  try{handle.setPointerCapture?.(event.pointerId);}catch{}
+  event.preventDefault();
+});
+document.addEventListener('pointermove',event=>{
+  const drag=activeExerciseDrag;
+  if(!drag||drag.pointerId!==event.pointerId)return;
+  if(!drag.active&&Math.hypot(event.clientX-drag.startX,event.clientY-drag.startY)<7)return;
+  drag.active=true;
+  drag.handle.classList.add('dragging');
+  const element=document.elementFromPoint(event.clientX,event.clientY)?.closest?.('[data-exrow]');
+  if(!element)return;
+  const destination=Number(element.dataset.exrow);
+  if(!Number.isInteger(destination)||destination<0||destination>=app.editor.exercises.length)return;
+  drag.to=destination;
+  document.querySelectorAll('[data-exrow]').forEach(row=>row.classList.toggle('drag-target',Number(row.dataset.exrow)===destination));
+  event.preventDefault();
+});
+document.addEventListener('pointerup',event=>{
+  const drag=activeExerciseDrag;
+  if(!drag||drag.pointerId!==event.pointerId)return;
+  const from=drag.from,to=drag.to,active=drag.active;
+  clearExerciseDrag();
+  if(active&&from!==to)handle('reorderExercise',`${from}:${to}`);
+});
+document.addEventListener('pointercancel',event=>{
+  if(activeExerciseDrag?.pointerId===event.pointerId)clearExerciseDrag();
+});
+
 document.addEventListener('change',e=>{
+  if(e.target.id==='sessionDate'&&app.view==='session'&&state.draft){
+    const selected=e.target.value;
+    if(!isWorkoutDate(selected,dateISO())){toast('Elegí una fecha válida que no sea futura.');render();return;}
+    const previous=state.draft.sessionDate;
+    state.draft.sessionDate=selected;
+    if(!save()){state.draft.sessionDate=previous;render();}
+    return;
+  }
   if(e.target.id==='progressExercise'){
     app.progressExercise=e.target.value;render();
   }
