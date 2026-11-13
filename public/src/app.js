@@ -15,6 +15,7 @@ import {listTrackedExercises,exerciseHistory,previousExerciseSet,sessionStats,ne
 import {cleanSharedRoutine,isValidShareCode,routineTemplateIsEqual} from './domain/routine-share.js?v=1.7.6';
 import {reorderRoutineExercises,isWorkoutDate,getWorkoutDate} from './domain/routine-session-tools.js?v=1.7.6';
 import {updateHistoricalSets} from './domain/historical-sets.js?v=1.10.0';
+import {EXERCISE_CATALOG,MUSCLE_GROUPS,filterCatalogExercises,muscleLabel} from './domain/exercise-catalog.js?v=1.11.0';
 
 
 (()=>{'use strict';
@@ -23,7 +24,7 @@ import {updateHistoricalSets} from './domain/historical-sets.js?v=1.10.0';
 
 let state;try{state=storage.read()||seed();if(!Array.isArray(state.records)||!Array.isArray(state.routines)||!Array.isArray(state.habits))throw Error('Formato inválido')}catch(e){state=seed()}
 const freshState=()=>({...seed(),version:3,demo:false,routines:[],records:[],habits:[],checks:{},draft:null});
-const app={activeUid:null,needLegacyChoice:false,hydrating:false,silentHydration:false,cloudConflict:null,cloudNotice:'',view:getInitialView(state),tab:'gym',activity:'walk',filter:'all',record:null,routine:null,routineListOrigin:'activity',editor:null,renamingExercise:null,habit:null,exerciseSearch:'',progressExercise:'',completedRecord:null,modal:null,toast:'',share:null};
+const app={activeUid:null,needLegacyChoice:false,hydrating:false,silentHydration:false,cloudConflict:null,cloudNotice:'',view:getInitialView(state),tab:'gym',activity:'walk',filter:'all',record:null,routine:null,routineListOrigin:'activity',editor:null,renamingExercise:null,habit:null,exerciseSearch:'',libraryMuscle:'all',progressExercise:'',completedRecord:null,modal:null,toast:'',share:null};
 const icons={account:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>',activity:'<path d="M6.5 6.5 17.5 17.5M4 9l5-5M2 7l5-5M15 20l5-5M17 22l5-5"/>',progress:'<path d="M3 19V5m0 14h18M7 16l5-5 4 3 5-7"/>',habits:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 10h18m-13 5 2 2 4-4"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.8 1.8-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.05 1.57V21h-2.5v-.08a1.7 1.7 0 0 0-1.05-1.57 1.7 1.7 0 0 0-1.88.34l-.06.06-1.8-1.8.06-.06A1.7 1.7 0 0 0 8.1 16a1.7 1.7 0 0 0-1.57-1.05H6.4v-2.5h.09A1.7 1.7 0 0 0 8.1 11.4a1.7 1.7 0 0 0-.34-1.88L7.7 9.46l1.8-1.8.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.05-1.57V6.4H15v.09a1.7 1.7 0 0 0 1.05 1.57 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.8 1.8-.06.06A1.7 1.7 0 0 0 19.4 11.4a1.7 1.7 0 0 0 1.57 1.05H21v2.5h-.09A1.7 1.7 0 0 0 19.4 15"/>',arrow:'<path d="m9 18 6-6-6-6"/>',plus:'<path d="M12 5v14M5 12h14"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',check:'<path d="m5 12 4 4L19 6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'};
 const icon=(n)=>`<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icons[n]||icons.arrow}</svg>`;
 const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -71,11 +72,13 @@ function renderActivity(){return `${title('Tu movimiento, a tu manera.','Entren�
 function renderAllRoutines(){
   return `<div class="detail-top">${back('activity')}<span class="micro">MIS RUTINAS / VISTA COMPLETA</span></div>${title('Todas mis rutinas','Revisá tus ejercicios, series y repeticiones sin abrir cada rutina.')}${renderRoutineOverview()}`;
 }
-const lib=['Press de banca','Sentadilla','Peso muerto','Remo con mancuerna','Press militar','Jalón al pecho','Prensa de piernas','Curl de bíceps','Plancha','Elevación lateral','Hip thrust','Dominadas'];
-function renderLibrary(){return `<div class="detail-top">${back(app.editor?'routineEdit':'activity')}<span class="micro">BIBLIOTECA</span></div>${title('Biblioteca de ejercicios','Encontrá movimientos por nombre o añadí uno propio.')}
+const lib=[...EXERCISE_CATALOG];
+function renderLibrary(){const matches=filterCatalogExercises(lib,{muscle:app.libraryMuscle,search:app.exerciseSearch});return `<div class="detail-top">${back(app.editor?'routineEdit':'activity')}<span class="micro">BIBLIOTECA</span></div>${title('Biblioteca de ejercicios','Encontrá movimientos por nombre o añadí uno propio.')}
 ${app.editor?`<section class="card custom-exercise-top" aria-label="Añadir ejercicio personalizado"><div class="field" style="margin:0"><label for="customexercise">Crear ejercicio personalizado</label><div class="row wrap custom-exercise-row"><input id="customexercise" maxlength="80" autocomplete="off" placeholder="Ej. Remo unilateral en polea" aria-describedby="customexercise-help"/><button class="btn" data-action="addCustomExercise">+ Añadir</button></div><p class="fieldhint" id="customexercise-help">Escribilo acá sin tener que bajar por toda la biblioteca.</p></div></section>`:''}
+<section class="library-muscle-panel" aria-label="Grupos musculares"><h3>Elegí un grupo muscular</h3><p class="micro">Filtrá los ejercicios de la biblioteca sin modificar tu rutina.</p><div class="library-muscle-filters" role="group" aria-label="Filtrar ejercicios por grupo muscular">${[{id:'all',label:'Todos'},...MUSCLE_GROUPS].map(group=>`<button type="button" class="chip ${app.libraryMuscle===group.id?'active':''}" data-action="filterMuscle" data-value="${group.id}" aria-pressed="${app.libraryMuscle===group.id}">${h(group.label)} <span class="library-filter-count">${group.id==='all'?lib.length:lib.filter(e=>e.muscle===group.id).length}</span></button>`).join('')}</div></section>
 <div class="field library-search"><label for="libsearch">Buscar en la biblioteca</label><div class="row wrap"><input id="libsearch" placeholder="Ej. Sentadilla" autocomplete="off" value="${h(app.exerciseSearch)}"/><button class="btn outline" data-action="searchLibrary">Buscar</button></div></div>
-<div class="card library-results">${lib.filter(e=>e.toLowerCase().includes(app.exerciseSearch.toLowerCase())).map(e=>`<div class="listrow"><div class="bubble">✦</div><div class="grow"><strong>${h(e)}</strong><div class="micro">Fuerza · biblioteca base</div></div>${app.editor?button('+ Añadir','addExercise',e,'small'):button('Ver rutinas','go','activity','small outline')}</div>`).join('')||'<div class="empty">No encontramos coincidencias. Probá con otra búsqueda o agregalo arriba como personalizado.</div>'}</div>`}
+<p class="micro library-results-count" role="status" aria-live="polite">${matches.length} ${matches.length===1?'ejercicio disponible':'ejercicios disponibles'} ${app.libraryMuscle!=='all'?'· '+muscleLabel(app.libraryMuscle):''}</p>
+<div class="card library-results">${matches.map(e=>`<div class="listrow library-exercise"><div class="bubble" aria-hidden="true">✦</div><div class="grow"><strong>${h(e.name)}</strong>${e.isNew?'<span class="library-new-label">Nuevo</span>':''}<div class="micro">${h(muscleLabel(e.muscle))} · fuerza</div></div>${app.editor?button('+ Añadir','addExercise',e.name,'small'):button('Ver rutinas','go','activity','small outline')}</div>`).join('')||'<div class="empty">No encontramos ejercicios con esos filtros. Probá con «Todos» o cambiá la búsqueda.</div>'}</div>`}
 
 
 function renderRoutineShare(){
@@ -656,8 +659,9 @@ case 'editRoutine':{app.renamingExercise=null;if(isOfflineNow(account)){showModa
 case 'beginOfflineRoutine':{app.renamingExercise=null;app.modal=null;let r=state.routines.find(x=>x.id===value);app.editor=r?JSON.parse(JSON.stringify(r)):{id:null,name:'',exercises:[]};app.routine=r?.id||null;saveRoutineEditor(app.activeUid,app.editor);go('routineEdit');break}
 case 'resumeRoutineDraft':{app.renamingExercise=null;const d=readRoutineEditor(app.activeUid);if(!d){toast('No encontramos el borrador.');break}app.editor=d;app.routine=d.id||null;go('routineEdit');break}
 case 'cancelEdit':app.renamingExercise=null;app.editor=null;clearRoutineEditor(app.activeUid);go('activity');break;
-case 'library':if(app.view==='routineEdit')persistEditor();app.exerciseSearch='';go('exerciseLibrary');break;
+case 'library':if(app.view==='routineEdit')persistEditor();app.exerciseSearch='';app.libraryMuscle='all';go('exerciseLibrary');break;
 case 'searchLibrary':app.exerciseSearch=get('libsearch').value.trim();render();break;
+case 'filterMuscle':if(value==='all'||MUSCLE_GROUPS.some(g=>g.id===value)){app.libraryMuscle=value;render();}break;
 case 'addExercise':app.renamingExercise=null;app.editor.exercises.push({name:value,sets:3,reps:10});saveRoutineEditor(app.activeUid,app.editor);go('routineEdit');toast('Ejercicio añadido');break;
 case 'addCustomExercise':{app.renamingExercise=null;let n=get('customexercise')?.value.trim();if(!n){toast('Ingresá un nombre');break}app.editor.exercises.push({name:n.slice(0,80),sets:3,reps:10});saveRoutineEditor(app.activeUid,app.editor);go('routineEdit');break}
 case 'reorderExercise':{
@@ -940,6 +944,7 @@ document.addEventListener('keydown',e=>{
   }
   if(e.key==='Escape'&&app.modal){e.preventDefault();closeAccessibleModal();return;}
   if(e.key==='Enter' && e.target.id==='customexercise' && app.editor){e.preventDefault();handle('addCustomExercise','');return;}
+  if(e.key==='Enter'&&e.target.id==='libsearch'&&app.view==='exerciseLibrary'){e.preventDefault();handle('searchLibrary','');return;}
 });
 document.addEventListener('input',e=>{
   if(!account.authenticated||!app.activeUid||(app.hydrating&&!app.silentHydration)||app.cloudConflict)return;

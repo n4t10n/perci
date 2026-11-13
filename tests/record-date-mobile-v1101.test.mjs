@@ -27,10 +27,10 @@ test('Historial: fecha no se desborda y el input nativo mantiene apertura y foco
   assert.match(css,/\.record-date-control:focus-within\{outline:/);
 });
 test('Historial: assets y Service Worker renuevan caché juntos sin tocar módulos de datos',()=>{
-  assert.match(sw,/perci-shell-v1\.10\.1-record-date/);
-  assert.match(sw,/src\/app\.js\?v=1\.10\.1/);
-  assert.match(sw,/src\/styles\.css\?v=1\.10\.1/);
-  assert.match(html,/src\/app\.js\?v=1\.10\.1/);
-  assert.match(html,/src\/styles\.css\?v=1\.10\.1/);
+  assert.match(sw,/perci-shell-v1\.11\.0-muscle-library/);
+  assert.match(sw,/src\/app\.js\?v=1\.11\.0/);
+  assert.match(sw,/src\/styles\.css\?v=1\.11\.0/);
+  assert.match(html,/src\/app\.js\?v=1\.11\.0/);
+  assert.match(html,/src\/styles\.css\?v=1\.11\.0/);
   assert.match(sw,/domain\/historical-sets\.js\?v=1\.10\.0/);
 });
