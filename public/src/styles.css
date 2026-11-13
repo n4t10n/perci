@@ -423,3 +423,35 @@
 .exercise-demo-credit a{text-decoration:underline;color:inherit}
 .exercise-demo-pending{display:inline-flex;align-items:center;max-width:88px;min-height:58px;font-size:10px;line-height:1.2;color:var(--muted,#768781);text-align:center}
 @media(prefers-reduced-motion:reduce){.exercise-demo-video{animation:none}}
+
+/* Percí v1.13.0 · Avatares privados. Mobile-first, integrado al diseño existente. */
+[data-profile-avatar]{display:flex;align-items:center;justify-content:center;width:100%;height:100%;overflow:hidden;border-radius:inherit}
+.profile-avatar-photo{display:block;width:100%;height:100%;object-fit:cover;object-position:center;border-radius:inherit}
+.profile-avatar-initial{display:grid;place-items:center;width:100%;height:100%;font-weight:800}
+.avatar{overflow:hidden;padding:0}
+.account-photo-button{position:relative;width:86px;height:86px;border-radius:50%;padding:0;overflow:visible;margin:0;background:var(--surface2);cursor:pointer}
+.account-photo-button [data-profile-avatar]{border-radius:50%;overflow:hidden}
+.avatar-camera-icon{position:absolute;bottom:-4px;right:-4px;display:grid;place-items:center;width:27px;height:27px;border:2px solid var(--surface);border-radius:50%;background:var(--accent);font-size:12px;color:var(--accent-ink)}
+.account-photo-controls{display:flex;flex-wrap:wrap;gap:8px;margin:9px 0 0}
+.account-photo-controls .btn{min-height:38px;padding:7px 12px;font-size:12px}
+.account-photo-controls .btn[hidden],.avatar-error[hidden]{display:none!important}
+.avatar-file-input{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;overflow:hidden;clip-path:inset(50%);pointer-events:none}
+.avatar-error{font-size:12px;color:var(--text);border:1px solid rgba(220,72,72,.4);border-radius:12px;background:rgba(220,72,72,.13);padding:10px 12px;margin:10px 0;line-height:1.5}
+.avatar-editor{position:fixed;inset:0;margin:auto;width:min(94vw,470px);max-height:min(92dvh,750px);padding:24px;background:var(--surface);border:1px solid var(--border);border-radius:22px;color:var(--text);box-shadow:0 25px 90px #0009;overflow-y:auto;overscroll-behavior:contain}
+.avatar-editor::backdrop{background:rgba(4,15,13,.82);backdrop-filter:blur(4px)}
+.avatar-editor-head{display:flex;justify-content:space-between;gap:10px;align-items:start}
+.avatar-editor-head h2{font-size:26px;margin:8px 0}
+.avatar-editor-head .micro{margin-bottom:12px;line-height:1.5}
+.avatar-close{width:44px;height:44px;border:1px solid var(--border);border-radius:13px;flex:none;background:var(--surface2);color:var(--text)}
+.avatar-crop-frame{width:min(280px,100%);aspect-ratio:1;margin:4px auto 18px;border-radius:50%;overflow:hidden;border:3px solid var(--accent);background:var(--surface2);box-shadow:0 5px 35px #0003}
+#avatar-crop-preview{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#avatar-crop-preview:active{cursor:grabbing}
+#avatar-crop-preview:focus-visible{outline:4px solid var(--accent);outline-offset:-5px}
+.avatar-zoom{display:grid;grid-template-columns:70px minmax(0,1fr);align-items:center;gap:12px;margin:12px 0}
+.avatar-zoom label{margin:0}
+.avatar-zoom input[type=range]{width:100%;min-height:38px;accent-color:var(--accent);padding:0}
+.avatar-nudge{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px auto 16px}
+.avatar-nudge button{width:44px;height:44px;border-radius:12px;background:var(--surface2);color:var(--text);border:1px solid var(--border);font-weight:800}
+.avatar-editor-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.avatar-editor-actions .btn{width:100%}
+@media(max-width:480px){.avatar-editor{padding:18px;border-radius:18px}.account-photo-button{width:76px;height:76px}.account-user{align-items:flex-start}.avatar-editor-head h2{font-size:22px}.avatar-crop-frame{width:min(270px,100%)}}

@@ -13,6 +13,7 @@ import re
 import urllib.parse
 from server import perci_server as core
 from server import perci_share
+from server import perci_avatar
 from server import perci_atomic as atomic
 
 SESSION_TTL = core.SESSION_TTL
@@ -22,7 +23,7 @@ REFRESH_COOKIE = 'perci_rt'
 WEB_ROOT = Path(__file__).resolve().parents[1] / 'public'
 ENDPOINTS = {
     '/api/status', '/api/auth/session', '/api/auth/login',
-    '/api/auth/signup', '/api/auth/logout', '/api/cloud/data', '/api/cloud/sync', '/api/cloud/delete', '/api/routine/share'
+    '/api/auth/signup', '/api/auth/logout', '/api/cloud/data', '/api/cloud/sync', '/api/cloud/delete', '/api/routine/share', '/api/profile/avatar'
 }
 
 
@@ -164,6 +165,11 @@ class ApiHandler(BaseHTTPRequestHandler):
                     return self.send_json({'configured': bool(core.CONFIG),
                                            'authenticated': bool(user),
                                            'user': core.safe_user(user) if user else None}, cookies=cookies)
+                if path == '/api/profile/avatar':
+                    token, user, cookies = self.authenticated()
+                    if not user:
+                        raise core.ApiError('Iniciá sesión para ver tu foto.', 401)
+                    return self.send_json(perci_avatar.fetch(core, token, user['id']), cookies=cookies)
                 if path == '/api/cloud/data':
                     token, user, cookies = self.authenticated()
                     if not user:
@@ -208,6 +214,11 @@ class ApiHandler(BaseHTTPRequestHandler):
                     except core.ApiError:
                         pass
                 return self.send_json({'authenticated': False}, cookies=self.logout_cookies())
+            if path == '/api/profile/avatar':
+                token, user, cookies = self.authenticated()
+                if not user:
+                    raise core.ApiError('Iniciá sesión para cambiar tu foto.', 401)
+                return self.send_json(perci_avatar.update(core, token, user['id'], body), cookies=cookies)
             if path == '/api/routine/share':
                 token, user, cookies = self.authenticated()
                 if not user:

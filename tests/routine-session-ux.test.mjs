@@ -124,8 +124,8 @@ test('finalizar sesión: guarda fecha elegida y las series originales',()=>{
 test('fecha en mobile: input de Safari no excede la tarjeta y se renueva la caché CSS',()=>{
   assert.match(css,/\.workout-date-input input\{[^}]*min-width:0;max-width:100%/);
   assert.match(css,/@media\(max-width:480px\)\{\.workout-date-panel\{[^}]*\}\.workout-date-panel>div\{min-width:0\}\.workout-date-input\{[^}]*width:100%/);
-  assert.match(sw,/perci-shell-v1\.12\.3-in-app-demo/);
-  assert.match(sw,/src\/styles\.css\?v=1\.12\.1/);
+  assert.match(sw,/perci-shell-v1\.13\.0-avatar/);
+  assert.match(sw,/src\/styles\.css\?v=1\.13\.0/);
 });
 
 
@@ -136,5 +136,5 @@ test('iOS: fecha visible propia dentro de un contenedor recortado, con calendari
   assert.match(app,/if\(display\)display\.textContent=formatSessionDate\(selected\)/);
   assert.match(css,/\.workout-date-control\{[^}]*overflow:hidden/);
   assert.match(css,/\.workout-date-control input\[type=date\]\{[^}]*opacity:0/);
-  assert.match(sw,/\.\/src\/app\.js\?v=1\.12\.3/);
+  assert.match(sw,/\.\/src\/app\.js\?v=1\.13\.0/);
 });

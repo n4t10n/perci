@@ -1,12 +1,13 @@
 // Percí v1.6 · SW actualizado, un único grafo de módulos por versión.
-const CACHE = 'perci-shell-v1.12.3-in-app-demo';
+const CACHE = 'perci-shell-v1.13.0-avatar';
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './src/account-ui.js?v=1.7.6',
+  './src/account-ui.js?v=1.13.0',
+  './src/profile-avatar.js?v=1.13.0',
   './src/account.js?v=1.7.6',
-  './src/app.js?v=1.12.3',
+  './src/app.js?v=1.13.0',
   './src/domain/routine-share.js?v=1.7.6',
   './src/domain/historical-sets.js?v=1.10.0',
   './src/domain/exercise-catalog.js?v=1.12.0',
@@ -25,7 +26,7 @@ const SHELL = [
   './src/domain/routine-session-tools.js?v=1.7.6',
   './src/domain/startup-route.js?v=1.7.6',
   './src/pwa.js?v=1.7.6',
-  './src/styles.css?v=1.12.1',
+  './src/styles.css?v=1.13.0',
   './assets/exercises/real/press-banca.jpg',
   './assets/exercises/real/sentadilla.jpg',
   './assets/exercises/real/peso-muerto.jpg',

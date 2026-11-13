@@ -80,9 +80,9 @@ test('Sin sesión activa no se abre confirmación',()=>{
 });
 
 test('PWA: JavaScript y CSS del cambio se actualizan juntos',()=>{
-  assert.match(sw,/perci-shell-v1\.12\.3-in-app-demo/);
-  assert.match(sw,/src\/app\.js\?v=1\.12\.3/);
-  assert.match(sw,/src\/styles\.css\?v=1\.12\.1/);
-  assert.match(html,/src\/app\.js\?v=1\.12\.3/);
-  assert.match(html,/src\/styles\.css\?v=1\.12\.1/);
+  assert.match(sw,/perci-shell-v1\.13\.0-avatar/);
+  assert.match(sw,/src\/app\.js\?v=1\.13\.0/);
+  assert.match(sw,/src\/styles\.css\?v=1\.13\.0/);
+  assert.match(html,/src\/app\.js\?v=1\.13\.0/);
+  assert.match(html,/src\/styles\.css\?v=1\.13\.0/);
 });
