@@ -347,3 +347,25 @@
   .card,.btn,.checkday,input,select,textarea,.modal{border-color:var(--muted)}
   :focus-visible{outline:3px solid var(--accent-strong);outline-offset:3px}
 }
+
+/* Percí v1.10.0 · Edición histórica de series, mobile-first y accesible. */
+.historical-sets-editor{max-width:740px;min-width:0}
+.historical-sets-heading{gap:14px;margin-bottom:12px}
+.historical-sets-heading h3{margin:0 0 4px}
+.historical-sets-intro{padding-bottom:16px;border-bottom:1px solid var(--border)}
+.historical-sets-intro p{margin:8px 0 0;line-height:1.6}
+.historical-sets-rows{display:flex;flex-direction:column;gap:10px;margin:18px 0}
+.historical-sets-row{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(2,minmax(0,1fr));align-items:end;gap:12px;padding:15px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;min-width:0}
+.historical-sets-name{display:flex;flex-direction:column;gap:5px;min-width:0;overflow-wrap:anywhere;padding-bottom:10px}
+.historical-sets-row .field{min-width:0;margin:0}
+.historical-sets-row .field label{font-size:13px}
+.historical-sets-row input{width:100%;max-width:100%;min-width:0;min-height:44px}
+.historical-sets-row input:focus-visible{outline:3px solid var(--accent-strong);outline-offset:2px}
+.historical-sets-incomplete{opacity:.7}
+.historical-sets-actions{margin-top:20px;gap:12px}
+.historical-sets-actions .btn{min-height:44px}
+@media(max-width:610px){
+  .historical-sets-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px}
+  .historical-sets-name{grid-column:1/-1;padding-bottom:0}
+  .historical-sets-actions .btn{flex:1 1 130px;min-width:0}
+}

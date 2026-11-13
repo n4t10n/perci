@@ -9,7 +9,8 @@ function walk(rel){
   const u=urlToPath(rel),id=u.pathname;
   const existing=moduleCache.get(id);
   if(existing){assert.equal(existing,u.search,`Módulo ${id} importado con dos versiones: ${existing} / ${u.search}`);return}
-  assert.equal(u.search,id.endsWith('/src/app.js')?'?v=1.9.0':'?v=1.7.6',`${rel} sin la identidad de versión esperada`);
+  const v110=id.endsWith('/src/app.js')||id.endsWith('/src/domain/historical-sets.js');
+  assert.equal(u.search,v110?'?v=1.10.0':'?v=1.7.6',`${rel} sin la identidad de versión esperada`);
   moduleCache.set(id,u.search);
   const content=fs.readFileSync(u,'utf8');
   const rx=/\bfrom\s*['"](\.[^'"?]+\.js(?:\?v=[\d.]+)?)['"]/g;
@@ -19,7 +20,7 @@ function walk(rel){
   }
 }
 test('v1.7.6: cuenta, UI y outbox son una única instancia de módulo por navegador',()=>{
-  moduleCache.clear();walk('src/app.js?v=1.9.0');
+  moduleCache.clear();walk('src/app.js?v=1.10.0');
   assert.ok(moduleCache.has(urlToPath('src/account.js').pathname));
   assert.ok(moduleCache.has(urlToPath('src/data/offline-outbox.js').pathname));
   assert.ok(moduleCache.size>=12);
@@ -32,11 +33,11 @@ test('v1.7.6: precache y entrada usan el mismo grafo de módulos',()=>{
   const html=fs.readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
   for(const id of moduleCache.keys()){
     const rel=path.posix.relative(root.pathname,id);
-    assert.ok(sw.includes(`'./${rel}?v=${rel==='src/app.js'?'1.9.0':'1.7.6'}'`),`SW no cachea ${rel} con query correcta`);
+    assert.ok(sw.includes(`'./${rel}?v=${['src/app.js','src/domain/historical-sets.js'].includes(rel)?'1.10.0':'1.7.6'}'`),`SW no cachea ${rel} con query correcta`);
   }
-  assert.match(html,/src\/app\.js\?v=1\.9\.0/);
+  assert.match(html,/src\/app\.js\?v=1\.10\.0/);
   assert.match(html,/src\/pwa\.js\?v=1\.7\.6/);
-  assert.match(sw,/perci-shell-v1\.9\.0-qa-accessibility-ux/);
+  assert.match(sw,/perci-shell-v1\.10\.0-historical-sets/);
 });
 test('v1.7.6: se verifica nuevo service worker sin interrumpir formularios',()=>{
   const pwa=fs.readFileSync(new URL('../public/src/pwa.js',import.meta.url),'utf8');
@@ -46,5 +47,5 @@ test('v1.7.6: se verifica nuevo service worker sin interrumpir formularios',()=>
   assert.match(pwa,/updateViaCache: 'none'/);
   assert.match(app,/function applyPendingPwaUpdate\(\)/);
   assert.match(app,/state\.draft/);
-  assert.match(app,/\['routineEdit','habitEdit','session','sessionSummary','record','otherForm'\]/);
+  assert.match(app,/\['routineEdit','habitEdit','session','sessionSummary','record','recordSetsEdit','otherForm'\]/);
 });
