@@ -396,3 +396,24 @@
   .library-exercise .grow strong{font-size:13px}
   .library-exercise .btn{padding:9px 10px;min-width:75px}
 }
+
+/* Percí v1.12.0 · Demostraciones originales de movimientos, bajo demanda */
+.exercise-demo-trigger{position:relative;flex:0 0 76px;width:76px;height:58px;min-height:58px;border:1px solid var(--border);border-radius:13px;padding:0;background:var(--surface2);overflow:hidden;display:grid;place-items:center;cursor:pointer}
+.exercise-demo-trigger img{width:100%;height:100%;object-fit:cover;display:block}
+.exercise-demo-play{position:absolute;right:4px;bottom:4px;width:23px;height:23px;border-radius:8px;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);font-size:11px;box-shadow:0 2px 8px #0006}
+.exercise-demo-trigger:focus-visible{outline:3px solid var(--accent-strong);outline-offset:2px}
+.exercise-demo-inline{min-width:0;gap:12px;flex-wrap:wrap}
+.exercise-demo-inline strong{min-width:0;overflow-wrap:anywhere}
+.exercise-demo-in-session{margin-top:9px}
+.exercise-demo-modal{max-width:540px;width:min(100%,540px)}
+.exercise-demo-modal .eyebrow{margin-bottom:9px}
+.exercise-demo-stage{width:100%;max-width:440px;aspect-ratio:320 / 224;margin:16px auto;background:#112221;border:1px solid var(--border);border-radius:17px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.exercise-demo-stage img{display:block;width:100%;height:100%;object-fit:contain}
+.exercise-demo-modal .fieldhint{line-height:1.55;margin:12px 0 16px}
+@media(max-width:480px){
+  .library-exercise{gap:9px}
+  .exercise-demo-trigger{width:68px;flex-basis:68px;height:55px;min-height:55px}
+  .exercise-demo-modal{padding:18px}
+  .exercise-demo-inline{gap:8px}
+}
+@media(prefers-reduced-motion:reduce){.exercise-demo-trigger,.exercise-demo-trigger *{transition:none!important}}

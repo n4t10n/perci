@@ -60,13 +60,13 @@ test('Compatibilidad: añadir un ejercicio sigue guardando nombre, series y repe
   const routineShare=read('../public/src/domain/routine-share.js');
   assert.match(routineShare,/return \{name, exercises\}/);
 });
-test('PWA: catálogo, HTML, CSS y SW pertenecen a v1.11.0 sin dividir account',()=>{
-  assert.match(sw,/perci-shell-v1\.11\.0-muscle-library/);
-  assert.match(sw,/domain\/exercise-catalog\.js\?v=1\.11\.0/);
-  assert.match(app,/domain\/exercise-catalog\.js\?v=1\.11\.0/);
-  assert.match(sw,/src\/app\.js\?v=1\.11\.0/);
-  assert.match(sw,/src\/styles\.css\?v=1\.11\.0/);
-  assert.match(html,/src\/app\.js\?v=1\.11\.0/);
-  assert.match(html,/src\/styles\.css\?v=1\.11\.0/);
+test('PWA: catálogo, HTML, CSS y SW pertenecen a v1.12.0 sin dividir account',()=>{
+  assert.match(sw,/perci-shell-v1\.12\.0-exercise-gifs/);
+  assert.match(sw,/domain\/exercise-catalog\.js\?v=1\.12\.0/);
+  assert.match(app,/domain\/exercise-catalog\.js\?v=1\.12\.0/);
+  assert.match(sw,/src\/app\.js\?v=1\.12\.0/);
+  assert.match(sw,/src\/styles\.css\?v=1\.12\.0/);
+  assert.match(html,/src\/app\.js\?v=1\.12\.0/);
+  assert.match(html,/src\/styles\.css\?v=1\.12\.0/);
   assert.match(sw,/domain\/historical-sets\.js\?v=1\.10\.0/);
 });

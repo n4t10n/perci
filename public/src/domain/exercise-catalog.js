@@ -46,3 +46,13 @@ export function filterCatalogExercises(items=EXERCISE_CATALOG,{muscle='all',sear
 }
 export const findCatalogExercise = name => EXERCISE_CATALOG.find(
   item=>normalizeExerciseName(item.name)===normalizeExerciseName(name))||null;
+
+// Identidad basada en catálogo, nunca en datos personales o nombres aproximados.
+// El reconocimiento funciona también para ejercicios personalizados con nombre equivalente.
+export function exerciseDemoAssets(name){
+  const exercise=findCatalogExercise(name);
+  if(!exercise)return null;
+  return {id:exercise.id,name:exercise.name,
+    gif:`./assets/exercises/${exercise.id}.gif`,
+    poster:`./assets/exercises/${exercise.id}.webp`};
+}

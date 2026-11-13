@@ -13,8 +13,8 @@ const slice=(start,end)=>{
 const fragment=slice('function renderRoutineEdit(){','const asKg=');
 function renderEdit(editor,renamingExercise=null){
   const app={editor,renamingExercise,activeUid:'u'};
-  return new Function('app','h','back','title','button','isOfflineNow','account',` ${fragment}; return renderRoutineEdit();`)(
-    app,htmlEscape,()=>'<button>Volver</button>',(a,b)=>`<h1>${a}</h1><p>${b}</p>`,button,()=>false,{}
+  return new Function('app','h','back','title','button','isOfflineNow','account','exerciseDemoButton',` ${fragment}; return renderRoutineEdit();`)(
+    app,htmlEscape,()=>'<button>Volver</button>',(a,b)=>`<h1>${a}</h1><p>${b}</p>`,button,()=>false,{},()=>''
   );
 }
 test('editor: permite renombrar un ejercicio existente sin perder los controles previos',()=>{

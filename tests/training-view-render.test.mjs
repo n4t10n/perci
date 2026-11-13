@@ -15,7 +15,7 @@ const record={id:'old',type:'gym',date:'2026-11-04',setDetails:[
 const sample={records:[record],draft:{id:'draft1',routineId:'r1',snapshot:[{name:'Press de banca',sets:3,reps:10}],startedAt:Date.now()-60000,sets:{'0-0':{weight:40,reps:10,done:false}},restEnabled:true,restSeconds:90,restUntil:Date.now()+90000},routines:[{id:'r1',name:'Torso A',exercises:[{name:'Press de banca',sets:3,reps:10}]}]};
 const app={completedRecord:'old',progressExercise:''};
 const account={offline:false};
-const deps={state:sample,app,account,sessionStats,nextPendingSet,restRemaining,restClock,previousExerciseSet,listTrackedExercises,exerciseHistory,isOfflineNow:()=>false,getWorkoutDate,dateISO,h:esc,button,back,renderProgress:()=>'<p>Progress</p>'};
+const deps={exerciseDemoButton:()=>'',state:sample,app,account,sessionStats,nextPendingSet,restRemaining,restClock,previousExerciseSet,listTrackedExercises,exerciseHistory,isOfflineNow:()=>false,getWorkoutDate,dateISO,h:esc,button,back,renderProgress:()=>'<p>Progress</p>'};
 function getRenderer(name,fragment){
  const keys=Object.keys(deps),values=Object.values(deps);
  return new Function(...keys,`${fragment};return ${name};`)(...values);
