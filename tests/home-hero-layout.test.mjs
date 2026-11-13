@@ -15,9 +15,9 @@ test('Home mobile: la etiqueta decorativa participa del flujo y no pisa los boto
 });
 
 test('PWA: el CSS v1.8.4 y la caché de Home cambian juntos, manteniendo el JS',()=>{
-  assert.match(sw,/perci-shell-v1\.8\.4-home-hero-flow/);
-  assert.match(sw,/src\/styles\.css\?v=1\.8\.4/);
-  assert.match(html,/src\/styles\.css\?v=1\.8\.4/);
-  assert.match(sw,/src\/app\.js\?v=1\.8\.3/);
-  assert.match(html,/src\/app\.js\?v=1\.8\.3/);
+  assert.match(sw,/perci-shell-v1\.9\.0-qa-accessibility-ux/);
+  assert.match(sw,/src\/styles\.css\?v=1\.9\.0/);
+  assert.match(html,/src\/styles\.css\?v=1\.9\.0/);
+  assert.match(sw,/src\/app\.js\?v=1\.9\.0/);
+  assert.match(html,/src\/app\.js\?v=1\.9\.0/);
 });

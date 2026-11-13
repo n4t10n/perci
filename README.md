@@ -1,6 +1,6 @@
-**Producción actual: Percí v1.6.4.** La v1.7.2 está exclusivamente en integración QA, sin despliegue. Ver `docs/15-V1.7.2-Integracion-Atomicidad-QA.md`.
+**Producción actual: Percí v1.8.4.** La mejora integral de UX/accesibilidad v1.9.0 está en evaluación en la rama `qa/perci-ux-accessibility-v1-9` y **no** debe desplegarse en `main` antes de aprobar QA. Ver `docs/16-QA-UX-Accessibility-v1.9.0.md`.
 
-La v1.6.4 permanece publicada; no aplicar v1.7.2 en producción hasta cutover aprobado.
+La rama QA v1.9.0 se valida por separado. Mantener `main` en v1.8.4 hasta completar las pruebas y aprobar el merge.
 
 **Histórico v1.5:** seguridad, concurrencia optimista y actualización PWA. Consultá [README-v1.5.md](README-v1.5.md) para cambios, límites y QA.
 
