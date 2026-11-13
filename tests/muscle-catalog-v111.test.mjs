@@ -61,12 +61,12 @@ test('Compatibilidad: añadir un ejercicio sigue guardando nombre, series y repe
   assert.match(routineShare,/return \{name, exercises\}/);
 });
 test('PWA: catálogo, HTML, CSS y SW pertenecen a v1.12.0 sin dividir account',()=>{
-  assert.match(sw,/perci-shell-v1\.12\.1-real-videos/);
+  assert.match(sw,/perci-shell-v1\.12\.2-clean-demo/);
   assert.match(sw,/domain\/exercise-catalog\.js\?v=1\.12\.0/);
   assert.match(app,/domain\/exercise-catalog\.js\?v=1\.12\.0/);
-  assert.match(sw,/src\/app\.js\?v=1\.12\.1/);
+  assert.match(sw,/src\/app\.js\?v=1\.12\.2/);
   assert.match(sw,/src\/styles\.css\?v=1\.12\.1/);
-  assert.match(html,/src\/app\.js\?v=1\.12\.1/);
+  assert.match(html,/src\/app\.js\?v=1\.12\.2/);
   assert.match(html,/src\/styles\.css\?v=1\.12\.1/);
   assert.match(sw,/domain\/historical-sets\.js\?v=1\.10\.0/);
 });

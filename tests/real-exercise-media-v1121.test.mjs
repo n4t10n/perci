@@ -38,7 +38,7 @@ test('QA v1.12.1: reproducción nativa con créditos y sin autoplay bajo reduce 
  assert.match(app,/prefers-reduced-motion: reduce/);
  assert.match(app,/target="_blank" rel="noopener noreferrer"/);
  assert.ok(app.includes('if(!match||!getRealExerciseMedia(value))break;'), 'La demostración debe rechazar ejercicios sin video real');
- assert.match(sw,/perci-shell-v1\.12\.1-real-videos/);
+ assert.match(sw,/perci-shell-v1\.12\.2-clean-demo/);
  assert.match(sw,/real-exercise-media\.js\?v=1\.12\.1/);
  assert.doesNotMatch(sw,/\.mp4'/,'Los videos no se precachean');
 });
