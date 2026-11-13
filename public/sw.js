@@ -1,12 +1,12 @@
 // Percí v1.6 · SW actualizado, un único grafo de módulos por versión.
-const CACHE = 'perci-shell-v1.10.0-historical-sets';
+const CACHE = 'perci-shell-v1.10.1-record-date';
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './src/account-ui.js?v=1.7.6',
   './src/account.js?v=1.7.6',
-  './src/app.js?v=1.10.0',
+  './src/app.js?v=1.10.1',
   './src/domain/routine-share.js?v=1.7.6',
   './src/domain/historical-sets.js?v=1.10.0',
   './src/brand.js?v=1.7.6',
@@ -23,7 +23,7 @@ const SHELL = [
   './src/domain/routine-session-tools.js?v=1.7.6',
   './src/domain/startup-route.js?v=1.7.6',
   './src/pwa.js?v=1.7.6',
-  './src/styles.css?v=1.10.0',
+  './src/styles.css?v=1.10.1',
   './assets/favicon.svg',
   './assets/icon-180.png',
   './assets/icon-192.png',
