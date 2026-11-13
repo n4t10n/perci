@@ -16,6 +16,7 @@ import {cleanSharedRoutine,isValidShareCode,routineTemplateIsEqual} from './doma
 import {reorderRoutineExercises,isWorkoutDate,getWorkoutDate} from './domain/routine-session-tools.js?v=1.7.6';
 import {updateHistoricalSets} from './domain/historical-sets.js?v=1.10.0';
 import {EXERCISE_CATALOG,MUSCLE_GROUPS,filterCatalogExercises,muscleLabel,findCatalogExercise,exerciseDemoAssets} from './domain/exercise-catalog.js?v=1.12.0';
+import {getRealExerciseMedia} from './domain/real-exercise-media.js?v=1.12.1';
 
 
 (()=>{'use strict';
@@ -77,7 +78,9 @@ const lib=[...EXERCISE_CATALOG];
 const exerciseDemoButton=name=>{
   const media=exerciseDemoAssets(name);
   if(!media)return '';
-  return `<button type="button" class="exercise-demo-trigger" data-action="showExerciseDemo" data-value="${h(name)}" aria-label="Ver demostración animada de ${h(name)}" title="Ver movimiento de ${h(name)}"><img src="${media.poster}" alt="" width="80" height="60" loading="lazy" decoding="async"/><span class="exercise-demo-play" aria-hidden="true">▶</span></button>`;
+  const real=getRealExerciseMedia(name);
+  if(!real)return '<span class="exercise-demo-pending" title="Pendiente de video real con licencia">Video pendiente</span>';
+  return `<button type="button" class="exercise-demo-trigger" data-action="showExerciseDemo" data-value="${h(name)}" aria-label="Ver demostración animada de ${h(name)}" title="Ver movimiento de ${h(name)}"><img src="${real.poster}" alt="" width="80" height="60" loading="lazy" decoding="async"/><span class="exercise-demo-play" aria-hidden="true">▶</span></button>`;
 };
 function renderLibrary(){const matches=filterCatalogExercises(lib,{muscle:app.libraryMuscle,search:app.exerciseSearch});return `<div class="detail-top">${back(app.editor?'routineEdit':'activity')}<span class="micro">BIBLIOTECA</span></div>${title('Biblioteca de ejercicios','Encontrá movimientos por nombre o añadí uno propio.')}
 ${app.editor?`<section class="card custom-exercise-top" aria-label="Añadir ejercicio personalizado"><div class="field" style="margin:0"><label for="customexercise">Crear ejercicio personalizado</label><div class="row wrap custom-exercise-row"><input id="customexercise" maxlength="80" autocomplete="off" placeholder="Ej. Remo unilateral en polea" aria-describedby="customexercise-help"/><button class="btn" data-action="addCustomExercise">+ Añadir</button></div><p class="fieldhint" id="customexercise-help">Escribilo acá sin tener que bajar por toda la biblioteca.</p></div></section>`:''}
@@ -238,10 +241,10 @@ function renderSettings(){return `${title('Tu espacio, a tu modo.','Personalizá
 function renderOnboard(){return `<div style="max-width:675px;margin:35px auto 0"><div class="onboard-visual">${iconMarkup('onboard-brand')}</div><div class="eyebrow">BIENVENIDO A PERCÍ</div><h1>Tu progreso. Sin comparaciones.</h1><p class="sub">Entrená, movete, registrá tus avances y construí hábitos a tu propio ritmo. Empezá por lo que te interesa.</p><div class="card"><h3>¿Qué te gustaría priorizar?</h3><p class="micro">Podés cambiarlo después y siempre verás todas las actividades.</p><div class="filterline">${[['gym','Gimnasio'],['others','Otras actividades'],['both','Ambas']].map(([k,v])=>`<button class="chip ${state.focus===k?'active':''}" data-action="focus" data-value="${k}" aria-pressed="${state.focus===k}">${v}</button>`).join('')}</div><h3 style="margin-top:23px">¿Cómo preferís visualizar Percí?</h3><div class="filterline">${[['dark','Oscuro'],['light','Claro'],['system','Automático']].map(([k,v])=>`<button class="chip ${state.theme===k?'active':''}" data-action="theme" data-value="${k}" aria-pressed="${state.theme===k}">${v}</button>`).join('')}</div><div class="row wrap" style="margin-top:17px">${button('Entrar a Percí ↗','finishOnboard')}${button('Omitir por ahora','finishOnboard','','outline')}</div></div></div>`}
 function renderModal(){const m=app.modal;if(!m)return '';
   if(m.demoName){
-    const media=exerciseDemoAssets(m.demoName);
-    if(!media)return '';
+    const real=getRealExerciseMedia(m.demoName);
+    if(!real)return '';
     const still=typeof window!=='undefined'&&!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    return `<div class="modal-wrap" role="presentation"><div class="modal exercise-demo-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDescription" tabindex="-1"><div class="eyebrow">BIBLIOTECA / DEMOSTRACIÓN</div><h2 id="modalTitle">${h(m.demoName)}</h2><p id="modalDescription" class="sub">${still?'Posición ilustrativa del ejercicio':'GIF ilustrativo del movimiento'}. Observá las posiciones inicial y final.</p><div class="exercise-demo-stage"><img src="${still?media.poster:media.gif}" ${still?'':`data-exercise-gif="true" data-exercise-poster="${media.poster}"`} alt="Representación esquemática de ${h(m.demoName)}" width="320" height="224" decoding="async"/></div><p class="fieldhint">Ilustración orientativa. No reemplaza indicaciones técnicas de entrenamiento.</p><div class="row wrap">${button('Cerrar','closeModal','','outline')}</div></div></div>`;
+    return `<div class="modal-wrap" role="presentation"><div class="modal exercise-demo-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDescription" tabindex="-1"><div class="eyebrow">EJERCICIO / PERSONA REAL</div><h2 id="modalTitle">${h(m.demoName)}</h2><p id="modalDescription" class="sub">Demostración filmada con una persona real${real.variant?` · Variante: ${h(real.variant)}`:''}. Mirá la ejecución completa.</p><div class="exercise-demo-stage"><video class="exercise-demo-video" src="${real.video}" poster="${real.poster}" playsinline muted loop controls preload="metadata" ${still?'':'autoplay'} aria-label="Demostración real de ${h(m.demoName)}"></video></div><p class="fieldhint">Material de referencia visual. Verificá la técnica con un profesional antes de entrenar.</p><p class="exercise-demo-credit"><a href="${real.source}" target="_blank" rel="noopener noreferrer">${real.provider==='YMove'?'Exercise video by Your Move':`Video por ${h(real.provider)}`}</a>. Sin vínculo de patrocinio con Percí.</p><div class="row wrap">${button('Cerrar','closeModal','','outline')}</div></div></div>`;
   }
   return `<div class="modal-wrap" role="presentation"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDescription" tabindex="-1"><h2 id="modalTitle">${h(m.title)}</h2><p class="sub" id="modalDescription">${h(m.body)}</p>${m.extra||''}<div class="row wrap">${button(h(m.confirmLabel||'Confirmar'),m.confirm,m.value||'',m.danger?'danger':'')}${button(m.confirm==='confirmCancelSession'?'Seguir entrenando':'Cancelar','closeModal','','outline')}</div></div></div>`}
 function render(){
@@ -674,7 +677,7 @@ case 'resumeRoutineDraft':{app.renamingExercise=null;const d=readRoutineEditor(a
 case 'cancelEdit':app.renamingExercise=null;app.editor=null;clearRoutineEditor(app.activeUid);go('activity');break;
 case 'showExerciseDemo':{
   const match=findCatalogExercise(value);
-  if(!match)break;
+  if(!match||!getRealExerciseMedia(value))break;
   modalReturnFocus=document.activeElement;
   app.modal={demoName:match.name};render();break;
 }

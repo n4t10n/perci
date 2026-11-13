@@ -1,0 +1,169 @@
+[
+  {
+    "id": "press-banca",
+    "provider": "YMove",
+    "page": "https://ymove.app/free-exercise-videos",
+    "download": "https://raw.githubusercontent.com/ymove-app/exercise-api/main/free-videos/barbell-bench-press-122b71.mp4",
+    "source_title": "Barbell Bench Press",
+    "variant": "",
+    "status": "ready"
+  },
+  {
+    "id": "sentadilla",
+    "provider": "YMove",
+    "page": "https://ymove.app/free-exercise-videos",
+    "download": "https://raw.githubusercontent.com/ymove-app/exercise-api/main/free-videos/barbell-back-squat.mp4",
+    "source_title": "Barbell Back Squat",
+    "variant": "",
+    "status": "ready"
+  },
+  {
+    "id": "peso-muerto",
+    "provider": "YMove",
+    "page": "https://ymove.app/free-exercise-videos",
+    "download": "https://raw.githubusercontent.com/ymove-app/exercise-api/main/free-videos/barbell-deadlift.mp4",
+    "source_title": "Barbell Deadlift",
+    "variant": "",
+    "status": "ready"
+  },
+  {
+    "id": "remo-mancuerna",
+    "provider": "YMove",
+    "page": "https://ymove.app/free-exercise-videos",
+    "download": "https://raw.githubusercontent.com/ymove-app/exercise-api/main/free-videos/single-arm-dumbbell-row-legs-apart.mp4",
+    "source_title": "Single Arm Dumbbell Row",
+    "variant": "",
+    "status": "ready"
+  },
+  {
+    "id": "jalon-pecho",
+    "provider": "YMove",
+    "page": "https://ymove.app/free-exercise-videos",
+    "download": "https://raw.githubusercontent.com/ymove-app/exercise-api/main/free-videos/lat-pulldown.mp4",
+    "source_title": "Lat Pulldown",
+    "variant": "",
+    "status": "ready"
+  },
+  {
+    "id": "prensa-piernas",
+    "provider": "YMove",
+    "page": "https://ymove.app/free-exercise-videos",
+    "download": "https://raw.githubusercontent.com/ymove-app/exercise-api/main/free-videos/leg-press.mp4",
+    "source_title": "Leg Press",
+    "variant": "",
+    "status": "ready"
+  },
+  {
+    "id": "elevacion-lateral",
+    "provider": "YMove",
+    "page": "https://ymove.app/free-exercise-videos",
+    "download": "https://raw.githubusercontent.com/ymove-app/exercise-api/main/free-videos/dumbbell-lateral-raise-27a4de.mp4",
+    "source_title": "Dumbbell Lateral Raise",
+    "variant": "",
+    "status": "ready"
+  },
+  {
+    "id": "remo-polea-baja",
+    "provider": "YMove",
+    "page": "https://ymove.app/free-exercise-videos",
+    "download": "https://raw.githubusercontent.com/ymove-app/exercise-api/main/free-videos/seated-cable-row-close-v-bar-bccf4f.mp4",
+    "source_title": "Seated Cable Row",
+    "variant": "agarre cerrado en V",
+    "status": "ready"
+  },
+  {
+    "id": "peso-muerto-rumano",
+    "provider": "YMove",
+    "page": "https://ymove.app/free-exercise-videos",
+    "download": "https://raw.githubusercontent.com/ymove-app/exercise-api/main/free-videos/kettlebell-romanian-deadlift.mp4",
+    "source_title": "Kettlebell Romanian Deadlift",
+    "variant": "con kettlebell",
+    "status": "ready"
+  },
+  {
+    "id": "curl-martillo",
+    "provider": "YMove",
+    "page": "https://ymove.app/free-exercise-videos",
+    "download": "https://raw.githubusercontent.com/ymove-app/exercise-api/main/free-videos/hammer-curls.mp4",
+    "source_title": "Hammer Curls",
+    "variant": "",
+    "status": "ready"
+  },
+  {
+    "id": "extension-triceps-polea",
+    "provider": "YMove",
+    "page": "https://ymove.app/free-exercise-videos",
+    "download": "https://raw.githubusercontent.com/ymove-app/exercise-api/main/free-videos/cable-tricep-pushdown.mp4",
+    "source_title": "Triceps Pushdown",
+    "variant": "",
+    "status": "ready"
+  },
+  {
+    "id": "press-militar",
+    "provider": "Pexels",
+    "page": "https://www.pexels.com/video/a-man-doing-dumbbell-shoulder-press-4367541/",
+    "download": "https://www.pexels.com/download/video/4367541/",
+    "source_title": "Dumbbell Shoulder Press",
+    "variant": "con mancuernas",
+    "status": "ready"
+  },
+  {
+    "id": "curl-biceps",
+    "provider": "Pexels",
+    "page": "https://www.pexels.com/video/a-man-doing-dumbbell-curls-6547801/",
+    "download": "https://www.pexels.com/download/video/6547801/",
+    "source_title": "Dumbbell Biceps Curl",
+    "variant": "",
+    "status": "ready"
+  },
+  {
+    "id": "plancha",
+    "provider": "Pexels",
+    "page": "https://www.pexels.com/video/woman-performing-plank-exercise-in-gym-31035751/",
+    "download": "https://www.pexels.com/download/video/31035751/",
+    "source_title": "Plank",
+    "variant": "",
+    "status": "ready"
+  },
+  {
+    "id": "dominadas",
+    "provider": "Pexels",
+    "page": "https://www.pexels.com/video/young-man-practicing-pull-ups-in-gym-34780117/",
+    "download": "https://www.pexels.com/download/video/34780117/",
+    "source_title": "Pull-ups",
+    "variant": "",
+    "status": "ready"
+  },
+  {
+    "id": "aperturas-mancuernas",
+    "provider": "Pexels",
+    "page": "https://www.pexels.com/video/a-woman-doing-dumbbell-chest-flys-at-an-outdoor-gym-8402113/",
+    "download": "https://www.pexels.com/download/video/8402113/",
+    "source_title": "Dumbbell Chest Flys",
+    "variant": "",
+    "status": "ready"
+  },
+  {
+    "id": "crunch-abdominal",
+    "provider": "Pexels",
+    "page": "https://www.pexels.com/video/young-man-performing-crunches-in-modern-gym-36484275/",
+    "download": "https://www.pexels.com/download/video/36484275/",
+    "source_title": "Crunches",
+    "variant": "",
+    "status": "ready"
+  },
+  {
+    "id": "hip-thrust",
+    "provider": "YMove",
+    "page": "https://ymove.app/free-exercise-videos",
+    "source_title": "Barbell Hip Thrust",
+    "status": "pending-download"
+  },
+  {
+    "id": "pajaros-mancuernas",
+    "provider": "Vecteezy",
+    "page": "https://www.vecteezy.com/video/72738763-athletic-woman-performs-bent-over-dumbbell-reverse-fly-exercise-in-a-spacious-gym-during-a-workout-session",
+    "source_title": "Bent-over Dumbbell Reverse Fly",
+    "status": "pending-license"
+  }
+]

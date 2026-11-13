@@ -56,7 +56,7 @@ test('Los GIFs son opt-in, imágenes previas no alteran la rutina ni el historia
 test('Fallback offline, preferencia de movimiento reducido y lectura accesible',()=>{
   assert.match(app,/prefers-reduced-motion: reduce/);
   // iOS Safari puede reportar falsamente offline: probar GIF y usar fallback si falla la carga.
-  assert.match(app,/data-exercise-poster/);
+  assert.match(app,/class=\"exercise-demo-video\"/);
   assert.match(app,/addEventListener\('error',event=>/);
   assert.match(app,/el\.removeAttribute\('data-exercise-gif'\)/);
   assert.match(app,/aria-label="Ver demostración animada/);
@@ -66,12 +66,12 @@ test('Fallback offline, preferencia de movimiento reducido y lectura accesible',
 });
 
 test('PWA v1.12: posters sí, GIFs bajo demanda, caché de JS/CSS coherente',()=>{
-  assert.match(sw,/perci-shell-v1\.12\.0-exercise-gifs/);
-  assert.match(sw,/src\/app\.js\?v=1\.12\.0/);
+  assert.match(sw,/perci-shell-v1\.12\.1-real-videos/);
+  assert.match(sw,/src\/app\.js\?v=1\.12\.1/);
   assert.match(sw,/domain\/exercise-catalog\.js\?v=1\.12\.0/);
-  assert.match(sw,/src\/styles\.css\?v=1\.12\.0/);
-  assert.match(html,/src\/app\.js\?v=1\.12\.0/);
-  assert.match(html,/src\/styles\.css\?v=1\.12\.0/);
+  assert.match(sw,/src\/styles\.css\?v=1\.12\.1/);
+  assert.match(html,/src\/app\.js\?v=1\.12\.1/);
+  assert.match(html,/src\/styles\.css\?v=1\.12\.1/);
   for(const entry of assets){
     assert.ok(sw.includes(`'./assets/exercises/${entry.id}.webp'`));
     assert.ok(!sw.includes(`'./assets/exercises/${entry.id}.gif'`),`No precachear GIF: ${entry.id}`);
@@ -86,8 +86,9 @@ test('El botón de demostración reconoce nombres de ejercicios personalizados',
   assert.ok(beginning>0&&end>beginning);
   const fragment=app.slice(beginning,end);
   const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const button=new Function('exerciseDemoAssets','h',`${fragment};return exerciseDemoButton;`)(exerciseDemoAssets,escape);
-  assert.match(button(' PÁJAROS    CON MANCUERNAS '),/assets\/exercises\/pajaros-mancuernas\.webp/);
+  const real=name=>{const old=exerciseDemoAssets(name);return old&&old.id!=='pajaros-mancuernas'&&old.id!=='hip-thrust'?{...old,poster:`./assets/exercises/real/${old.id}.jpg`}:null};
+  const button=new Function('exerciseDemoAssets','getRealExerciseMedia','h',`${fragment};return exerciseDemoButton;`)(exerciseDemoAssets,real,escape);
+  assert.match(button(' PÁJAROS    CON MANCUERNAS '),/Video pendiente/);
   assert.match(button('Press de banca'),/showExerciseDemo/);
   assert.equal(button('Press de banca en máquina'),'');
   assert.doesNotMatch(button('<script>alert(1)</script>'),/<script>/);

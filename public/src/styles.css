@@ -417,3 +417,9 @@
   .exercise-demo-inline{gap:8px}
 }
 @media(prefers-reduced-motion:reduce){.exercise-demo-trigger,.exercise-demo-trigger *{transition:none!important}}
+/* QA 1.12.1 · demostraciones con personas reales, opt-in y compatibles con iOS */
+.exercise-demo-video{width:100%;height:auto;max-height:min(56vh,410px);display:block;object-fit:contain;background:#0e1514;border-radius:12px}
+.exercise-demo-credit{font-size:12px;line-height:1.5;margin:10px 0;color:var(--muted,#768781)}
+.exercise-demo-credit a{text-decoration:underline;color:inherit}
+.exercise-demo-pending{display:inline-flex;align-items:center;max-width:88px;min-height:58px;font-size:10px;line-height:1.2;color:var(--muted,#768781);text-align:center}
+@media(prefers-reduced-motion:reduce){.exercise-demo-video{animation:none}}
