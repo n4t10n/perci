@@ -1,12 +1,12 @@
 // Percí v1.6 · SW actualizado, un único grafo de módulos por versión.
-const CACHE = 'perci-shell-v1.12.2-clean-demo';
+const CACHE = 'perci-shell-v1.12.3-in-app-demo';
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './src/account-ui.js?v=1.7.6',
   './src/account.js?v=1.7.6',
-  './src/app.js?v=1.12.2',
+  './src/app.js?v=1.12.3',
   './src/domain/routine-share.js?v=1.7.6',
   './src/domain/historical-sets.js?v=1.10.0',
   './src/domain/exercise-catalog.js?v=1.12.0',

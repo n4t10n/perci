@@ -66,11 +66,11 @@ test('Fallback offline, preferencia de movimiento reducido y lectura accesible',
 });
 
 test('PWA v1.12: posters sí, GIFs bajo demanda, caché de JS/CSS coherente',()=>{
-  assert.match(sw,/perci-shell-v1\.12\.2-clean-demo/);
-  assert.match(sw,/src\/app\.js\?v=1\.12\.2/);
+  assert.match(sw,/perci-shell-v1\.12\.3-in-app-demo/);
+  assert.match(sw,/src\/app\.js\?v=1\.12\.3/);
   assert.match(sw,/domain\/exercise-catalog\.js\?v=1\.12\.0/);
   assert.match(sw,/src\/styles\.css\?v=1\.12\.1/);
-  assert.match(html,/src\/app\.js\?v=1\.12\.2/);
+  assert.match(html,/src\/app\.js\?v=1\.12\.3/);
   assert.match(html,/src\/styles\.css\?v=1\.12\.1/);
   for(const entry of assets){
     assert.ok(sw.includes(`'./assets/exercises/${entry.id}.webp'`));
@@ -88,7 +88,9 @@ test('El botón de demostración reconoce nombres de ejercicios personalizados',
   const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const real=name=>{const old=exerciseDemoAssets(name);return old&&old.id!=='pajaros-mancuernas'&&old.id!=='hip-thrust'?{...old,poster:`./assets/exercises/real/${old.id}.jpg`}:null};
   const button=new Function('exerciseDemoAssets','getRealExerciseMedia','h',`${fragment};return exerciseDemoButton;`)(exerciseDemoAssets,real,escape);
-  assert.match(button(' PÁJAROS    CON MANCUERNAS '),/Video pendiente/);
+  assert.match(button(' PÁJAROS    CON MANCUERNAS '),/showExerciseDemo/);
+  assert.match(button('Hip thrust'),/showExerciseDemo/);
+  assert.match(button('Hip thrust'),/hip-thrust\.webp/);
   assert.match(button('Press de banca'),/showExerciseDemo/);
   assert.equal(button('Press de banca en máquina'),'');
   assert.doesNotMatch(button('<script>alert(1)</script>'),/<script>/);

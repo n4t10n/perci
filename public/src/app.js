@@ -79,7 +79,7 @@ const exerciseDemoButton=name=>{
   const media=exerciseDemoAssets(name);
   if(!media)return '';
   const real=getRealExerciseMedia(name);
-  if(!real)return '<span class="exercise-demo-pending" title="Pendiente de video real con licencia">Video pendiente</span>';
+  if(!real)return `<button type="button" class="exercise-demo-trigger" data-action="showExerciseDemo" data-value="${h(name)}" aria-label="Ver ilustración animada de ${h(name)}" title="Ver ilustración de ${h(name)}"><img src="${media.poster}" alt="" width="80" height="60" loading="lazy" decoding="async"/><span class="exercise-demo-play" aria-hidden="true">▶</span></button>`;
   return `<button type="button" class="exercise-demo-trigger" data-action="showExerciseDemo" data-value="${h(name)}" aria-label="Ver demostración animada de ${h(name)}" title="Ver movimiento de ${h(name)}"><img src="${real.poster}" alt="" width="80" height="60" loading="lazy" decoding="async"/><span class="exercise-demo-play" aria-hidden="true">▶</span></button>`;
 };
 function renderLibrary(){const matches=filterCatalogExercises(lib,{muscle:app.libraryMuscle,search:app.exerciseSearch});return `<div class="detail-top">${back(app.editor?'routineEdit':'activity')}<span class="micro">BIBLIOTECA</span></div>${title('Biblioteca de ejercicios','Encontrá movimientos por nombre o añadí uno propio.')}
@@ -242,7 +242,12 @@ function renderOnboard(){return `<div style="max-width:675px;margin:35px auto 0"
 function renderModal(){const m=app.modal;if(!m)return '';
   if(m.demoName){
     const real=getRealExerciseMedia(m.demoName);
-    if(!real)return '';
+    if(!real){
+      const illustrated=exerciseDemoAssets(m.demoName);
+      if(!illustrated)return '';
+      const still=typeof window!=='undefined'&&!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      return `<div class="modal-wrap" role="presentation"><div class="modal exercise-demo-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDescription" tabindex="-1"><div class="eyebrow">DEMOSTRACIÓN</div><h2 id="modalTitle">${h(m.demoName)}</h2><p id="modalDescription" class="sub">Animación ilustrativa temporal. Próximamente incorporaremos una demostración filmada.</p><div class="exercise-demo-stage"><img src="${still?illustrated.poster:illustrated.gif}" data-exercise-gif="1" data-exercise-poster="${illustrated.poster}" alt="Ilustración del movimiento de ${h(m.demoName)}" width="400" height="280"></div><p class="fieldhint">Material de referencia visual. Verificá la técnica con un profesional antes de entrenar.</p><div class="row wrap">${button('Cerrar','closeModal','','outline')}</div></div></div>`;
+    }
     const still=typeof window!=='undefined'&&!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     return `<div class="modal-wrap" role="presentation"><div class="modal exercise-demo-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDescription" tabindex="-1"><div class="eyebrow">DEMOSTRACIÓN</div><h2 id="modalTitle">${h(m.demoName)}</h2><p id="modalDescription" class="sub">${real.variant?`Variante: ${h(real.variant)}. `:''}Observá la ejecución.</p><div class="exercise-demo-stage"><video class="exercise-demo-video" src="${real.video}" poster="${real.poster}" playsinline muted loop controls preload="metadata" ${still?'':'autoplay'} aria-label="Demostración real de ${h(m.demoName)}"></video></div><p class="fieldhint">Material de referencia visual. Verificá la técnica con un profesional antes de entrenar.</p><div class="row wrap">${button('Cerrar','closeModal','','outline')}</div></div></div>`;
   }
@@ -677,7 +682,7 @@ case 'resumeRoutineDraft':{app.renamingExercise=null;const d=readRoutineEditor(a
 case 'cancelEdit':app.renamingExercise=null;app.editor=null;clearRoutineEditor(app.activeUid);go('activity');break;
 case 'showExerciseDemo':{
   const match=findCatalogExercise(value);
-  if(!match||!getRealExerciseMedia(value))break;
+  if(!match||!exerciseDemoAssets(value))break;
   modalReturnFocus=document.activeElement;
   app.modal={demoName:match.name};render();break;
 }
