@@ -1,5 +1,5 @@
 // Percí v1.6 · SW actualizado, un único grafo de módulos por versión.
-const CACHE = 'perci-shell-v1.7.6-rutinas-photo-custom-exercise-order-date-summary-left';
+const CACHE = 'perci-shell-v1.8.1-ios-date-field';
 const SHELL = [
   './',
   './index.html',
@@ -22,7 +22,7 @@ const SHELL = [
   './src/domain/routine-session-tools.js?v=1.7.6',
   './src/domain/startup-route.js?v=1.7.6',
   './src/pwa.js?v=1.7.6',
-  './src/styles.css?v=1.7.6',
+  './src/styles.css?v=1.8.1',
   './assets/favicon.svg',
   './assets/icon-180.png',
   './assets/icon-192.png',

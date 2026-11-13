@@ -121,3 +121,9 @@ test('finalizar sesión: guarda fecha elegida y las series originales',()=>{
   assert.equal(state.draft,null);
 });
 
+test('fecha en mobile: input de Safari no excede la tarjeta y se renueva la caché CSS',()=>{
+  assert.match(css,/\.workout-date-input input\{[^}]*min-width:0;max-width:100%/);
+  assert.match(css,/@media\(max-width:480px\)\{\.workout-date-panel\{[^}]*\}\.workout-date-panel>div\{min-width:0\}\.workout-date-input\{[^}]*width:100%/);
+  assert.match(sw,/perci-shell-v1\.8\.1-ios-date-field/);
+  assert.match(sw,/src\/styles\.css\?v=1\.8\.1/);
+});

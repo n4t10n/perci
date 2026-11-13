@@ -276,8 +276,8 @@
 .workout-date-panel h3{font-size:16px;margin:0 0 5px}
 .workout-date-panel p{margin:0;line-height:1.5}
 .workout-date-input{margin:0;flex:0 1 185px;min-width:156px}
-.workout-date-input input{min-height:44px;width:100%}
-@media(max-width:480px){.workout-date-panel{flex-direction:column;align-items:stretch}.workout-date-input{flex:1;min-width:0}.exercise-reorder-bar{gap:5px}.exercise-order-index{font-size:10px}}
+.workout-date-input input{display:block;box-sizing:border-box;min-height:44px;width:100%;min-width:0;max-width:100%}
+@media(max-width:480px){.workout-date-panel{flex-direction:column;align-items:stretch}.workout-date-panel>div{min-width:0}.workout-date-input{flex:none;width:100%;min-width:0;max-width:100%}.exercise-reorder-bar{gap:5px}.exercise-order-index{font-size:10px}}
 
 /* v1.8 · Actividad liviana: acceso a vista completa bajo las tarjetas. */
 .routine-all-link{display:flex;justify-content:flex-start;margin:19px 0 0}
