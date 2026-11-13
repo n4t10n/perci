@@ -17,7 +17,7 @@ MAX_AVATAR_BYTES = 200_000
 MAX_RESPONSE_BYTES = 260_000
 
 
-def _object_path(user_id):
+def _object_path(user_id, extension='webp'):
     """Reject path traversal and derive the only allowed object from auth.uid."""
     try:
         normalized = str(uuid.UUID(str(user_id)))
@@ -25,7 +25,9 @@ def _object_path(user_id):
         raise ValueError('Identificador de cuenta inválido.') from exc
     if str(user_id) != normalized:
         raise ValueError('Identificador de cuenta inválido.')
-    return f'/storage/v1/object/{BUCKET}/{normalized}/avatar.webp'
+    if extension not in ('webp', 'jpg'):
+        raise ValueError('Extensión de foto no permitida.')
+    return f'/storage/v1/object/{BUCKET}/{normalized}/avatar.{extension}'
 
 
 def _size_webp(raw):
@@ -50,16 +52,46 @@ def _size_webp(raw):
     return width, height
 
 
-def validate_image(core, encoded):
+def _size_jpeg(raw):
+    # JPEG SOF dimensions; reject trailing garbage and malformed segments.
+    if not isinstance(raw, bytes) or len(raw) < 24 or raw[:2] != b'\xff\xd8' or raw[-2:] != b'\xff\xd9':
+        return None
+    pos = 2
+    while pos < len(raw)-2:
+        if raw[pos] != 0xff:
+            return None
+        while pos < len(raw)-2 and raw[pos] == 0xff:
+            pos += 1
+        marker = raw[pos]; pos += 1
+        if marker in (0x01,) or 0xd0 <= marker <= 0xd9:
+            return None
+        if marker == 0xda:  # Start of image scan after SOF.
+            break
+        if pos + 2 > len(raw)-2:
+            return None
+        length = int.from_bytes(raw[pos:pos+2], 'big')
+        if length < 2 or pos + length > len(raw)-2:
+            return None
+        if marker in (0xc0,0xc1,0xc2,0xc3,0xc5,0xc6,0xc7,0xc9,0xca,0xcb,0xcd,0xce,0xcf):
+            if length < 8:
+                return None
+            height = int.from_bytes(raw[pos+3:pos+5], 'big')
+            width = int.from_bytes(raw[pos+5:pos+7], 'big')
+            return (width, height)
+        pos += length
+    return None
+
+
+def validate_image(core, encoded, mime='image/webp'):
     if not isinstance(encoded, str) or not encoded or len(encoded) > 275_000:
         raise core.ApiError('La foto supera el tamaño permitido (200 KB).', 413)
     try:
         raw = base64.b64decode(encoded, validate=True)
     except (binascii.Error, ValueError) as exc:
         raise core.ApiError('La foto no tiene un formato válido.', 400) from exc
-    dims = _size_webp(raw)
+    dims = _size_webp(raw) if mime == 'image/webp' else _size_jpeg(raw) if mime == 'image/jpeg' else None
     if not dims or not 128 <= dims[0] <= 1024 or dims[0] != dims[1]:
-        raise core.ApiError('La foto debe ser una imagen WebP cuadrada y válida.', 400)
+        raise core.ApiError('La foto debe ser una imagen JPEG/WebP cuadrada y válida.', 400)
     if len(raw) > MAX_AVATAR_BYTES:
         raise core.ApiError('La foto supera el tamaño permitido (200 KB).', 413)
     return raw
@@ -70,10 +102,11 @@ def _storage(core, path, token, *, method='GET', raw=None):
         raise core.ApiError('El almacenamiento de la cuenta no está configurado.', 503)
     if not path.startswith('/storage/v1/object/') or '://' in path:
         raise core.ApiError('Ruta de imagen inválida.', 400)
+    content_type = 'image/jpeg' if path.endswith('/avatar.jpg') else 'image/webp'
     headers = {'apikey': core.CONFIG['key'], 'Authorization': 'Bearer ' + token,
-               'Accept': 'application/json' if method != 'GET' else 'image/webp'}
+               'Accept': 'application/json' if method != 'GET' else content_type}
     if method == 'POST':
-        headers.update({'Content-Type': 'image/webp', 'x-upsert': 'true', 'cache-control': 'max-age=0'})
+        headers.update({'Content-Type': content_type, 'x-upsert': 'true', 'cache-control': 'max-age=0'})
     req = urllib.request.Request(core.CONFIG['url'] + path, data=raw, headers=headers, method=method)
     try:
         with urllib.request.urlopen(req, timeout=15) as response:
@@ -96,29 +129,36 @@ def _storage(core, path, token, *, method='GET', raw=None):
 
 
 def fetch(core, token, user_id):
-    path = _object_path(user_id)
-    # Authenticated private object endpoint. The path is *never* user-provided.
-    private = path.replace('/storage/v1/object/', '/storage/v1/object/authenticated/', 1)
-    raw = _storage(core, private, token)
-    if raw is None:
-        return {'present': False, 'image': None, 'ownerId': user_id}
-    if len(raw) > MAX_AVATAR_BYTES or not _size_webp(raw):
-        raise core.ApiError('No se pudo validar la foto guardada.', 502)
-    return {'present': True, 'image': 'data:image/webp;base64,' + base64.b64encode(raw).decode('ascii'), 'ownerId': user_id}
+    # The newer JPEG is preferred; retain support for existing WebP avatars.
+    # Both reads use an authenticated endpoint and fixed keys derived from auth.uid.
+    for extension, mime, validator in (('jpg', 'image/jpeg', _size_jpeg),
+                                       ('webp', 'image/webp', _size_webp)):
+        path = _object_path(user_id, extension)
+        private = path.replace('/storage/v1/object/', '/storage/v1/object/authenticated/', 1)
+        raw = _storage(core, private, token)
+        if raw is None:
+            continue
+        if len(raw) > MAX_AVATAR_BYTES or not validator(raw):
+            raise core.ApiError('No se pudo validar la foto guardada.', 502)
+        return {'present': True, 'image': 'data:' + mime + ';base64,' + base64.b64encode(raw).decode('ascii'), 'ownerId': user_id}
+    return {'present': False, 'image': None, 'ownerId': user_id}
 
 
 def update(core, token, user_id, body):
-    path = _object_path(user_id)
     if body.get('ownerId') != user_id:
         raise core.ApiError('La sesión de la cuenta cambió. Volvé a ingresar.', 403)
     action = body.get('action')
     if action == 'save':
-        if body.get('mime') != 'image/webp':
-            raise core.ApiError('Solo aceptamos fotos procesadas en formato WebP.', 415)
-        raw = validate_image(core, body.get('image'))
+        mime = body.get('mime')
+        if mime not in ('image/jpeg', 'image/webp'):
+            raise core.ApiError('Solo aceptamos fotos procesadas en formato JPEG o WebP.', 415)
+        raw = validate_image(core, body.get('image'), mime)
+        path = _object_path(user_id, 'jpg' if mime == 'image/jpeg' else 'webp')
         _storage(core, path, token, method='POST', raw=raw)
         return {'saved': True, 'ownerId': user_id}
     if action == 'remove':
-        _storage(core, path, token, method='DELETE')
+        # Remove both generations so a previous WebP cannot reappear afterward.
+        for extension in ('jpg', 'webp'):
+            _storage(core, _object_path(user_id, extension), token, method='DELETE')
         return {'removed': True, 'ownerId': user_id}
     raise core.ApiError('Acción de foto no permitida.', 400)

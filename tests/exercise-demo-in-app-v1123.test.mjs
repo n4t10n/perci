@@ -38,8 +38,8 @@ test('v1.12.3: mismo modal, fallback offline, accesibilidad y movimiento reducid
 });
 
 test('v1.12.3: ningún GIF remoto o de terceros se precachea',()=>{
- assert.match(sw,/perci-shell-v1\.13\.0-avatar/);
- assert.match(sw,/src\/app\.js\?v=1\.13\.0/);
+ assert.match(sw,/perci-shell-v1\.13\.1-safari-jpeg/);
+ assert.match(sw,/src\/app\.js\?v=1\.13\.1/);
  assert.doesNotMatch(sw,/\.gif'/);
  assert.doesNotMatch(app,/fitcron\.com/);
 });

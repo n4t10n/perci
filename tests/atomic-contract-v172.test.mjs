@@ -24,5 +24,5 @@ test('v1.7.6 shell no mezcla versiones',()=>{
     assert.doesNotMatch(content,/v=1\.6\.4/);
     assert.match(content,/v=1\.7\.6/);
   }
-  assert.match(sw,/perci-shell-v1\.13\.0-avatar/);
+  assert.match(sw,/perci-shell-v1\.13\.1-safari-jpeg/);
 });

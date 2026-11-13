@@ -26,7 +26,7 @@ test('v1.13: editor nativo accesible recorta, mueve, permite cancelar y guardar'
  assert.match(avatar,/<dialog class="avatar-editor"/);
  assert.match(avatar,/dialog\.showModal\(\)/);
  assert.match(avatar,/URL\.revokeObjectURL/);
- assert.match(avatar,/canvas\.toBlob\(resolve,'image\/webp'/);
+ assert.match(avatar,/canvas\.toBlob\(resolve,'image\/jpeg'/);
  assert.match(avatar,/data-avatar-move="left"/);
  assert.match(avatar,/data-avatar-action="cancel"/);
  assert.match(avatar,/data-avatar-action="save"/);
@@ -51,24 +51,24 @@ test('v1.13: perfil privado aislado del snapshot y los datos offline',()=>{
  assert.doesNotMatch(app,/storage\/v1\/object\/public/);
 });
 
-test('v1.13: origen/cookie autenticados, JPG/PNG/HEIC se convierten a WebP seguro',()=>{
+test('v1.13: origen/cookie autenticados, JPG/PNG/HEIC se convierten a JPEG seguro para Safari',()=>{
  assert.match(api,/self\.check_post\(\)/);
  assert.match(avatar,/MAX_ORIGINAL=10\*1024\*1024/);
  assert.match(avatar,/image\/heic/);
  assert.match(avatar,/image\/webp/);
  assert.match(server,/base64\.b64decode\(encoded, validate=True\)/);
  assert.match(server,/MAX_AVATAR_BYTES = 200_000/);
- assert.match(server,/_object_path\(user_id\)/); // user ID comes from authenticated session
+ assert.match(server,/_object_path\(user_id,/); // user ID comes from authenticated session
 });
 
 test('v1.13: caché PWA coherente sin precachear fotos privadas',()=>{
- assert.match(sw,/perci-shell-v1\.13\.0-avatar/);
- assert.match(sw,/src\/profile-avatar\.js\?v=1\.13\.0/);
- assert.match(sw,/src\/account-ui\.js\?v=1\.13\.0/);
- assert.match(sw,/src\/app\.js\?v=1\.13\.0/);
- assert.match(sw,/src\/styles\.css\?v=1\.13\.0/);
- assert.match(html,/src\/app\.js\?v=1\.13\.0/);
- assert.match(html,/src\/styles\.css\?v=1\.13\.0/);
+ assert.match(sw,/perci-shell-v1\.13\.1-safari-jpeg/);
+ assert.match(sw,/src\/profile-avatar\.js\?v=1\.13\.1/);
+ assert.match(sw,/src\/account-ui\.js\?v=1\.13\.1/);
+ assert.match(sw,/src\/app\.js\?v=1\.13\.1/);
+ assert.match(sw,/src\/styles\.css\?v=1\.13\.1/);
+ assert.match(html,/src\/app\.js\?v=1\.13\.1/);
+ assert.match(html,/src\/styles\.css\?v=1\.13\.1/);
  assert.doesNotMatch(sw,/perci-avatars-qa|api\/profile\/avatar/);
  assert.match(sw,/url\.pathname\.startsWith\('\/api\/'\)/);
 });

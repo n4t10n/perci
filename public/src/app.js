@@ -6,8 +6,8 @@ import { reconcileCloudWithBaseline, hasPersonalData } from './data/auto-hydrati
 import { dateISO, offsetDate, seed } from './domain/initial-state.js?v=1.7.6';
 import { getInitialView } from './domain/startup-route.js?v=1.7.6';
 import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync,probeOfflineAccount} from './account.js?v=1.7.6';
-import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.13.0';
-import {avatarMarkup,renderAvatarDialog,mountAvatarDialog,installAvatarUI,refreshAvatar,resetAvatarOnAccountChange} from './profile-avatar.js?v=1.13.0';
+import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.13.1';
+import {avatarMarkup,renderAvatarDialog,mountAvatarDialog,installAvatarUI,refreshAvatar,resetAvatarOnAccountChange} from './profile-avatar.js?v=1.13.1';
 import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.7.6';
 import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.7.6';
 import {canAutoRefreshCloud,shouldRefreshOnNavigation} from './data/auto-refresh.js?v=1.7.6';

@@ -8,7 +8,7 @@ const CACHE_PREFIX='perci_avatar_v113_';
 const MAX_ORIGINAL=10*1024*1024;
 const MAX_ENCODED=200000;
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const validImage=value=>typeof value==='string'&&value.length<=280000&&/^data:image\/webp;base64,[A-Za-z0-9+/=]+$/.test(value);
+const validImage=value=>typeof value==='string'&&value.length<=280000&&/^data:image\/(?:webp|jpeg);base64,[A-Za-z0-9+/=]+$/.test(value);
 const currentUid=()=>account.authenticated?account.user?.id||null:null;
 let displayUid=null;
 let displayImage=null;
@@ -152,22 +152,26 @@ async function prepareImage(file){
 }
 
 async function exportAvatar(){
+  // Safari para iPhone no garantiza codificación WebP desde Canvas.
+  // JPEG sí está ampliamente soportado y el backend verifica sus bytes reales.
   const canvas=document.createElement('canvas');
-  canvas.width=canvas.height=512;
-  draw(canvas,512);
-  for(const quality of [0.82,0.72,0.6,0.48,0.36]){
-    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',quality));
-    if(!blob||blob.type!=='image/webp')throw Error('Este navegador no puede preparar WebP. Probá actualizar Safari.');
-    if(blob.size<=MAX_ENCODED){
-      const data=await new Promise((resolve,reject)=>{
-        const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('No se pudo leer la foto.'));
-        reader.readAsDataURL(blob);
-      });
-      if(!validImage(data))throw Error('La foto procesada no tiene un formato válido.');
-      return data;
+  for(const size of [512,448,384,320]){
+    canvas.width=canvas.height=size;
+    draw(canvas,size);
+    for(const quality of [0.82,0.72,0.60,0.48,0.36]){
+      const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',quality));
+      if(!blob||blob.type!=='image/jpeg')throw Error('No pudimos preparar la foto. Probá de nuevo desde Safari.');
+      if(blob.size<=MAX_ENCODED){
+        const data=await new Promise((resolve,reject)=>{
+          const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('No se pudo leer la foto.'));
+          reader.readAsDataURL(blob);
+        });
+        if(!validImage(data)||!data.startsWith('data:image/jpeg;'))throw Error('La foto procesada no tiene un formato válido.');
+        return data;
+      }
     }
   }
-  throw Error('No pudimos reducir la foto. Probá elegir otra imagen.');
+  throw Error('No pudimos reducir la foto a 200 KB. Probá otra imagen.');
 }
 
 async function saveAvatar(){
@@ -179,7 +183,7 @@ async function saveAvatar(){
   const uid=selected.uid;
   try{
     const data=await exportAvatar();
-    const result=await api({action:'save',ownerId:uid,mime:'image/webp',image:data.split(',')[1]});
+    const result=await api({action:'save',ownerId:uid,mime:'image/jpeg',image:data.split(',')[1]});
     if(result?.ownerId!==uid)throw Error('La sesión cambió mientras guardábamos la foto.');
     if(currentUid()!==uid)return;
     mutationVersion++;

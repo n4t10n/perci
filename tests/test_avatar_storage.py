@@ -47,14 +47,18 @@ class TestAvatarStorage(unittest.TestCase):
         def fake_storage(core, path, token, **kwargs):
             calls.append((path, token, kwargs))
             return raw
-        with patch.object(perci_avatar, '_storage', side_effect=fake_storage):
+        def read_avatar(core, path, token, **kwargs):
+            calls.append((path, token, kwargs))
+            return raw if path.endswith('/avatar.webp') else None
+        with patch.object(perci_avatar, '_storage', side_effect=read_avatar):
             response = perci_avatar.fetch(FakeCore, 'USER_JWT', UID)
         self.assertTrue(response['present'])
         self.assertEqual(base64.b64decode(response['image'].split(',')[1]), raw)
-        self.assertEqual(len(calls), 1)
-        self.assertIn('/object/authenticated/perci-avatars-qa/' + UID + '/avatar.webp', calls[0][0])
+        self.assertEqual(len(calls), 2)
+        self.assertIn('/object/authenticated/perci-avatars-qa/' + UID + '/avatar.jpg', calls[0][0])
+        self.assertIn('/object/authenticated/perci-avatars-qa/' + UID + '/avatar.webp', calls[1][0])
         self.assertNotIn('/public/', calls[0][0])
-        self.assertEqual(calls[0][1], 'USER_JWT')
+        self.assertTrue(all(x[1] == 'USER_JWT' for x in calls))
 
     def test_missing_avatar_is_normal_empty_state(self):
         with patch.object(perci_avatar, '_storage', return_value=None):
@@ -71,8 +75,8 @@ class TestAvatarStorage(unittest.TestCase):
         with patch.object(perci_avatar, '_storage', side_effect=mock_storage):
             self.assertTrue(perci_avatar.update(FakeCore, 'USER_JWT', UID, body)['saved'])
             self.assertTrue(perci_avatar.update(FakeCore, 'USER_JWT', UID, {'action':'remove', 'userId':OTHER, 'ownerId':UID})['removed'])
-        self.assertEqual([x[2]['method'] for x in seen], ['POST', 'DELETE'])
-        self.assertTrue(all('/' + UID + '/avatar.webp' in x[0] for x in seen))
+        self.assertEqual([x[2]['method'] for x in seen], ['POST', 'DELETE', 'DELETE'])
+        self.assertTrue(all('/' + UID + '/avatar.' in x[0] for x in seen))
         self.assertTrue(all(OTHER not in x[0] for x in seen))
 
     def test_stale_session_cannot_copy_photo_into_another_user(self):
