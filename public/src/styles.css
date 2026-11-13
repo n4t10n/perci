@@ -296,3 +296,16 @@
 .hero .btn.session-cancel{background:rgba(9,22,20,.82);color:#fff;border-color:rgba(255,255,255,.5)}
 .hero .btn.session-cancel:hover{background:rgba(9,22,20,.96)}
 @media(max-width:380px){.session-end-actions{width:100%}.session-end-actions .btn{flex:1 1 100%}}
+
+/* Percí v1.8.4 · Home: badge en flujo y botones sin superposición. */
+@media(max-width:700px){
+  .hero{flex-direction:column;align-items:stretch;justify-content:flex-end;min-height:325px}
+  .hero-content{width:100%;max-width:100%;padding-bottom:8px}
+  .hero .row.wrap{align-items:flex-start;gap:12px}
+  .hero .row.wrap .btn{max-width:100%;white-space:normal;text-align:center}
+  .hero .btn.session-cancel{min-height:44px;padding:10px 14px;font-size:14px}
+  .hero-flair{position:relative;top:auto;right:auto;bottom:auto;left:auto;align-self:flex-end;flex-shrink:0;margin:12px 20px 20px auto;max-width:calc(100% - 40px);text-align:center;font-size:10px}
+}
+@media(max-width:380px){
+  .hero-flair{margin-right:16px;margin-bottom:16px;max-width:calc(100% - 32px)}
+}

@@ -24,5 +24,5 @@ test('v1.7.6 shell no mezcla versiones',()=>{
     assert.doesNotMatch(content,/v=1\.6\.4/);
     assert.match(content,/v=1\.7\.6/);
   }
-  assert.match(sw,/perci-shell-v1\.8\.3-cancel-session/);
+  assert.match(sw,/perci-shell-v1\.8\.4-home-hero-flow/);
 });

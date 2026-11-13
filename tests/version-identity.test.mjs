@@ -36,7 +36,7 @@ test('v1.7.6: precache y entrada usan el mismo grafo de módulos',()=>{
   }
   assert.match(html,/src\/app\.js\?v=1\.8\.3/);
   assert.match(html,/src\/pwa\.js\?v=1\.7\.6/);
-  assert.match(sw,/perci-shell-v1\.8\.3-cancel-session/);
+  assert.match(sw,/perci-shell-v1\.8\.4-home-hero-flow/);
 });
 test('v1.7.6: se verifica nuevo service worker sin interrumpir formularios',()=>{
   const pwa=fs.readFileSync(new URL('../public/src/pwa.js',import.meta.url),'utf8');
