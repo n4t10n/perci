@@ -289,3 +289,10 @@
 .routine-all-link{display:flex;justify-content:flex-start;margin:19px 0 0}
 .routine-all-link .btn{min-height:46px;max-width:100%;text-align:center}
 @media(max-width:480px){.routine-all-link .btn{width:auto;max-width:100%}}
+
+/* Percí v1.8.3 · Cancelar un borrador de entrenamiento sin crear historial. */
+.session-cancel-actions{display:flex;justify-content:flex-end;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.session-end-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.hero .btn.session-cancel{background:rgba(9,22,20,.82);color:#fff;border-color:rgba(255,255,255,.5)}
+.hero .btn.session-cancel:hover{background:rgba(9,22,20,.96)}
+@media(max-width:380px){.session-end-actions{width:100%}.session-end-actions .btn{flex:1 1 100%}}
