@@ -277,6 +277,12 @@
 .workout-date-panel p{margin:0;line-height:1.5}
 .workout-date-input{margin:0;flex:0 1 185px;min-width:156px}
 .workout-date-input input{display:block;box-sizing:border-box;min-height:44px;width:100%;min-width:0;max-width:100%}
+/* Safari iOS: el input date puede conservar un ancho interno mayor que su contenedor.
+   La superficie visible tiene borde propio; el input nativo transparente sigue siendo interactivo. */
+.workout-date-control{position:relative;isolation:isolate;display:grid;place-items:center;overflow:hidden;width:100%;max-width:100%;min-width:0;min-height:52px;border:1px solid var(--border);border-radius:13px;background:var(--surface2)}
+.workout-date-control .workout-date-value{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-size:16px;color:var(--text);pointer-events:none}
+.workout-date-control input[type=date]{position:absolute;inset:0;display:block;width:100%;height:100%;min-width:0;max-width:100%;min-height:0;margin:0;padding:0;border:0;border-radius:0;opacity:0;cursor:pointer}
+.workout-date-control:focus-within{outline:3px solid var(--accent);outline-offset:3px}
 @media(max-width:480px){.workout-date-panel{flex-direction:column;align-items:stretch}.workout-date-panel>div{min-width:0}.workout-date-input{flex:none;width:100%;min-width:0;max-width:100%}.exercise-reorder-bar{gap:5px}.exercise-order-index{font-size:10px}}
 
 /* v1.8 · Actividad liviana: acceso a vista completa bajo las tarjetas. */
