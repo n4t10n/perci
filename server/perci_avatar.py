@@ -12,7 +12,7 @@ import urllib.error
 import urllib.request
 import uuid
 
-BUCKET = 'perci-avatars-qa'
+BUCKET = 'perci-avatars-dev'
 MAX_AVATAR_BYTES = 200_000
 MAX_RESPONSE_BYTES = 260_000
 
@@ -120,7 +120,7 @@ def _storage(core, path, token, *, method='GET', raw=None):
         if e.code in (401, 403):
             raise core.ApiError('No tenés permiso para acceder a esta foto.', 403) from e
         if e.code == 404:
-            raise core.ApiError('El espacio privado de fotos de QA todavía no está configurado.', 503) from e
+            raise core.ApiError('El espacio privado de fotos de DEV todavía no está configurado.', 503) from e
         if e.code in (400, 413, 415):
             raise core.ApiError('No se pudo guardar la foto. Revisá el formato o el tamaño.', 400) from e
         raise core.ApiError('No pudimos acceder a las fotos. Intentá nuevamente.', 503) from e

@@ -25,7 +25,7 @@ def webp_header(width=512, height=512):
 class TestAvatarStorage(unittest.TestCase):
     def test_fixed_path_is_derived_from_auth_user(self):
         self.assertEqual(perci_avatar._object_path(UID),
-                         '/storage/v1/object/perci-avatars-qa/' + UID + '/avatar.webp')
+                         '/storage/v1/object/perci-avatars-dev/' + UID + '/avatar.webp')
         for value in ('../admin', 'not-an-uuid', OTHER + '/evil.webp', None, ''):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 perci_avatar._object_path(value)
@@ -55,8 +55,8 @@ class TestAvatarStorage(unittest.TestCase):
         self.assertTrue(response['present'])
         self.assertEqual(base64.b64decode(response['image'].split(',')[1]), raw)
         self.assertEqual(len(calls), 2)
-        self.assertIn('/object/authenticated/perci-avatars-qa/' + UID + '/avatar.jpg', calls[0][0])
-        self.assertIn('/object/authenticated/perci-avatars-qa/' + UID + '/avatar.webp', calls[1][0])
+        self.assertIn('/object/authenticated/perci-avatars-dev/' + UID + '/avatar.jpg', calls[0][0])
+        self.assertIn('/object/authenticated/perci-avatars-dev/' + UID + '/avatar.webp', calls[1][0])
         self.assertNotIn('/public/', calls[0][0])
         self.assertTrue(all(x[1] == 'USER_JWT' for x in calls))
 

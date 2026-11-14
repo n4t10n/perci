@@ -30,7 +30,7 @@ class TestAvatarSafariJPEG(unittest.TestCase):
         with patch.object(perci_avatar,'_storage',side_effect=lambda c,p,t,**kw:requests.append((p,t,kw)) or b'{}'):
             out=perci_avatar.update(shared.core,'privatejwt',UID,{'ownerId':UID,'action':'save','mime':'image/jpeg','image':base64.b64encode(jpeg_512()).decode(),'path':OTHER})
         self.assertTrue(out['saved'])
-        self.assertEqual(requests[0][0],'/storage/v1/object/perci-avatars-qa/'+UID+'/avatar.jpg')
+        self.assertEqual(requests[0][0],'/storage/v1/object/perci-avatars-dev/'+UID+'/avatar.jpg')
         self.assertEqual(requests[0][1],'privatejwt')
         self.assertNotIn(OTHER,requests[0][0])
 
@@ -39,7 +39,7 @@ class TestAvatarSafariJPEG(unittest.TestCase):
         with patch.object(perci_avatar,'_storage',return_value=j) as storage:
             output=perci_avatar.fetch(shared.core,'token',UID)
         self.assertTrue(output['image'].startswith('data:image/jpeg;base64,'))
-        self.assertIn('/object/authenticated/perci-avatars-qa/'+UID+'/avatar.jpg',storage.call_args.args[1])
+        self.assertIn('/object/authenticated/perci-avatars-dev/'+UID+'/avatar.jpg',storage.call_args.args[1])
         with patch.object(perci_avatar,'_storage',side_effect=[None,None]):
             self.assertFalse(perci_avatar.fetch(shared.core,'token',UID)['present'])
 
@@ -47,7 +47,7 @@ class TestAvatarSafariJPEG(unittest.TestCase):
         calls=[]
         with patch.object(perci_avatar,'_storage',side_effect=lambda c,p,t,**kw:calls.append((p,kw['method']))):
             perci_avatar.update(shared.core,'token',UID,{'ownerId':UID,'action':'remove'})
-        self.assertEqual(calls,[('/storage/v1/object/perci-avatars-qa/'+UID+'/avatar.jpg','DELETE'),('/storage/v1/object/perci-avatars-qa/'+UID+'/avatar.webp','DELETE')])
+        self.assertEqual(calls,[('/storage/v1/object/perci-avatars-dev/'+UID+'/avatar.jpg','DELETE'),('/storage/v1/object/perci-avatars-dev/'+UID+'/avatar.webp','DELETE')])
         with self.assertRaises(shared.core.ApiError) as caught:
             perci_avatar.update(shared.core,'token',UID,{'ownerId':OTHER,'action':'remove'})
         self.assertEqual(caught.exception.status,403)
