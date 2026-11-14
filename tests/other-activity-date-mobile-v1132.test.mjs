@@ -24,7 +24,7 @@ function renderActivity(type){
 test('Caminata, Running, Bicicleta, Deporte y Otra usan la fecha adaptada para iPhone',()=>{
   for(const type of ['walk','run','cycle','sport','other']){
     const html=renderActivity(type);
-    assert.match(html,/class="field record-date-field"/,type);
+    assert.match(html,/class="field record-date-field other-activity-date-field"/,type);
     assert.match(html,/class="record-date-control"/,type);
     assert.match(html,/id="adateText" aria-hidden="true">14 nov 2026/,type);
     assert.match(html,/type="date" id="adate" value="2026-11-14" aria-label="Fecha de la actividad"/,type);
