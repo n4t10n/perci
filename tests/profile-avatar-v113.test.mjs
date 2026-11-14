@@ -62,12 +62,12 @@ test('v1.13: origen/cookie autenticados, JPG/PNG/HEIC se convierten a JPEG segur
 });
 
 test('v1.13: caché PWA coherente sin precachear fotos privadas',()=>{
- assert.match(sw,/perci-shell-v1\.13\.1-safari-jpeg/);
+ assert.match(sw,/perci-shell-v1\.13\.2-activity-date/);
  assert.match(sw,/src\/profile-avatar\.js\?v=1\.13\.1/);
  assert.match(sw,/src\/account-ui\.js\?v=1\.13\.1/);
- assert.match(sw,/src\/app\.js\?v=1\.13\.1/);
+ assert.match(sw,/src\/app\.js\?v=1\.13\.2/);
  assert.match(sw,/src\/styles\.css\?v=1\.13\.1/);
- assert.match(html,/src\/app\.js\?v=1\.13\.1/);
+ assert.match(html,/src\/app\.js\?v=1\.13\.2/);
  assert.match(html,/src\/styles\.css\?v=1\.13\.1/);
  assert.doesNotMatch(sw,/perci-avatars-qa|api\/profile\/avatar/);
  assert.match(sw,/url\.pathname\.startsWith\('\/api\/'\)/);

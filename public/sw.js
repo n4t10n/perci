@@ -1,5 +1,5 @@
 // Percí v1.6 · SW actualizado, un único grafo de módulos por versión.
-const CACHE = 'perci-shell-v1.13.1-safari-jpeg';
+const CACHE = 'perci-shell-v1.13.2-activity-date';
 const SHELL = [
   './',
   './index.html',
@@ -7,7 +7,7 @@ const SHELL = [
   './src/account-ui.js?v=1.13.1',
   './src/profile-avatar.js?v=1.13.1',
   './src/account.js?v=1.7.6',
-  './src/app.js?v=1.13.1',
+  './src/app.js?v=1.13.2',
   './src/domain/routine-share.js?v=1.7.6',
   './src/domain/historical-sets.js?v=1.10.0',
   './src/domain/exercise-catalog.js?v=1.12.0',

@@ -95,8 +95,8 @@ test('UI: ruta propia, botones visibles, cancelación y campos accesibles',()=>{
   assert.match(css,/@media\(max-width:610px\)/);
 });
 test('PWA: módulo y CSS están en la misma caché de QA',()=>{
-  assert.match(sw,/perci-shell-v1\.13\.1-safari-jpeg/);
+  assert.match(sw,/perci-shell-v1\.13\.2-activity-date/);
   assert.match(sw,/domain\/historical-sets\.js\?v=1\.10\.0/);
-  assert.match(sw,/src\/app\.js\?v=1\.13\.1/);
+  assert.match(sw,/src\/app\.js\?v=1\.13\.2/);
   assert.match(sw,/src\/styles\.css\?v=1\.13\.1/);
 });
