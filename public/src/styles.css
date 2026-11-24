@@ -369,7 +369,7 @@
   .historical-sets-name{grid-column:1/-1;padding-bottom:0}
   .historical-sets-actions .btn{flex:1 1 130px;min-width:0}
 }
-*(Percí, v1.10.1, QA:, el, input, date, nativo, de, iOS, puede, exceder, el, ancho, de, la, tarjeta.)
+/* (Percí, v1.10.1, QA:, el, input, date, nativo, de, iOS, puede, exceder, el, ancho, de, la, tarjeta.)
    El valor visible se pinta en el contenedor; el calendario nativo sigue siendo interactivo. */
 .record-date-field{min-width:0;max-width:100%}
 .record-date-control{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;overflow:hidden;box-sizing:border-box;width:100%;max-width:100%;min-width:0;min-height:52px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--perci-control-radius)}
@@ -455,3 +455,72 @@
 .avatar-editor-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
 .avatar-editor-actions .btn{width:100%}
 @media(max-width:480px){.avatar-editor{padding:18px;border-radius:18px}.account-photo-button{width:76px;height:76px}.account-user{align-items:flex-start}.avatar-editor-head h2{font-size:22px}.avatar-crop-frame{width:min(270px,100%)}}
+
+
+/* Perci QA v1.13.3 - ancho acotado del calendario en actividades no gimnasio.
+   Grid minmax(0,1fr) evita el minimo intrinseco de Safari/iOS;
+   el input nativo sigue superpuesto y clickeable dentro del control. */
+.other-activity-form{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  min-width:0;
+  max-width:680px;
+}
+.other-activity-form > .field{
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
+}
+.other-activity-form .other-activity-date-field{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  width:100%;
+  min-width:0;
+  max-width:100%;
+}
+.other-activity-form .other-activity-date-field .record-date-control{
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
+  overflow:hidden;
+}
+.other-activity-form .other-activity-date-field input[type=date]{
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+}
+
+/* v1.15.0: navegación táctil del calendario y detalle accesible por día. */
+.activity-week-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px}
+.activity-week-head h3{margin:0}
+.activity-week-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+.activity-week-actions .micro{font-size:12px;white-space:nowrap;text-align:center}
+.week-nav{display:grid;place-items:center;min-height:36px;min-width:36px;padding:6px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text);font-size:19px;cursor:pointer}
+.week-nav:disabled{opacity:.3;cursor:default}
+.activity-week{touch-action:pan-y;-webkit-user-select:none;user-select:none}
+.activity-week .day{padding:5px 1px;min-width:0;cursor:pointer}
+.activity-week .day:disabled{opacity:.35;cursor:default}
+.activity-week .day.is-selected{outline:2px solid var(--accent);outline-offset:2px;background:var(--soft);color:var(--text)}
+.activity-week .day:focus-visible,.week-nav:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.progress-day-details{margin-top:15px;padding:11px 13px;border:1px solid var(--border);background:var(--surface2);border-radius:14px}
+.progress-day-details>strong{display:block;margin-bottom:6px;text-transform:capitalize;font-size:13px}
+.progress-day-details .history-item{min-height:58px}
+.progress-day-details .history-item:last-child{border-bottom:0}
+.progress-day-details .bubble{flex:0 0 35px;width:35px;height:35px}
+.activity-week-tip{font-size:12px;margin:10px 0 0}
+@media(max-width:420px){.activity-week-head{align-items:flex-start}.activity-week-actions{width:100%;justify-content:space-between}}
+
+/* Percí v1.15.0 · Selector de rutinas desde Inicio. */
+.routine-picker-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:14px;margin:0 0 28px}
+.routine-picker-card{width:100%;min-width:0;display:flex;flex-direction:column;align-items:stretch;gap:9px;text-align:left;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px;cursor:pointer;min-height:174px}
+.routine-picker-card:hover{background:var(--surface2)}
+.routine-picker-card:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.routine-picker-last{border-color:var(--accent)}
+.routine-picker-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:19px}
+.routine-picker-heading strong{overflow-wrap:anywhere}
+.routine-picker-meta{font-size:13px;color:var(--muted);margin-top:auto}
+.routine-picker-start{color:var(--accent);font-size:14px;font-weight:800;margin-top:5px}
+@media(max-width:700px){.routine-picker-grid{grid-template-columns:minmax(0,1fr)}.routine-picker-card{min-height:158px}}

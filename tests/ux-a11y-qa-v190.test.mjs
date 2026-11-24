@@ -31,7 +31,7 @@ test('P1: ajustes y onboarding muestran selección a lectores',()=>{
 });
 test('P1: calendario y series tienen estados semánticos',()=>{
   assert.match(app,/role="list" aria-label="Calendario de hábitos"/);
-  assert.match(app,/role="list" aria-label="Actividad de la semana"/);
+  assert.match(app,/class="week activity-week" data-progress-week role="group" aria-label="Días con actividad/);
   assert.match(app,/aria-valuenow="\$\{completed\}"/);
 });
 test('P1: guardado de registros revierte cambios si falla persistencia',()=>{
@@ -44,7 +44,7 @@ test('P2: responsive y contraste mantienen una sola caché de QA',()=>{
   assert.match(css,/--muted2:#526c66/);
   assert.match(css,/@media\(min-width:701px\)/);
   assert.match(css,/prefers-reduced-motion:reduce/);
-  assert.match(sw,/perci-shell-v1\.13\.1-safari-jpeg/);
+  assert.match(sw,/perci-shell-v1\.15\.0-activity-date-layout/);
 });
 test('P1: tokens de texto tenue alcanzan 4.5:1 en superficies del tema claro',()=>{
   const block=css.match(/:root\[data-theme="light"\]\{([^}]+)\}/)?.[1]||'';

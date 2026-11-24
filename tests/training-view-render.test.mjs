@@ -34,7 +34,7 @@ test('v1.6: HTML de sesión distingue serie escrita y confirmada y ofrece últim
  assert.match(html,/data-rest-clock/);
  assert.match(html,/Siguiente serie/);
  assert.match(html,/data-set="0-0"/);
- assert.match(html,/max="99999"/);
+ assert.match(html,/type="text" inputmode="decimal" autocomplete="off" placeholder="0" data-field="weight"/);
 });
 test('v1.6: render de progreso se activa solo con series realmente existentes',()=>{
  const html=renderStrength();
