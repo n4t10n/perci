@@ -15,6 +15,7 @@ QA_REF = 'PERCI_ATOMIC_QA_PROJECT_REF'
 DEV_FLAG = 'PERCI_ATOMIC_DEV_ENABLED'
 DEV_REF = 'PERCI_ATOMIC_DEV_PROJECT_REF'
 DEV_VERCEL_PROJECT = 'prj_vsYW5BNPSo3gjH2N7paREVKiEvln'
+DEV_PREVIEW_VERCEL_PROJECT = 'prj_d6yvCQhvCkWwlzRtVWYHZogKkcCv'
 QA_SUPABASE_PROJECT = 'vafurtauwarukdcopjnh'
 
 
@@ -38,10 +39,16 @@ def enabled():
     else:
         if dev_flag != 'YES_DEV_ATOMIC':
             raise core.ApiError('Configuración atómica DEV inválida.', 503)
-        if os.environ.get('VERCEL_ENV', '').lower() != 'production':
-            raise core.ApiError('DEV atómico requiere Production.', 503)
-        if os.environ.get('VERCEL_PROJECT_ID') != DEV_VERCEL_PROJECT:
-            raise core.ApiError('Proyecto Vercel DEV no autorizado.', 503)
+        # Dos hosts explícitamente autorizados: app principal en Production,
+        # o el proyecto DEV independiente en Preview. Jamás QA u otro preview.
+        vercel_env = os.environ.get('VERCEL_ENV', '').lower()
+        vercel_project = os.environ.get('VERCEL_PROJECT_ID', '')
+        allowed = (
+            (vercel_env == 'production' and vercel_project == DEV_VERCEL_PROJECT)
+            or (vercel_env == 'preview' and vercel_project == DEV_PREVIEW_VERCEL_PROJECT)
+        )
+        if not allowed:
+            raise core.ApiError('Entorno o proyecto Vercel DEV no autorizado.', 503)
         expected = os.environ.get(DEV_REF, '')
         if expected == QA_SUPABASE_PROJECT:
             raise core.ApiError('No se puede utilizar Supabase QA en DEV.', 503)
