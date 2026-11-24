@@ -20,7 +20,9 @@ function getRenderer(name,fragment){
  const keys=Object.keys(deps),values=Object.values(deps);
  return new Function(...keys,`${fragment};return ${name};`)(...values);
 }
-const sessionCode=source.slice(source.indexOf('const asKg='),source.indexOf('function renderOtherForm(){'));
+const timerCode=source.slice(source.indexOf('function activeSessionMs('),source.indexOf('function beginSession('));
+assert.ok(timerCode.startsWith('function activeSessionMs(') && timerCode.includes('function activeSessionClock('),'Funciones de tiempo activo ausentes');
+const sessionCode=timerCode+'\n'+source.slice(source.indexOf('const asKg='),source.indexOf('function renderOtherForm(){'));
 const renderSession=getRenderer('renderSession',sessionCode);
 const renderSummary=getRenderer('renderSessionSummary',sessionCode);
 const strengthCode=source.slice(source.indexOf('function renderStrengthEvolution(){'),source.indexOf('function renderProgress(){'));
