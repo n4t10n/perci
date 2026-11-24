@@ -492,3 +492,23 @@
   min-width:0;
   max-width:100%;
 }
+
+/* v1.14.0: navegación táctil del calendario y detalle accesible por día. */
+.activity-week-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px}
+.activity-week-head h3{margin:0}
+.activity-week-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+.activity-week-actions .micro{font-size:12px;white-space:nowrap;text-align:center}
+.week-nav{display:grid;place-items:center;min-height:36px;min-width:36px;padding:6px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text);font-size:19px;cursor:pointer}
+.week-nav:disabled{opacity:.3;cursor:default}
+.activity-week{touch-action:pan-y;-webkit-user-select:none;user-select:none}
+.activity-week .day{padding:5px 1px;min-width:0;cursor:pointer}
+.activity-week .day:disabled{opacity:.35;cursor:default}
+.activity-week .day.is-selected{outline:2px solid var(--accent);outline-offset:2px;background:var(--soft);color:var(--text)}
+.activity-week .day:focus-visible,.week-nav:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.progress-day-details{margin-top:15px;padding:11px 13px;border:1px solid var(--border);background:var(--surface2);border-radius:14px}
+.progress-day-details>strong{display:block;margin-bottom:6px;text-transform:capitalize;font-size:13px}
+.progress-day-details .history-item{min-height:58px}
+.progress-day-details .history-item:last-child{border-bottom:0}
+.progress-day-details .bubble{flex:0 0 35px;width:35px;height:35px}
+.activity-week-tip{font-size:12px;margin:10px 0 0}
+@media(max-width:420px){.activity-week-head{align-items:flex-start}.activity-week-actions{width:100%;justify-content:space-between}}

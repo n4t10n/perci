@@ -26,7 +26,7 @@ import {getRealExerciseMedia} from './domain/real-exercise-media.js?v=1.12.1';
 
 let state;try{state=storage.read()||seed();if(!Array.isArray(state.records)||!Array.isArray(state.routines)||!Array.isArray(state.habits))throw Error('Formato inválido')}catch(e){state=seed()}
 const freshState=()=>({...seed(),version:3,demo:false,routines:[],records:[],habits:[],checks:{},draft:null});
-const app={activeUid:null,needLegacyChoice:false,hydrating:false,silentHydration:false,cloudConflict:null,cloudNotice:'',view:getInitialView(state),tab:'gym',activity:'walk',filter:'all',record:null,routine:null,routineListOrigin:'activity',editor:null,renamingExercise:null,habit:null,exerciseSearch:'',libraryMuscle:'all',progressExercise:'',completedRecord:null,modal:null,toast:'',share:null};
+const app={activeUid:null,needLegacyChoice:false,hydrating:false,silentHydration:false,cloudConflict:null,cloudNotice:'',view:getInitialView(state),tab:'gym',activity:'walk',filter:'all',record:null,routine:null,routineListOrigin:'activity',editor:null,renamingExercise:null,habit:null,exerciseSearch:'',libraryMuscle:'all',progressExercise:'',completedRecord:null,modal:null,toast:'',share:null,progressWeekOffset:0,progressDay:null};
 const icons={account:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>',activity:'<path d="M6.5 6.5 17.5 17.5M4 9l5-5M2 7l5-5M15 20l5-5M17 22l5-5"/>',progress:'<path d="M3 19V5m0 14h18M7 16l5-5 4 3 5-7"/>',habits:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 10h18m-13 5 2 2 4-4"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.8 1.8-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.05 1.57V21h-2.5v-.08a1.7 1.7 0 0 0-1.05-1.57 1.7 1.7 0 0 0-1.88.34l-.06.06-1.8-1.8.06-.06A1.7 1.7 0 0 0 8.1 16a1.7 1.7 0 0 0-1.57-1.05H6.4v-2.5h.09A1.7 1.7 0 0 0 8.1 11.4a1.7 1.7 0 0 0-.34-1.88L7.7 9.46l1.8-1.8.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.05-1.57V6.4H15v.09a1.7 1.7 0 0 0 1.05 1.57 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.8 1.8-.06.06A1.7 1.7 0 0 0 19.4 11.4a1.7 1.7 0 0 0 1.57 1.05H21v2.5h-.09A1.7 1.7 0 0 0 19.4 15"/>',arrow:'<path d="m9 18 6-6-6-6"/>',plus:'<path d="M12 5v14M5 12h14"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',check:'<path d="m5 12 4 4L19 6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'};
 const icon=(n)=>`<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icons[n]||icons.arrow}</svg>`;
 const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -169,6 +169,15 @@ function importSharedRoutine(){
 function renderRoutine(){const r=state.routines.find(x=>x.id===app.routine);if(!r)return renderActivity();return `<div class="detail-top">${back(app.routineListOrigin||'activity')}<span class="micro">DETALLE DE RUTINA</span></div><div class="photo-card" style="min-height:240px;--photo:url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1100&q=80'),linear-gradient(130deg,#264a45,#17201e)"><div class="eyebrow">TU PRÓXIMA SESIÓN</div><h2 style="color:#fff">${h(r.name)}</h2><div class="row wrap">${button('▶ Empezar entrenamiento','start',r.id,'small')}</div></div><div class="section-head"><h2>Plan de entrenamiento</h2>${button('Editar rutina','editRoutine',r.id,'small outline')}</div><div class="card">${r.exercises.map((e,i)=>`<div class="listrow"><div class="bubble">${String(i+1).padStart(2,'0')}</div>${exerciseDemoButton(e.name)}<div class="grow"><strong>${h(e.name)}</strong><div class="micro">${e.sets} series · ${e.reps} repeticiones objetivo</div></div></div>`).join('')}</div><div class="row wrap" style="margin-top:16px">${button('Empezar ahora','start',r.id,'wide')}${button('Compartir rutina','shareRoutine',r.id,'outline')}${button('Duplicar','duplicateRoutine',r.id,'outline')}${button('Eliminar','deleteRoutine',r.id,'outline')}</div>`}
 function renderRoutineEdit(){const e=app.editor||{id:null,name:'',exercises:[]};return `<div class="detail-top">${back(e.id?'routine':'activity')}<span class="micro">${e.id?'EDITAR':'NUEVA'} RUTINA</span></div>${title(e.id?'Editá tu rutina':'Creá una rutina propia','Planificá el entrenamiento. Registrarlo será otra acción, cuando lo realices.') }${!e.id?`<div class="row wrap" style="margin-bottom:14px">${button('Agregar por código de rutina','importByCode','','small outline')}</div>`:''}<div class="card"><div class="field"><label for="rname">Nombre de la rutina *</label><input id="rname" maxlength="80" value="${h(e.name)}" placeholder="Ej. Tren superior A"/></div><div class="section-head"><h2>Ejercicios (${e.exercises.length})</h2>${button('+ Añadir ejercicio','library','','small outline')}</div><p class="micro exercise-order-hint">Arrastrá ⋮⋮ o usá las flechas para cambiar el orden. Series indica cuántas veces repetís cada ejercicio; Reps objetivo indica cuántas repeticiones buscás en cada serie. Los cambios quedan en tu borrador hasta guardar la rutina.</p>${e.exercises.length?e.exercises.map((item,i)=>`<div class="exercise-row" data-exrow="${i}"><div class="exercise-reorder-bar"><span class="exercise-order-index">Ejercicio ${i+1}</span><div class="exercise-reorder-controls"><span class="exercise-drag-handle" data-exercise-drag="${i}" title="Arrastrar para ordenar" aria-label="Arrastrar ${h(item.name)}">⋮⋮</span><button type="button" class="exercise-arrow" data-action="reorderExercise" data-value="${i}:${i-1}" aria-label="Subir ${h(item.name)}" ${i===0?'disabled':''}>↑</button><button type="button" class="exercise-arrow" data-action="reorderExercise" data-value="${i}:${i+1}" aria-label="Bajar ${h(item.name)}" ${i===e.exercises.length-1?'disabled':''}>↓</button></div></div><div class="row between wrap"><div class="row exercise-demo-inline">${exerciseDemoButton(item.name)}<strong>${h(item.name)}</strong></div><div class="row wrap exercise-edit-controls">${button(app.renamingExercise===i?'Listo':'Renombrar','renameExercise',i,'small outline')}<button class="btn small outline" data-action="removeExercise" data-value="${i}">Quitar</button></div></div>${app.renamingExercise===i?`<div class="field exercise-name-edit"><label for="exercise-name-${i}">Nombre del ejercicio</label><input id="exercise-name-${i}" data-field="exerciseName" type="text" maxlength="80" autocomplete="off" value="${h(item.name)}" placeholder="Ej. Remo unilateral"/><p class="fieldhint">Se actualiza solo en esta rutina cuando la guardes. El historial de sesiones anteriores no cambia.</p></div>`:''}<div class="inline2" style="margin-top:12px"><div><label for="routine-sets-${i}">Series</label><input id="routine-sets-${i}" data-field="sets" type="number" min="1" max="15" value="${item.sets}" aria-label="Series de ${h(item.name)}"/></div><div><label for="routine-reps-${i}">Reps objetivo</label><input id="routine-reps-${i}" data-field="reps" type="number" min="1" max="100" value="${item.reps}" aria-label="Repeticiones objetivo de ${h(item.name)}"/></div></div></div>`).join(''):`<div class="empty">Todavía no agregaste ejercicios.<br/>Usá la biblioteca para empezar.</div>`}${isOfflineNow(account)?'<div class="offline-draft-note">◌ Sin conexión: guardá esta rutina como borrador local. Se sincronizará después.</div>':''}<div class="row wrap" style="margin-top:17px">${button(isOfflineNow(account)?'Guardar borrador':'Guardar rutina','saveRoutine')} ${button('Cancelar','cancelEdit','','outline')}</div></div>`}
 const asKg=value=>Number(value||0).toLocaleString('es-AR',{maximumFractionDigits:2});
+// En la interfaz siempre mostramos coma, pero en los registros guardamos un número.
+const formatInputWeight=value=>value===null||value===undefined?'':String(value).replace('.',',');
+const parseSessionWeight=raw=>{
+  const text=String(raw??'').trim().replace(',','.');
+  if(text==='')return 0;
+  if(!/^\d+(?:\.\d{0,2})?$/.test(text))return null;
+  const weight=Number(text);
+  return Number.isFinite(weight)&&weight>=0&&weight<=99999?weight:null;
+};
 const formatSessionDate=iso=>{const [year,month,day]=String(iso).split('-').map(Number);return `${day} ${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][month-1]} ${year}`;};
 function renderRestPanel(d){
   const enabled=d.restEnabled===true,seconds=[60,90,120].includes(Number(d.restSeconds))?Number(d.restSeconds):90;
@@ -189,7 +198,7 @@ ${Array.from({length:Number(item.sets)},(_,j)=>{
   const k=`${i}-${j}`,o=d.sets?.[k]||{};
   const prior=previousExerciseSet(state.records,item.name,j+1);
   const isCurrent=k===next;
-  return `<div class="set-block ${o.done?'set-complete':isCurrent?'set-next':''}" ${isCurrent?'data-current-set="true"':''}><div class="setrow" data-set="${k}"><div class="num">${j+1}</div><div><label>Peso (kg)</label><input type="number" inputmode="decimal" min="0" max="99999" step="0.5" placeholder="0" data-field="weight" value="${o.weight??''}" aria-label="Peso serie ${j+1} de ${h(item.name)}"/></div><div><label>Reps</label><input type="number" inputmode="numeric" min="0" max="100" data-field="reps" placeholder="${item.reps}" value="${o.reps??item.reps}" aria-label="Repeticiones serie ${j+1} de ${h(item.name)}"/></div><button class="${o.done?'done':''}" data-action="toggleSet" data-value="${k}" aria-label="${o.done?'Desmarcar':'Completar'} serie ${j+1}" aria-pressed="${!!o.done}">${o.done?'✓':'○'}</button></div><div class="set-foot">${o.done?'<span class="set-finished-text">✓ Confirmada</span>':isCurrent?'<span class="set-next-text">Siguiente serie</span>':'<span class="micro">Pendiente</span>'}${prior?`<span class="set-history">Última vez: ${asKg(prior.weight)} kg × ${prior.reps} reps</span>${!o.done?`<button class="set-use-prior" data-action="usePreviousSet" data-value="${k}" aria-label="Usar valores anteriores de la serie ${j+1}">Usar anterior</button>`:''}`:'<span class="set-history">Sin registro previo de esta serie</span>'}</div></div>`;
+  return `<div class="set-block ${o.done?'set-complete':isCurrent?'set-next':''}" ${isCurrent?'data-current-set="true"':''}><div class="setrow" data-set="${k}"><div class="num">${j+1}</div><div><label>Peso (kg)</label><input type="text" inputmode="decimal" autocomplete="off" placeholder="0" data-field="weight" value="${formatInputWeight(o.weight)}" aria-label="Peso serie ${j+1} de ${h(item.name)}"/></div><div><label>Reps</label><input type="number" inputmode="numeric" min="0" max="100" data-field="reps" placeholder="${item.reps}" value="${o.reps??item.reps}" aria-label="Repeticiones serie ${j+1} de ${h(item.name)}"/></div><button class="${o.done?'done':''}" data-action="toggleSet" data-value="${k}" aria-label="${o.done?'Desmarcar':'Completar'} serie ${j+1}" aria-pressed="${!!o.done}">${o.done?'✓':'○'}</button></div><div class="set-foot">${o.done?'<span class="set-finished-text">✓ Confirmada</span>':isCurrent?'<span class="set-next-text">Siguiente serie</span>':'<span class="micro">Pendiente</span>'}${prior?`<span class="set-history">Última vez: ${asKg(prior.weight)} kg × ${prior.reps} reps</span>${!o.done?`<button class="set-use-prior" data-action="usePreviousSet" data-value="${k}" aria-label="Usar valores anteriores de la serie ${j+1}">Usar anterior</button>`:''}`:'<span class="set-history">Sin registro previo de esta serie</span>'}</div></div>`;
 }).join('')}</section>`).join('')}
 <div class="card session-end"><div class="row between wrap"><div><h3 style="margin-bottom:4px">${completed===total?'Sesión completa':'Avanzá a tu ritmo'}</h3><p class="micro" style="margin:0">Guardamos tus series en este dispositivo. Al finalizar, se respaldan en tu cuenta cuando haya conexión.</p></div><div class="session-end-actions">${button('Cancelar sesión','cancelSession','','small outline')}${button('Finalizar sesión','finishSession')}</div></div></div>`;
 }
@@ -210,7 +219,26 @@ function renderStrengthEvolution(){
   const points=lastEight.map((x,i)=>`${16+(lastEight.length===1?0:i*288/(lastEight.length-1))},${94-x.maxWeight/max*73}`).join(' ');
   return `<section class="card strength-progress" aria-label="Evolución de fuerza"><div class="row between wrap strength-head"><div><h3>Evolución por ejercicio</h3><p class="micro">Datos reales de sesiones completadas, sin estimaciones.</p></div><label class="strength-select-label" for="progressExercise">Ejercicio<select id="progressExercise">${names.map(n=>`<option value="${h(n)}" ${n===selected?'selected':''}>${h(n)}</option>`).join('')}</select></label></div><div class="strength-kpis"><div><strong>${asKg(latest.maxWeight)} kg</strong><span>Máximo en la última sesión</span></div><div><strong>${entries.length}</strong><span>Sesiones registradas</span></div><div><strong>${asKg(latest.maxWeight-first.maxWeight)} kg</strong><span>Diferencia respecto de la primera</span></div></div>${lastEight.length>1?`<div class="strength-trend"><svg viewBox="0 0 320 112" preserveAspectRatio="none" role="img" aria-label="Evolución del máximo por sesión de ${h(selected)}: ${lastEight.map(x=>`${asKg(x.maxWeight)} kg`).join(', ')}"><line x1="10" y1="98" x2="310" y2="98" stroke="currentColor" stroke-opacity=".15"/><polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>${lastEight.map((x,i)=>`<circle cx="${16+i*288/(lastEight.length-1)}" cy="${94-x.maxWeight/max*73}" r="4.5" fill="var(--accent)"/>`).join('')}</svg></div>`:'<p class="micro strength-first">Con otra sesión de este ejercicio vas a poder comparar la evolución.</p>'}<div class="strength-session-list">${entries.slice(-4).reverse().map(x=>`<div class="strength-session"><span>${h(x.date)}</span><strong>${asKg(x.maxWeight)} kg × ${x.repsAtMax} reps</strong><span>${asKg(x.volume)} kg volumen</span></div>`).join('')}</div><p class="micro">El gráfico muestra el mayor peso registrado en cada sesión, no una estimación de fuerza.</p></section>`;
 }
-function renderProgress(){const categories2=[['all','Todas'],['gym','Fuerza'],['walk','Caminata'],['run','Running'],['cycle','Bici'],['sport','Deporte'],['other','Otras']];const list=state.records.filter(r=>app.filter==='all'||r.type===app.filter).sort((a,b)=>b.date.localeCompare(a.date));const mins=countMin(list);return `${title('El progreso también se ve.','Un historial compartido, métricas específicas y contexto para cada actividad.')}<div class="feature-photo" role="img" aria-label="Fotografía deportiva de personas corriendo"><div><div class="eyebrow">TU HISTORIA EN MOVIMIENTO</div><h2>Cada entrenamiento cuenta.</h2><p>Progreso real, a tu ritmo.</p></div></div><div class="grid2">${bars()}<div class="card"><h3>Tu recorrido</h3><p class="micro">Últimos 7 días · datos ${state.demo?'ilustrativos':'registrados'}</p><div class="tiles"><div class="tile"><div class="val">${sessionsWeek().length}</div><div class="micro">Sesiones</div></div><div class="tile"><div class="val">${countMin(sessionsWeek())}</div><div class="micro">Minutos</div></div><div class="tile"><div class="val">${sessionsWeek().filter(x=>x.type==='gym').length}</div><div class="micro">Fuerza</div></div></div><div class="section-head"><h3 style="font-size:17px">Días con actividad</h3></div><div class="week" role="list" aria-label="Actividad de la semana">${getWeek().map(d=>`<div class="day ${d===dateISO()?'today':''}" role="listitem" aria-label="${new Date(d+'T12:00:00').toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'})}: ${state.records.some(r=>r.date===d)?'actividad registrada':'sin actividad registrada'}"><span>${weekDay(d).slice(0,3)}</span><b>${d.slice(-2)}</b>${state.records.some(r=>r.date===d)?'<i></i>':'<span style="height:6px"></span>'}</div>`).join('')}</div></div></div>${renderStrengthEvolution()}<div class="section-head"><h2>Historial</h2><span class="micro">${list.length} registros</span></div><div class="filterline">${categories2.map(([k,l])=>`<button class="chip ${app.filter===k?'active':''}" data-action="filter" data-value="${k}" aria-pressed="${app.filter===k}">${l}</button>`).join('')}</div><div class="card">${list.length?list.map(r=>`<button type="button" class="listrow history-item" data-action="detailRecord" data-value="${r.id}" aria-label="Ver registro ${h(r.name)}"><div class="bubble">${categories.find(x=>x[0]===r.type)?.[2]||'🏋️'}</div><div class="grow"><strong>${h(r.name)}</strong><div class="micro">${new Date(r.date+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'short'})} · ${r.minutes} min ${r.distance?'· '+r.distance+' km':''} ${r.setsDone?'· '+r.setsDone+' series':''}</div></div><span class="history-chevron" aria-hidden="true">${icon('arrow')}</span></button>`).join(''):`<div class="empty"><div class="emoji">◌</div><h3>Sin registros por ahora</h3><p>Cuando registres una actividad, aparecerá acá sin inventar estadísticas.</p>${button('Registrar actividad','go','activity')}</div>`}</div>${renderSavedRecordDrafts()}`}
+// Estado del calendario solo en UI: no modifica ni reescribe los registros.
+function renderActivityCalendar(){
+  const offset=Math.min(0,Math.trunc(Number(app.progressWeekOffset)||0));
+  const today=dateISO();
+  const dayOfWeek=(new Date(`${today}T12:00:00`).getDay()+6)%7;
+  const days=Array.from({length:7},(_,i)=>offsetDate(i-dayOfWeek+offset*7));
+  const dateLabel=iso=>new Date(`${iso}T12:00:00`).toLocaleDateString('es-AR',{day:'numeric',month:'short'}).replace('.','');
+  const range=`${dateLabel(days[0])} - ${dateLabel(days[6])}`;
+  const selected=days.includes(app.progressDay)&&app.progressDay<=today?app.progressDay:null;
+  const records=selected?state.records.filter(record=>record.date===selected):[];
+  const selectedLabel=selected?new Date(`${selected}T12:00:00`).toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'';
+  return `<div class="section-head activity-week-head"><h3 style="font-size:17px">Días con actividad</h3><div class="activity-week-actions"><button type="button" class="week-nav" data-action="progressWeek" data-value="-1" aria-label="Ver semana anterior">←</button><span class="micro" aria-live="polite">${range}</span><button type="button" class="week-nav" data-action="progressWeek" data-value="1" aria-label="Ver semana siguiente" ${offset===0?'disabled':''}>→</button></div></div>
+  <div class="week activity-week" data-progress-week role="group" aria-label="Días con actividad de ${range}; deslizá hacia la derecha para semanas anteriores">${days.map(d=>{
+    const active=state.records.some(r=>r.date===d),future=d>today;
+    const dayLabel=new Date(`${d}T12:00:00`).toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
+    return `<button type="button" class="day ${d===today?'today':''} ${selected===d?'is-selected':''}" data-action="progressDay" data-value="${d}" aria-pressed="${selected===d}" aria-label="${dayLabel}: ${active?'actividad registrada':'sin actividad registrada'}" ${future?'disabled':''}><span>${weekDay(d).slice(0,3)}</span><b>${d.slice(-2)}</b>${active?'<i aria-hidden="true"></i>':'<span style="height:6px"></span>'}</button>`;
+  }).join('')}</div>
+  ${selected?`<div class="progress-day-details" aria-live="polite"><strong>${selectedLabel}</strong>${records.length?records.map(r=>`<button type="button" class="listrow history-item" data-action="detailRecord" data-value="${h(r.id)}" aria-label="Ver registro ${h(r.name)}"><div class="bubble">${categories.find(x=>x[0]===r.type)?.[2]||'🏋️'}</div><div class="grow"><strong>${h(r.name)}</strong><div class="micro">${Number(r.minutes)||0} min ${r.distance?'· '+h(r.distance)+' km':''} ${r.setsDone?'· '+Number(r.setsDone)+' series':''}</div></div><span class="history-chevron" aria-hidden="true">${icon('arrow')}</span></button>`).join(''):'<p class="micro">No hay actividades registradas ese día.</p>'}</div>`:'<p class="micro activity-week-tip">Deslizá a la derecha para semanas anteriores. Tocá un día para ver sus actividades.</p>'}`;
+}
+function renderProgress(){const categories2=[['all','Todas'],['gym','Fuerza'],['walk','Caminata'],['run','Running'],['cycle','Bici'],['sport','Deporte'],['other','Otras']];const list=state.records.filter(r=>app.filter==='all'||r.type===app.filter).sort((a,b)=>b.date.localeCompare(a.date));const mins=countMin(list);return `${title('El progreso también se ve.','Un historial compartido, métricas específicas y contexto para cada actividad.')}<div class="feature-photo" role="img" aria-label="Fotografía deportiva de personas corriendo"><div><div class="eyebrow">TU HISTORIA EN MOVIMIENTO</div><h2>Cada entrenamiento cuenta.</h2><p>Progreso real, a tu ritmo.</p></div></div><div class="grid2">${bars()}<div class="card"><h3>Tu recorrido</h3><p class="micro">Últimos 7 días · datos ${state.demo?'ilustrativos':'registrados'}</p><div class="tiles"><div class="tile"><div class="val">${sessionsWeek().length}</div><div class="micro">Sesiones</div></div><div class="tile"><div class="val">${countMin(sessionsWeek())}</div><div class="micro">Minutos</div></div><div class="tile"><div class="val">${sessionsWeek().filter(x=>x.type==='gym').length}</div><div class="micro">Fuerza</div></div></div>${renderActivityCalendar()}</div></div>${renderStrengthEvolution()}<div class="section-head"><h2>Historial</h2><span class="micro">${list.length} registros</span></div><div class="filterline">${categories2.map(([k,l])=>`<button class="chip ${app.filter===k?'active':''}" data-action="filter" data-value="${k}" aria-pressed="${app.filter===k}">${l}</button>`).join('')}</div><div class="card">${list.length?list.map(r=>`<button type="button" class="listrow history-item" data-action="detailRecord" data-value="${r.id}" aria-label="Ver registro ${h(r.name)}"><div class="bubble">${categories.find(x=>x[0]===r.type)?.[2]||'🏋️'}</div><div class="grow"><strong>${h(r.name)}</strong><div class="micro">${new Date(r.date+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'short'})} · ${r.minutes} min ${r.distance?'· '+r.distance+' km':''} ${r.setsDone?'· '+r.setsDone+' series':''}</div></div><span class="history-chevron" aria-hidden="true">${icon('arrow')}</span></button>`).join(''):`<div class="empty"><div class="emoji">◌</div><h3>Sin registros por ahora</h3><p>Cuando registres una actividad, aparecerá acá sin inventar estadísticas.</p>${button('Registrar actividad','go','activity')}</div>`}</div>${renderSavedRecordDrafts()}`}
 function renderSavedRecordDrafts(){
   const drafts=listRecordDrafts(app.activeUid);
   if(!drafts.length)return '';
@@ -226,7 +254,7 @@ function renderRecordSetsEdit(){
     if(set.completed===false)return `<div class="historical-sets-row historical-sets-incomplete"><div class="historical-sets-name"><strong>${h(set.exerciseName)}</strong><span class="micro">Serie ${set.setNumber} · Sin confirmar, solo lectura</span></div></div>`;
     return `<div class="historical-sets-row" role="group" aria-label="${h(set.exerciseName)}, serie ${set.setNumber}">
       <div class="historical-sets-name"><strong>${h(set.exerciseName)}</strong><span class="micro">Serie ${set.setNumber}</span></div>
-      <div class="field"><label for="history-weight-${i}">Peso (kg)</label><input id="history-weight-${i}" type="number" inputmode="decimal" min="0" max="99999" step="0.01" required value="${h(set.weight)}" aria-label="Peso en kilogramos de ${h(set.exerciseName)}, serie ${set.setNumber}"/></div>
+      <div class="field"><label for="history-weight-${i}">Peso (kg)</label><input id="history-weight-${i}" type="text" inputmode="decimal" autocomplete="off" required value="${h(formatInputWeight(set.weight))}" aria-label="Peso en kilogramos de ${h(set.exerciseName)}, serie ${set.setNumber}"/></div>
       <div class="field"><label for="history-reps-${i}">Repeticiones</label><input id="history-reps-${i}" type="number" inputmode="numeric" min="0" max="100" step="1" required value="${h(set.reps)}" aria-label="Repeticiones de ${h(set.exerciseName)}, serie ${set.setNumber}"/></div>
     </div>`;
   }).join('');
@@ -663,6 +691,23 @@ function deletePersonalEntity(kind,itemId){
 function handle(action,value){switch(action){
 case 'go':app.modal=null;go(value);break;
 case 'tab':app.tab=value;render();break;
+case 'progressWeek':{
+  const delta=Number(value);
+  if(delta!==-1&&delta!==1)break;
+  app.progressWeekOffset=Math.min(0,(Number(app.progressWeekOffset)||0)+delta);
+  app.progressDay=null;
+  render();break;
+}
+case 'progressDay':{
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(value)||value>dateISO())break;
+  const offset=Math.min(0,Math.trunc(Number(app.progressWeekOffset)||0));
+  const today=dateISO();
+  const dayOfWeek=(new Date(`${today}T12:00:00`).getDay()+6)%7;
+  const days=Array.from({length:7},(_,i)=>offsetDate(i-dayOfWeek+offset*7));
+  if(!days.includes(value))break;
+  app.progressDay=app.progressDay===value?null:value;
+  render();break;
+}
 case 'filter':app.filter=value;render();break;
 case 'theme':{const prev=state.theme;state.theme=value;if(!save())state.theme=prev;render();break;}
 case 'focus':{const prev=state.focus;state.focus=value;if(!save())state.focus=prev;render();break;}
@@ -766,7 +811,7 @@ case 'skipRest':{
 case 'toggleSet':{
   const d=state.draft;if(!d || !/^\d+-\d+$/.test(value))break;
   const row=document.querySelector(`[data-set="${value}"]`);if(!row)break;
-  const weight=Number(row.querySelector('[data-field=weight]').value);
+  const weight=parseSessionWeight(row.querySelector('[data-field=weight]').value);
   const reps=Number(row.querySelector('[data-field=reps]').value);
   const previous=d.sets[value];
   if(previous?.done)d.sets[value]={...previous,done:false};
@@ -949,6 +994,21 @@ document.addEventListener('error',event=>{
     if(poster)el.src=poster;
   }
 },true);
+// Deslizar a la derecha retrocede una semana, sin bloquear el scroll vertical.
+let progressSwipe=null;
+document.addEventListener('touchstart',event=>{
+  if(app.view!=='progress'||event.touches.length!==1||!event.target.closest?.('[data-progress-week]'))return;
+  progressSwipe={x:event.touches[0].clientX,y:event.touches[0].clientY};
+},{passive:true});
+document.addEventListener('touchend',event=>{
+  if(!progressSwipe||app.view!=='progress')return;
+  const touch=event.changedTouches[0];
+  const dx=touch.clientX-progressSwipe.x,dy=touch.clientY-progressSwipe.y;
+  progressSwipe=null;
+  if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.3)return;
+  handle('progressWeek',dx>0?'-1':'1');
+},{passive:true});
+document.addEventListener('touchcancel',()=>{progressSwipe=null;},{passive:true});
 document.addEventListener('change',e=>{
   if(e.target.id==='adate'&&app.view==='otherForm'){
     const display=document.getElementById('adateText');
@@ -989,13 +1049,19 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&e.target.id==='libsearch'&&app.view==='exerciseLibrary'){e.preventDefault();handle('searchLibrary','');return;}
 });
 document.addEventListener('input',e=>{
+  if(e.target.matches?.('[data-field=weight], [id^="history-weight-"]')){
+    // El punto se convierte inmediatamente en coma, incluso en Safari iOS.
+    e.target.value=e.target.value.replace(/\./g,',');
+  }
   if(!account.authenticated||!app.activeUid||(app.hydrating&&!app.silentHydration)||app.cloudConflict)return;
   if(e.target.id==='routineShareCode'&&app.share?.mode==='import'){app.share.code=e.target.value;app.share.preview=null;return;}
   if(app.view==='routineEdit' && (e.target.id==='rname'||e.target.matches('[data-exrow] input'))){persistEditor();return;}
   const row=e.target.closest('[data-set]');
   if(app.view==='session'&&row&&state.draft && (e.target.matches('[data-field=weight]')||e.target.matches('[data-field=reps]'))){
     const previous=state.draft.sets[row.dataset.set]||{};
-    state.draft.sets[row.dataset.set]={...previous,weight:e.target.closest('[data-field=weight]')?Number(row.querySelector('[data-field=weight]').value)||0:0,
+    const parsed=parseSessionWeight(row.querySelector('[data-field=weight]').value);
+    state.draft.sets[row.dataset.set]={...previous,
+      weight:parsed===null?(Number.isFinite(previous.weight)?previous.weight:0):parsed,
       reps:Number(row.querySelector('[data-field=reps]').value)||0,done:false};
     save();
   }
