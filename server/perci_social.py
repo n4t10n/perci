@@ -59,3 +59,22 @@ def handle(core, token, user_id, action, body=None):
     if not isinstance(result, dict):
         raise core.ApiError('Respuesta social inesperada.', 502)
     return result
+
+
+def friend_avatar(core, token, viewer_id, friendship_id):
+    """Read a private avatar only after an accepted friendship check in Supabase.
+
+    The browser never provides an arbitrary Storage user ID or path. The owner's
+    identity is resolved by an authenticated SECURITY DEFINER RPC, and Supabase
+    Storage enforces a second friend-only RLS check on the object.
+    """
+    from server import perci_avatar
+    if not token or not isinstance(viewer_id, str):
+        raise core.ApiError('Iniciá sesión para ver esta foto.', 401)
+    if not isinstance(friendship_id, str) or not re.fullmatch(r'[a-fA-F0-9-]{36}', friendship_id):
+        raise core.ApiError('Amistad inválida.', 400)
+    owner = core.supabase('/rest/v1/rpc/perci_social_avatar_owner',
+                          method='POST', data={'p_friendship_id': friendship_id}, token=token)
+    if not isinstance(owner, str) or not re.fullmatch(r'[a-f0-9-]{36}', owner) or owner == viewer_id:
+        raise core.ApiError('Foto no disponible para esta cuenta.', 404)
+    return perci_avatar.fetch(core, token, owner)

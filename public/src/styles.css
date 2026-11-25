@@ -528,7 +528,7 @@
 /* v1.16 QA: tiempo activo y amistades */
 .active-session-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:15px}.active-session-clock{display:flex;flex-direction:column;gap:4px;flex:1 1 155px}.active-session-clock strong{font:800 clamp(29px,4vw,40px)/1.1 Manrope,system-ui,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-1px}.social-invite-code{font:800 clamp(21px,4vw,29px) Manrope,system-ui,sans-serif;letter-spacing:2px;overflow-wrap:anywhere}.social-friend-row{gap:10px;flex-wrap:wrap}.social-row-actions{margin-left:auto;gap:6px}.social-panels .card{min-width:0}@media(max-width:380px){.mobile-nav .navbtn{padding:7px 2px;font-size:10px}.active-session-controls .btn{flex:1 1 auto}.social-friend-row .social-row-actions{width:100%}}
 
-/* Percí v1.16.1 QA: jerarquía y espacios de Social, mobile-first */
+/* Percí v1.16.2 QA: jerarquía y espacios de Social, mobile-first */
 .social-stack{display:grid;gap:18px;align-content:start}
 .social-stack>.card,.social-panels>.card{margin:0;min-width:0}
 .social-panels{gap:18px}
@@ -553,3 +553,7 @@
 .social-row-actions{margin-left:auto;gap:8px}
 @media(max-width:700px){.social-stack{gap:16px}.social-panels{gap:16px}.social-card{padding:19px}.social-card>h3{margin-bottom:13px}.social-friend-row{align-items:flex-start}}
 @media(max-width:380px){.social-card{padding:16px}.social-found .btn{width:100%}.social-row-actions{width:100%;justify-content:flex-start}}
+
+/* Percí QA v1.16.2: avatares circulares para amistades aceptadas. */
+.social-friend-row .social-avatar{width:45px;height:45px;min-width:45px;border-radius:50%;overflow:hidden;flex-shrink:0;padding:0;display:grid;place-items:center}
+.social-friend-row .social-avatar img{width:100%;height:100%;object-fit:cover;display:block}

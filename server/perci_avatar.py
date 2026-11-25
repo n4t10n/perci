@@ -13,11 +13,20 @@ import urllib.request
 import uuid
 
 BUCKET = 'perci-avatars-dev'
+QA_BUCKET = 'perci-avatars-qa'
+QA_SUPABASE_URL = 'https://vafurtauwarukdcopjnh.supabase.co'
+
+
+def active_bucket(core):
+    config = getattr(core, 'CONFIG', None) or {}
+    url = str(config.get('url', '')).rstrip('/')
+    return QA_BUCKET if url == QA_SUPABASE_URL else BUCKET
+
 MAX_AVATAR_BYTES = 200_000
 MAX_RESPONSE_BYTES = 260_000
 
 
-def _object_path(user_id, extension='webp'):
+def _object_path(user_id, extension='webp', *, bucket=None):
     """Reject path traversal and derive the only allowed object from auth.uid."""
     try:
         normalized = str(uuid.UUID(str(user_id)))
@@ -27,7 +36,7 @@ def _object_path(user_id, extension='webp'):
         raise ValueError('Identificador de cuenta inválido.')
     if extension not in ('webp', 'jpg'):
         raise ValueError('Extensión de foto no permitida.')
-    return f'/storage/v1/object/{BUCKET}/{normalized}/avatar.{extension}'
+    return f'/storage/v1/object/{bucket or BUCKET}/{normalized}/avatar.{extension}'
 
 
 def _size_webp(raw):
@@ -120,7 +129,7 @@ def _storage(core, path, token, *, method='GET', raw=None):
         if e.code in (401, 403):
             raise core.ApiError('No tenés permiso para acceder a esta foto.', 403) from e
         if e.code == 404:
-            raise core.ApiError('El espacio privado de fotos de DEV todavía no está configurado.', 503) from e
+            raise core.ApiError('El espacio privado de fotos todavía no está configurado.', 503) from e
         if e.code in (400, 413, 415):
             raise core.ApiError('No se pudo guardar la foto. Revisá el formato o el tamaño.', 400) from e
         raise core.ApiError('No pudimos acceder a las fotos. Intentá nuevamente.', 503) from e
@@ -133,7 +142,7 @@ def fetch(core, token, user_id):
     # Both reads use an authenticated endpoint and fixed keys derived from auth.uid.
     for extension, mime, validator in (('jpg', 'image/jpeg', _size_jpeg),
                                        ('webp', 'image/webp', _size_webp)):
-        path = _object_path(user_id, extension)
+        path = _object_path(user_id, extension, bucket=active_bucket(core))
         private = path.replace('/storage/v1/object/', '/storage/v1/object/authenticated/', 1)
         raw = _storage(core, private, token)
         if raw is None:
@@ -153,12 +162,12 @@ def update(core, token, user_id, body):
         if mime not in ('image/jpeg', 'image/webp'):
             raise core.ApiError('Solo aceptamos fotos procesadas en formato JPEG o WebP.', 415)
         raw = validate_image(core, body.get('image'), mime)
-        path = _object_path(user_id, 'jpg' if mime == 'image/jpeg' else 'webp')
+        path = _object_path(user_id, 'jpg' if mime == 'image/jpeg' else 'webp', bucket=active_bucket(core))
         _storage(core, path, token, method='POST', raw=raw)
         return {'saved': True, 'ownerId': user_id}
     if action == 'remove':
         # Remove both generations so a previous WebP cannot reappear afterward.
         for extension in ('jpg', 'webp'):
-            _storage(core, _object_path(user_id, extension), token, method='DELETE')
+            _storage(core, _object_path(user_id, extension, bucket=active_bucket(core)), token, method='DELETE')
         return {'removed': True, 'ownerId': user_id}
     raise core.ApiError('Acción de foto no permitida.', 400)

@@ -34,5 +34,5 @@ test('social: navegación, sesión autenticada y no acceso directo a datos de en
   assert.match(app,/Enviar solicitud/);
   assert.match(app,/Solicitudes recibidas/);
   assert.match(app,/case 'socialAccept':/);
-  assert.match(sw,/perci-shell-v1\.16\.1-social-search-layout/);
+  assert.match(sw,/perci-shell-v1\.16\.2-friend-avatars/);
 });

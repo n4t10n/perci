@@ -20,5 +20,5 @@ test('Social: separación vertical consistente en iPhone',()=>{
   assert.match(css,/\.social-stack\{display:grid;gap:18px/);
   assert.match(css,/@media\(max-width:700px\)\{\.social-stack\{gap:16px/);
   assert.match(app,/class="social-stack"/);
-  assert.match(sw,/perci-shell-v1\.16\.1-social-search-layout/);
+  assert.match(sw,/perci-shell-v1\.16\.2-friend-avatars/);
 });

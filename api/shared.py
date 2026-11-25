@@ -174,6 +174,13 @@ class ApiHandler(BaseHTTPRequestHandler):
                 if path == '/api/social':
                     token, user, cookies = self.authenticated()
                     if not user:raise core.ApiError('Iniciá sesión para ver tus amistades.',401)
+                    params = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query,
+                                                   keep_blank_values=True)
+                    if params:
+                        if set(params) != {'friendAvatar'} or len(params['friendAvatar']) != 1:
+                            raise core.ApiError('Solicitud de avatar inválida.', 400)
+                        return self.send_json(perci_social.friend_avatar(
+                            core, token, user['id'], params['friendAvatar'][0]), cookies=cookies)
                     return self.send_json(perci_social.handle(core,token,user['id'],'overview'),cookies=cookies)
                 if path == '/api/cloud/data':
                     token, user, cookies = self.authenticated()

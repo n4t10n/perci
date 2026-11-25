@@ -26,7 +26,7 @@ import {getRealExerciseMedia} from './domain/real-exercise-media.js?v=1.12.1';
 
 let state;try{state=storage.read()||seed();if(!Array.isArray(state.records)||!Array.isArray(state.routines)||!Array.isArray(state.habits))throw Error('Formato inválido')}catch(e){state=seed()}
 const freshState=()=>({...seed(),version:3,demo:false,routines:[],records:[],habits:[],checks:{},draft:null});
-const app={activeUid:null,needLegacyChoice:false,hydrating:false,silentHydration:false,cloudConflict:null,cloudNotice:'',view:getInitialView(state),tab:'gym',activity:'walk',filter:'all',record:null,routine:null,routineListOrigin:'activity',editor:null,renamingExercise:null,habit:null,exerciseSearch:'',libraryMuscle:'all',progressExercise:'',completedRecord:null,modal:null,toast:'',share:null,social:{data:null,busy:false,loading:false,error:'',found:null,lookup:null,searchTerm:''},progressWeekOffset:0,progressDay:null};
+const app={activeUid:null,needLegacyChoice:false,hydrating:false,silentHydration:false,cloudConflict:null,cloudNotice:'',view:getInitialView(state),tab:'gym',activity:'walk',filter:'all',record:null,routine:null,routineListOrigin:'activity',editor:null,renamingExercise:null,habit:null,exerciseSearch:'',libraryMuscle:'all',progressExercise:'',completedRecord:null,modal:null,toast:'',share:null,social:{data:null,busy:false,loading:false,error:'',found:null,lookup:null,searchTerm:'',avatarImages:{}},progressWeekOffset:0,progressDay:null};
 const icons={account:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>',activity:'<path d="M6.5 6.5 17.5 17.5M4 9l5-5M2 7l5-5M15 20l5-5M17 22l5-5"/>',progress:'<path d="M3 19V5m0 14h18M7 16l5-5 4 3 5-7"/>',habits:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 10h18m-13 5 2 2 4-4"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.8 1.8-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.05 1.57V21h-2.5v-.08a1.7 1.7 0 0 0-1.05-1.57 1.7 1.7 0 0 0-1.88.34l-.06.06-1.8-1.8.06-.06A1.7 1.7 0 0 0 8.1 16a1.7 1.7 0 0 0-1.57-1.05H6.4v-2.5h.09A1.7 1.7 0 0 0 8.1 11.4a1.7 1.7 0 0 0-.34-1.88L7.7 9.46l1.8-1.8.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.05-1.57V6.4H15v.09a1.7 1.7 0 0 0 1.05 1.57 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.8 1.8-.06.06A1.7 1.7 0 0 0 19.4 11.4a1.7 1.7 0 0 0 1.57 1.05H21v2.5h-.09A1.7 1.7 0 0 0 19.4 15"/>',arrow:'<path d="m9 18 6-6-6-6"/>',plus:'<path d="M12 5v14M5 12h14"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',check:'<path d="m5 12 4 4L19 6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',social:'<circle cx="9" cy="8" r="3"/><path d="M3 19v-2a6 6 0 0 1 12 0v2M16 6a3 3 0 0 1 0 6m2 2a5 5 0 0 1 3 5"/>'};
 const icon=(n)=>`<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icons[n]||icons.arrow}</svg>`;
 const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -358,13 +358,39 @@ async function inviteFoundSocial(){
   if(ok===true){app.social.found=null;app.social.lookup=null;app.social.searchTerm='';if(app.view==='social')render();}
 }
 
+async function loadSocialFriendAvatars(){
+  const uid=app.activeUid, social=app.social;
+  if(!uid||!social?.data||isOfflineNow(account))return;
+  const avatars=social.avatarImages||(social.avatarImages={});
+  const friends=(social.data.friends||[]).slice(0,30);
+  for(const friend of friends){
+    if(uid!==app.activeUid||app.social!==social)return;
+    const key=String(friend.requestId||'');
+    if(!/^[a-fA-F0-9-]{36}$/.test(key)||Object.prototype.hasOwnProperty.call(avatars,key))continue;
+    avatars[key]=null;
+    try{
+      const response=await fetch('/api/social?friendAvatar='+encodeURIComponent(key),{
+        credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}
+      });
+      if(uid!==app.activeUid||app.social!==social)return;
+      if(!response.ok)continue;
+      const photo=await response.json();
+      const data=photo?.present?photo.image:null;
+      if(typeof data!=='string'||data.length>280000||!/^data:image\/(?:webp|jpeg);base64,[A-Za-z0-9+/=]+$/.test(data))continue;
+      avatars[key]=data;
+      const node=app.view==='social'?document.querySelector('[data-social-avatar="'+key+'"]'):null;
+      if(node)node.innerHTML='<img src="'+h(data)+'" alt="" decoding="async"/>';
+    }catch{ /* Una foto ausente no interrumpe Social. */ }
+  }
+}
+
 async function loadSocial(){
   const uid=app.activeUid;
   if(!uid||app.social.loading||isOfflineNow(account))return;
   app.social.loading=true;app.social.error='';if(app.view==='social')render();
   try{const data=await socialApi('overview');if(uid===app.activeUid)app.social.data=data;}
   catch(error){if(uid===app.activeUid){app.social.data=null;app.social.error='Social todavía no está disponible: '+String(error.message||'verificá la conexión.');}}
-  finally{if(uid===app.activeUid){app.social.loading=false;if(app.view==='social')render();}}
+  finally{if(uid===app.activeUid){app.social.loading=false;if(app.view==='social')render();if(app.social.data?.friends?.length)queueMicrotask(loadSocialFriendAvatars);}}
 }
 async function mutateSocial(action,data){
   const uid=app.activeUid;if(!uid||app.social.busy||isOfflineNow(account))return;
@@ -385,7 +411,7 @@ function renderSocial(){
   if(!s.data)return `${title('Amigos','Conectá con otras personas que tengan cuenta.')}<div class="card"><p>${h(s.error||'Preparando la sección Social…')}</p>${button('Reintentar','socialRefresh','','outline')}</div>`;
   const data=s.data,profile=data.profile;
   if(!profile)return `${title('Amigos','Elegí el nombre que querés mostrar a tus amigos.')}<div class="social-stack"><div class="card"><label for="socialDisplayName">Nombre visible</label><input id="socialDisplayName" maxlength="60" autocomplete="nickname" placeholder="Tu nombre o apodo" value="${h(account.user?.name||'')}"/><p class="micro">Solo compartiremos tu nombre social cuando aceptes o recibas una solicitud. Tu correo, rutinas e historial siguen privados.</p>${button('Activar mi perfil social','socialSetup','','')}</div></div>`;
-  const list=(items,mode)=>items?.length?items.map(x=>`<div class="listrow social-friend-row"><div class="bubble">${h(String(x.name||'?').trim().slice(0,1).toUpperCase())}</div><div class="grow"><strong>${h(x.name||'Usuario de Percí')}</strong><div class="micro">${mode==='friends'?'En tu lista de amigos':mode==='received'?'Solicitud recibida':'Solicitud enviada'}</div></div><div class="row wrap social-row-actions">${mode==='received'?`${button('Aceptar','socialAccept',x.requestId,'small')}${button('Rechazar','socialRemove',x.requestId,'small outline')}`:mode==='sent'?button('Cancelar','socialRemove',x.requestId,'small outline'):button('Eliminar','socialRemove',x.requestId,'small outline')}</div></div>`).join(''):'<p class="micro social-empty">Todavía no hay nadie acá.</p>';
+  const list=(items,mode)=>items?.length?items.map(x=>`<div class="listrow social-friend-row"><div class="bubble social-avatar" ${mode==='friends'?`data-social-avatar="${h(x.requestId)}"`:''}>${mode==='friends'&&app.social.avatarImages?.[x.requestId]?`<img src="${h(app.social.avatarImages[x.requestId])}" alt="" decoding="async"/>`:h(String(x.name||'?').trim().slice(0,1).toUpperCase())}</div><div class="grow"><strong>${h(x.name||'Usuario de Percí')}</strong><div class="micro">${mode==='friends'?'En tu lista de amigos':mode==='received'?'Solicitud recibida':'Solicitud enviada'}</div></div><div class="row wrap social-row-actions">${mode==='received'?`${button('Aceptar','socialAccept',x.requestId,'small')}${button('Rechazar','socialRemove',x.requestId,'small outline')}`:mode==='sent'?button('Cancelar','socialRemove',x.requestId,'small outline'):button('Eliminar','socialRemove',x.requestId,'small outline')}</div></div>`).join(''):'<p class="micro social-empty">Todavía no hay nadie acá.</p>';
   const match=s.found?.found?`<div class="social-found" aria-live="polite"><div class="grow"><strong>${h(s.found.name||'Usuario de Percí')}</strong>${s.found.username?`<div class="micro">@${h(s.found.username)}</div>`:''}</div>${button('Enviar solicitud','socialInviteLookup','','small')}</div>`:s.found?.found===false?'<p class="fieldhint" role="status">No encontramos un perfil disponible con esos datos. Revisá la escritura o pedile su código.</p>':'';
   return `${title('Amigos','Tus conexiones, a tu ritmo.')}
   <div class="social-stack">
@@ -443,7 +469,7 @@ function activateAccountData(){
   if(!account.authenticated || account.user?.id!==app.activeUid)app.share=null;
   const id=account.user?.id;
   if(!account.authenticated||!id){
-    app.social={data:null,busy:false,loading:false,error:'',found:null,lookup:null,searchTerm:''};app.activeUid=null;app.needLegacyChoice=false;app.hydrating=false;app.cloudConflict=null;app.cloudNotice='';
+    app.social={data:null,busy:false,loading:false,error:'',found:null,lookup:null,searchTerm:'',avatarImages:{}};app.activeUid=null;app.needLegacyChoice=false;app.hydrating=false;app.cloudConflict=null;app.cloudNotice='';
     app.editor=null;app.habit=null;app.record=null;app.routine=null;app.completedRecord=null;app.progressExercise='';app.modal=null;
     storage.activateUser(null);state=freshState();app.view='home';return;
   }
@@ -458,7 +484,7 @@ function activateAccountData(){
   // No arrastrar editores, modales o selecciones de otra cuenta. Esto también
   // evita bloquear futuras lecturas de Supabase con un editor ya abandonado.
   app.editor=null;app.habit=null;app.record=null;app.routine=null;app.completedRecord=null;app.progressExercise='';app.modal=null;
-  app.social={data:null,busy:false,loading:false,error:'',found:null,lookup:null,searchTerm:''};app.activeUid=id;
+  app.social={data:null,busy:false,loading:false,error:'',found:null,lookup:null,searchTerm:'',avatarImages:{}};app.activeUid=id;
   account.syncPaused=false;
   app.cloudConflict=null;app.cloudNotice='';
   storage.activateUser(id);
@@ -851,7 +877,7 @@ case 'socialSaveProfile':{
   const emailDiscoverable=document.getElementById('socialEmailDiscoverable')?.checked===true;
   void mutateSocial('settings',{username,emailDiscoverable});break;
 }
-case 'socialRefresh':app.social.data=null;void loadSocial();break;
+case 'socialRefresh':app.social.data=null;app.social.avatarImages={};void loadSocial();break;
 case 'socialSetup':{const name=document.getElementById('socialDisplayName')?.value.trim();if(!name||name.length<2||name.length>60){toast('Escribí un nombre de 2 a 60 caracteres');break;}void mutateSocial('setup',{name});break;}
 case 'socialInvite':{const code=String(document.getElementById('socialInviteCode')?.value||'').trim().toUpperCase();if(!/^[0-9A-F]{16}$/.test(code)){toast('Ingresá un código válido de 16 caracteres');break;}void mutateSocial('invite',{code});break;}
 case 'socialAccept':void mutateSocial('accept',{requestId:value});break;
