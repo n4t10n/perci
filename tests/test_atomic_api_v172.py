@@ -64,6 +64,30 @@ class TestAtomicAPI(unittest.TestCase):
         with self.assertRaises(APIError) as e: atomic.enabled()
         self.assertEqual(e.exception.status,503)
 
+    def test_shared_release_only_allows_exact_projects_and_database(self):
+        shared = 'faoilcfpfijyzichwdmj'
+        main = 'prj_vsYW5BNPSo3gjH2N7paREVKiEvln'
+        dev = 'prj_d6yvCQhvCkWwlzRtVWYHZogKkcCv'
+        mockcore.CONFIG = {'url': f'https://{shared}.supabase.co', 'key': 'fake'}
+        for target, project, allowed in [('production', main, True),
+                                         ('preview', dev, True),
+                                         ('preview', main, False),
+                                         ('production', dev, False),
+                                         ('preview', 'other', False)]:
+            env = {'PERCI_ATOMIC_DEV_ENABLED': 'YES_DEV_ATOMIC',
+                   'PERCI_ATOMIC_DEV_PROJECT_REF': shared,
+                   'VERCEL_ENV': target, 'VERCEL_PROJECT_ID': project}
+            with self.subTest(target=target, project=project), patch.dict(os.environ, env, clear=True):
+                if allowed: self.assertTrue(atomic.enabled())
+                else:
+                    with self.assertRaises(APIError): atomic.enabled()
+        wrong = 'vafurtauwarukdcopjnh'
+        mockcore.CONFIG = {'url': f'https://{wrong}.supabase.co', 'key': 'fake'}
+        with patch.dict(os.environ, {'PERCI_ATOMIC_DEV_ENABLED': 'YES_DEV_ATOMIC',
+                                      'PERCI_ATOMIC_DEV_PROJECT_REF': wrong,
+                                      'VERCEL_ENV': 'preview', 'VERCEL_PROJECT_ID': dev}, clear=True):
+            with self.assertRaises(APIError): atomic.enabled()
+
     def test_wrong_project_ref_fails_closed(self):
         mockcore.CONFIG={'url':'https://some-other.supabase.co','key':'x'}
         with self.assertRaises(APIError) as e: atomic.enabled()

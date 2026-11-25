@@ -15,6 +15,8 @@ QA_REF = 'PERCI_ATOMIC_QA_PROJECT_REF'
 DEV_FLAG = 'PERCI_ATOMIC_DEV_ENABLED'
 DEV_REF = 'PERCI_ATOMIC_DEV_PROJECT_REF'
 DEV_VERCEL_PROJECT = 'prj_vsYW5BNPSo3gjH2N7paREVKiEvln'
+DEV_PREVIEW_PROJECT = 'prj_d6yvCQhvCkWwlzRtVWYHZogKkcCv'
+SHARED_SUPABASE_PROJECT = 'faoilcfpfijyzichwdmj'
 QA_SUPABASE_PROJECT = 'vafurtauwarukdcopjnh'
 
 
@@ -38,13 +40,14 @@ def enabled():
     else:
         if dev_flag != 'YES_DEV_ATOMIC':
             raise core.ApiError('Configuración atómica DEV inválida.', 503)
-        if os.environ.get('VERCEL_ENV', '').lower() != 'production':
-            raise core.ApiError('DEV atómico requiere Production.', 503)
-        if os.environ.get('VERCEL_PROJECT_ID') != DEV_VERCEL_PROJECT:
-            raise core.ApiError('Proyecto Vercel DEV no autorizado.', 503)
+        target = os.environ.get('VERCEL_ENV', '').lower()
+        project = os.environ.get('VERCEL_PROJECT_ID')
+        if (target, project) not in (('production', DEV_VERCEL_PROJECT),
+                                     ('preview', DEV_PREVIEW_PROJECT)):
+            raise core.ApiError('Proyecto o entorno Vercel no autorizado.', 503)
         expected = os.environ.get(DEV_REF, '')
-        if expected == QA_SUPABASE_PROJECT:
-            raise core.ApiError('No se puede utilizar Supabase QA en DEV.', 503)
+        if expected != SHARED_SUPABASE_PROJECT:
+            raise core.ApiError('Destino Supabase compartido no autorizado.', 503)
         mode = 'DEV'
 
     if not re.fullmatch(r'[a-z0-9-]{8,32}', expected):
