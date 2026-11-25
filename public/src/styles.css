@@ -527,3 +527,29 @@
 
 /* v1.16 QA: tiempo activo y amistades */
 .active-session-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:15px}.active-session-clock{display:flex;flex-direction:column;gap:4px;flex:1 1 155px}.active-session-clock strong{font:800 clamp(29px,4vw,40px)/1.1 Manrope,system-ui,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-1px}.social-invite-code{font:800 clamp(21px,4vw,29px) Manrope,system-ui,sans-serif;letter-spacing:2px;overflow-wrap:anywhere}.social-friend-row{gap:10px;flex-wrap:wrap}.social-row-actions{margin-left:auto;gap:6px}.social-panels .card{min-width:0}@media(max-width:380px){.mobile-nav .navbtn{padding:7px 2px;font-size:10px}.active-session-controls .btn{flex:1 1 auto}.social-friend-row .social-row-actions{width:100%}}
+
+/* Percí v1.16.1 QA: jerarquía y espacios de Social, mobile-first */
+.social-stack{display:grid;gap:18px;align-content:start}
+.social-stack>.card,.social-panels>.card{margin:0;min-width:0}
+.social-panels{gap:18px}
+.social-card{padding:20px;min-width:0}
+.social-card>h3{margin:0 0 14px;line-height:1.25}
+.social-card>label{margin-top:8px}
+.social-card>input:not([type=checkbox]){margin:3px 0 0;width:100%;max-width:100%}
+.social-card>.micro{margin:10px 0 0;line-height:1.55}
+.social-actions{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
+.social-actions>.btn{min-height:44px}
+.social-invite-code{line-height:1.3;margin:2px 0 7px}
+.social-found{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--surface2)}
+.social-found>.grow{min-width:0;flex:1 1 155px}
+.social-found>.btn{min-height:44px}
+.social-optin{display:flex;align-items:center;gap:12px;margin-top:12px;line-height:1.45;cursor:pointer}
+.social-optin input[type=checkbox]{flex:0 0 20px;width:20px;margin:0}
+.social-optin span{font-size:14px;font-weight:600}
+.social-empty{margin:2px 0 0}
+.social-refresh{margin:0 0 4px}
+.social-friend-row{padding:15px 0;gap:11px}
+.social-friend-row+.social-friend-row{border-top:1px solid var(--border)}
+.social-row-actions{margin-left:auto;gap:8px}
+@media(max-width:700px){.social-stack{gap:16px}.social-panels{gap:16px}.social-card{padding:19px}.social-card>h3{margin-bottom:13px}.social-friend-row{align-items:flex-start}}
+@media(max-width:380px){.social-card{padding:16px}.social-found .btn{width:100%}.social-row-actions{width:100%;justify-content:flex-start}}

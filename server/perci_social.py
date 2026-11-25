@@ -7,6 +7,9 @@ _ACTION_RPC = {
     'invite': 'perci_social_invite',
     'accept': 'perci_social_accept',
     'remove': 'perci_social_remove',
+    'settings': 'perci_social_settings',
+    'find': 'perci_social_find',
+    'inviteLookup': 'perci_social_invite_lookup',
 }
 
 def handle(core, token, user_id, action, body=None):
@@ -28,6 +31,25 @@ def handle(core, token, user_id, action, body=None):
         if not isinstance(code, str) or not re.fullmatch(r'[0-9A-F]{16}', code):
             raise core.ApiError('Código de invitación inválido.', 400)
         payload = {'p_code': code}
+    elif action == 'settings':
+        username = data.get('username')
+        discoverable = data.get('emailDiscoverable')
+        if not isinstance(username, str) or not re.fullmatch(r'[a-z0-9_]{3,24}', username):
+            raise core.ApiError('Nombre de usuario inválido.', 400)
+        if type(discoverable) is not bool:
+            raise core.ApiError('Configuración de privacidad inválida.', 400)
+        payload = {'p_username': username, 'p_email_discoverable': discoverable}
+    elif action in ('find', 'inviteLookup'):
+        mode, query = data.get('mode'), data.get('query')
+        if mode not in ('code', 'username', 'email') or not isinstance(query, str):
+            raise core.ApiError('Búsqueda inválida.', 400)
+        if mode == 'code' and not re.fullmatch(r'[0-9A-F]{16}', query):
+            raise core.ApiError('Código de invitación inválido.', 400)
+        if mode == 'username' and not re.fullmatch(r'[a-z0-9_]{3,24}', query):
+            raise core.ApiError('Nombre de usuario inválido.', 400)
+        if mode == 'email' and (len(query)>254 or not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', query)):
+            raise core.ApiError('Correo de búsqueda inválido.', 400)
+        payload = {'p_mode': mode, 'p_query': query}
     elif action in ('accept', 'remove'):
         request_id = data.get('requestId')
         if not isinstance(request_id, str) or not re.fullmatch(r'[a-fA-F0-9-]{36}', request_id):
