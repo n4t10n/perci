@@ -88,7 +88,7 @@ def download_data(token, user):
         # En QA: la configuración inicial vive en perci_profiles (RLS por usuario).
         # Se consulta dentro de las dos lecturas de revisión: no mezclar estados.
         profiles = core.select_rows('perci_profiles', token, user,
-                                    'theme,focus,onboarding_done')
+                                    'theme,focus,onboarding_done,custom_variants')
         if not isinstance(profiles, list) or len(profiles) > 1:
             raise core.ApiError('Perfil remoto inesperado.', 502)
         meta = {}
@@ -100,6 +100,8 @@ def download_data(token, user):
                 raise core.ApiError('Preferencias de cuenta inválidas.', 502)
             meta = {'theme': profile['theme'], 'focus': profile['focus'],
                     'onboardSeen': profile['onboarding_done']}
+            variants=core.verify_custom_variants(profile.get('custom_variants',[]))
+            if variants: meta['customVariants']=variants
         after = revision(token, user)
         if before == after:
             return {**snapshot, **meta, 'revision': after}

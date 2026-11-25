@@ -76,5 +76,5 @@ test('Nueva ruta forma parte de la navegación Actividad sin alterar editor ni f
  assert.match(source,/case 'reorderExercise':/);
  assert.match(source,/id="sessionDate"/);
  assert.match(css,/\.routine-all-link\{/);
- assert.match(sw,/perci-shell-v1\.17\.1-social-auto-sync/);
+ assert.match(sw,/perci-shell-v1\.19\.1-exercise-context/);
 });

@@ -3,6 +3,7 @@
  * Los borradores de sesión / editor no se envían al servidor hasta quedar completos.
  */
 import {cleanImportedState} from './import-cleanup.js?v=1.7.6';
+import {cleanVariantRegistry,mergeVariantRegistry} from '../domain/exercise-context.js?v=1.19.1';
 
 const copy=value=>JSON.parse(JSON.stringify(value));
 const items=['routines','records','habits'];
@@ -104,11 +105,11 @@ export function isOfflineNow(account){
 
 function fingerprint(kind,obj){
   if(obj===undefined)return '__missing__';
-  if(kind==='routines')return JSON.stringify({name:obj.name,exercises:(obj.exercises||[]).map(e=>({name:e.name,sets:Number(e.sets),reps:Number(e.reps)}))});
+  if(kind==='routines')return JSON.stringify({name:obj.name,exercises:(obj.exercises||[]).map(e=>({name:e.name,sets:Number(e.sets),reps:Number(e.reps),defaultVariant:e.defaultVariant||'',variantsEnabled:typeof e.variantsEnabled==='boolean'?e.variantsEnabled:null}))});
   if(kind==='habits')return JSON.stringify({name:obj.name,days:[...(obj.days||[])].sort((a,b)=>a-b),paused:!!obj.paused});
   if(kind==='records')return JSON.stringify({type:obj.type,name:obj.name,date:obj.date,minutes:Number(obj.minutes),
     distance:obj.distance==null?null:Number(obj.distance),setsDone:obj.setsDone==null?null:Number(obj.setsDone),
-    volume:obj.volume==null?null:Number(obj.volume),note:obj.note||'',setDetails:(obj.setDetails||[]).map(x=>({exercisePosition:Number(x.exercisePosition),exerciseName:x.exerciseName,setNumber:Number(x.setNumber),reps:Number(x.reps),weight:Number(x.weight),completed:!!x.completed})).sort((a,b)=>a.exercisePosition-b.exercisePosition||a.setNumber-b.setNumber)});
+    volume:obj.volume==null?null:Number(obj.volume),note:obj.note||'',exerciseNotes:(obj.exerciseNotes||[]).map(n=>({exercisePosition:Number(n.exercisePosition),exerciseName:n.exerciseName,note:n.note,variant:n.variant||''})).sort((a,b)=>a.exercisePosition-b.exercisePosition),setDetails:(obj.setDetails||[]).map(x=>({exercisePosition:Number(x.exercisePosition),exerciseName:x.exerciseName,setNumber:Number(x.setNumber),reps:Number(x.reps),weight:Number(x.weight),completed:!!x.completed,variant:x.variant||''})).sort((a,b)=>a.exercisePosition-b.exercisePosition||a.setNumber-b.setNumber)});
   return JSON.stringify(obj);
 }
 function normalized(src){
@@ -125,6 +126,8 @@ export function planOfflineSync(base,local,remote,prefer=null,deletedRecordIds=[
   const before=base==null?null:normalized(base);
   const here=normalized(local),there=normalized(remote);
   const merged={...copy(here),demo:false,onboardSeen:true};
+  const variants=mergeVariantRegistry(before?.customVariants,here.customVariants,there.customVariants);
+  if(variants.length)merged.customVariants=variants;else delete merged.customVariants;
   const conflicts=[],unsupportedDeletes=[],deletions=[];
   const explicitDeleted={records:new Set(deletedRecordIds),routines:new Set(deletedEntities.routines||[]),habits:new Set(deletedEntities.habits||[])};
   for(const kind of items){
@@ -191,6 +194,7 @@ export function planOfflineSync(base,local,remote,prefer=null,deletedRecordIds=[
 /** Exigir lectura posterior: confirma que lo que escribimos está realmente en Supabase. */
 export function verifyRemoteSnapshot(expected,actual,deletions=[]){
   const left=normalized(expected),right=normalized(actual);
+  if(JSON.stringify(cleanVariantRegistry(left.customVariants))!==JSON.stringify(cleanVariantRegistry(right.customVariants)))return false;
   for(const kind of items){
     const remote=new Map(right[kind].map(x=>[x.id,x]));
     for(const x of left[kind])if(fingerprint(kind,x)!==fingerprint(kind,remote.get(x.id)))return false;

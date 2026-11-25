@@ -587,3 +587,18 @@
 .social-profile-warning{line-height:1.6;margin-top:20px}
 @media(max-width:700px){.social-profile-hero{padding:19px;gap:14px;align-items:flex-start}.social-profile-avatar{width:70px;height:70px;flex-basis:70px;font-size:25px}.social-profile-routine-title{margin:22px 0 12px}.social-routine-card{padding:17px}.social-profile-id h1{font-size:24px}.social-routine-actions .btn{flex:1 1 125px}}
 @media(max-width:380px){.social-profile-hero{gap:10px;padding:15px}.social-profile-avatar{width:60px;height:60px;flex-basis:60px}.social-profile-id h1{font-size:21px}}
+
+/* Percí QA v1.18.0: ejercicio contextual */
+.exercise-variant{display:flex;flex-direction:column;gap:4px;max-width:100%;min-width:0;font-size:12px;margin:6px 0;align-self:flex-start}
+.exercise-variant select{width:auto;min-width:120px;max-width:100%;min-height:44px;padding:8px 10px;font-size:16px}
+.session-exercise>.row>div:first-child{min-width:0;flex:1 1 150px}
+.session-exercise .exercise-variant{flex:0 1 auto;max-width:100%}
+.exercise-variant select:disabled{opacity:.75}
+.exercise-observation{margin-top:12px;display:grid;gap:5px;min-width:0}
+.exercise-observation label{font-size:13px}
+.exercise-observation textarea{width:100%;min-width:0;max-width:100%;min-height:42px;max-height:112px;resize:none;font-size:16px;line-height:1.35;padding:9px 12px;box-sizing:border-box;overflow-y:auto}
+.exercise-observation details p,.exercise-history-note p{white-space:pre-wrap;overflow-wrap:anywhere;margin:4px 0}
+.exercise-observation summary{cursor:pointer;min-height:32px;display:list-item;padding-top:6px}
+.exercise-history-note{padding:8px 0;overflow-wrap:anywhere}
+
+.variant-management{margin:8px 0 0;padding:8px 0;min-width:0}.variant-management summary{cursor:pointer;min-height:32px}.variant-management .row{margin-top:8px;overflow-wrap:anywhere}.variant-management p{margin:6px 0 8px}

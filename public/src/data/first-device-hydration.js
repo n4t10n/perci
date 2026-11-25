@@ -10,12 +10,12 @@ const copy=value=>JSON.parse(JSON.stringify(value));
 
 export function planFirstDeviceRestore({local,remote,pending=null,deleteIntents=null}){
   if(!local || typeof local!=='object' || !remote || typeof remote!=='object' || pending)return null;
-  if(local.draft || local.demo!==false || !list.every(k=>Array.isArray(local[k])&&local[k].length===0))return null;
+  if(local.draft || local.customVariants?.length || local.demo!==false || !list.every(k=>Array.isArray(local[k])&&local[k].length===0))return null;
   if(!local.checks || typeof local.checks!=='object' || Array.isArray(local.checks) || Object.keys(local.checks).length)return null;
   if(['routines','records','habits'].some(k=>(deleteIntents?.[k]||[]).length))return null;
   if(!list.every(k=>Array.isArray(remote[k])))return null;
   if(!remote.checks || typeof remote.checks!=='object' || Array.isArray(remote.checks))return null;
-  const remoteHasData=list.some(k=>remote[k].length>0) || Object.values(remote.checks).some(Boolean);
+  const remoteHasData=list.some(k=>remote[k].length>0) || Object.values(remote.checks).some(Boolean) || Boolean(remote.customVariants?.length);
   if(!remoteHasData && remote.onboardSeen!==true)return null;
   // No permitir que un dato remoto malformado se convierta en estado persistido.
   for(const k of list){
@@ -29,6 +29,7 @@ export function planFirstDeviceRestore({local,remote,pending=null,deleteIntents=
   const cleaned={...local,demo:false,version:Math.max(3,Number(local.version)||3),
     routines:copy(remote.routines),records:copy(remote.records),habits:copy(remote.habits),checks:copy(remote.checks),
     onboardSeen:remote.onboardSeen===true||remoteHasData,draft:null};
+  if(Array.isArray(remote.customVariants)&&remote.customVariants.length)cleaned.customVariants=copy(remote.customVariants);
   if(allowedThemes.has(remote.theme))cleaned.theme=remote.theme;
   if(allowedFocus.has(remote.focus))cleaned.focus=remote.focus;
   return cleaned;

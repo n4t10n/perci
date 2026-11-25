@@ -63,7 +63,7 @@ test('la interfaz pregunta antes de eliminar y no reabre cartel de borrados de r
   assert.match(app,/Eliminar definitivamente/);
   // En v1.7.6 el borrado forma parte del mismo commit transaccional.
   assert.match(app,/for\(const item of result\.deletions\)grouped\[item\.kind\]\.push\(item\.id\)/);
-  assert.match(app,/const committed=await syncCloudSnapshot\(\{\.\.\.result\.snapshot,draft:null\},remote,deletions\)/);
+  assert.match(app,/const committed=await syncCloudSnapshot\(\{\.\.\.result\.snapshot,draft:null,exerciseContextVersion:3\},remote,deletions\)/);
   assert.doesNotMatch(app,/await deleteCloudEntities\(/);
   assert.match(app,/renderSavedRecordDrafts/);
 });
