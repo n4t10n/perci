@@ -10,6 +10,11 @@ _ACTION_RPC = {
     'settings': 'perci_social_settings',
     'find': 'perci_social_find',
     'inviteLookup': 'perci_social_invite_lookup',
+    'myProfile': 'perci_social_my_profile',
+    'profile': 'perci_social_friend_profile',
+    'bio': 'perci_social_update_bio',
+    'publishRoutine': 'perci_social_publish_routine',
+    'unpublishRoutine': 'perci_social_unpublish_routine',
 }
 
 def handle(core, token, user_id, action, body=None):
@@ -50,6 +55,28 @@ def handle(core, token, user_id, action, body=None):
         if mode == 'email' and (len(query)>254 or not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', query)):
             raise core.ApiError('Correo de búsqueda inválido.', 400)
         payload = {'p_mode': mode, 'p_query': query}
+    elif action == 'profile':
+        request_id = data.get('requestId')
+        if not isinstance(request_id, str) or not re.fullmatch(r'[a-fA-F0-9-]{36}', request_id):
+            raise core.ApiError('Amistad inválida.', 400)
+        payload = {'p_friendship_id': request_id}
+    elif action == 'bio':
+        bio = data.get('bio')
+        if not isinstance(bio, str) or len(bio.strip()) > 160:
+            raise core.ApiError('La presentación puede tener hasta 160 caracteres.', 400)
+        payload = {'p_bio': bio.strip()}
+    elif action in ('publishRoutine', 'unpublishRoutine'):
+        source_id = data.get('sourceId')
+        if not isinstance(source_id, str) or not 1 <= len(source_id) <= 120:
+            raise core.ApiError('Identificador de rutina inválido.', 400)
+        payload = {'p_source_id': source_id}
+        if action == 'publishRoutine':
+            from server.perci_share import clean_routine
+            try:
+                clean = clean_routine(data.get('routine'))
+            except ValueError as exc:
+                raise core.ApiError(str(exc), 400) from exc
+            payload['p_payload'] = clean
     elif action in ('accept', 'remove'):
         request_id = data.get('requestId')
         if not isinstance(request_id, str) or not re.fullmatch(r'[a-fA-F0-9-]{36}', request_id):

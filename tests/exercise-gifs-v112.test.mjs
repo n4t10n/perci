@@ -66,12 +66,12 @@ test('Fallback offline, preferencia de movimiento reducido y lectura accesible',
 });
 
 test('PWA v1.12: posters sí, GIFs bajo demanda, caché de JS/CSS coherente',()=>{
-  assert.match(sw,/perci-shell-v1\.16\.2-friend-avatars/);
-  assert.match(sw,/src\/app\.js\?v=1\.16\.2/);
+  assert.match(sw,/perci-shell-v1\.17\.0-friend-profiles/);
+  assert.match(sw,/src\/app\.js\?v=1\.17\.0/);
   assert.match(sw,/domain\/exercise-catalog\.js\?v=1\.12\.0/);
-  assert.match(sw,/src\/styles\.css\?v=1\.16\.2/);
-  assert.match(html,/src\/app\.js\?v=1\.16\.2/);
-  assert.match(html,/src\/styles\.css\?v=1\.16\.2/);
+  assert.match(sw,/src\/styles\.css\?v=1\.17\.0/);
+  assert.match(html,/src\/app\.js\?v=1\.17\.0/);
+  assert.match(html,/src\/styles\.css\?v=1\.17\.0/);
   for(const entry of assets){
     assert.ok(sw.includes(`'./assets/exercises/${entry.id}.webp'`));
     assert.ok(!sw.includes(`'./assets/exercises/${entry.id}.gif'`),`No precachear GIF: ${entry.id}`);

@@ -26,7 +26,7 @@ import {getRealExerciseMedia} from './domain/real-exercise-media.js?v=1.12.1';
 
 let state;try{state=storage.read()||seed();if(!Array.isArray(state.records)||!Array.isArray(state.routines)||!Array.isArray(state.habits))throw Error('Formato inválido')}catch(e){state=seed()}
 const freshState=()=>({...seed(),version:3,demo:false,routines:[],records:[],habits:[],checks:{},draft:null});
-const app={activeUid:null,needLegacyChoice:false,hydrating:false,silentHydration:false,cloudConflict:null,cloudNotice:'',view:getInitialView(state),tab:'gym',activity:'walk',filter:'all',record:null,routine:null,routineListOrigin:'activity',editor:null,renamingExercise:null,habit:null,exerciseSearch:'',libraryMuscle:'all',progressExercise:'',completedRecord:null,modal:null,toast:'',share:null,social:{data:null,busy:false,loading:false,error:'',found:null,lookup:null,searchTerm:'',avatarImages:{}},progressWeekOffset:0,progressDay:null};
+const app={activeUid:null,needLegacyChoice:false,hydrating:false,silentHydration:false,cloudConflict:null,cloudNotice:'',view:getInitialView(state),tab:'gym',activity:'walk',filter:'all',record:null,routine:null,routineListOrigin:'activity',editor:null,renamingExercise:null,habit:null,exerciseSearch:'',libraryMuscle:'all',progressExercise:'',completedRecord:null,modal:null,toast:'',share:null,social:{data:null,busy:false,loading:false,error:'',found:null,lookup:null,searchTerm:'',avatarImages:{},profileTarget:null,profileData:null,profileLoading:false,profileBusy:false,profileError:''},progressWeekOffset:0,progressDay:null};
 const icons={account:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>',activity:'<path d="M6.5 6.5 17.5 17.5M4 9l5-5M2 7l5-5M15 20l5-5M17 22l5-5"/>',progress:'<path d="M3 19V5m0 14h18M7 16l5-5 4 3 5-7"/>',habits:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 10h18m-13 5 2 2 4-4"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.8 1.8-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.05 1.57V21h-2.5v-.08a1.7 1.7 0 0 0-1.05-1.57 1.7 1.7 0 0 0-1.88.34l-.06.06-1.8-1.8.06-.06A1.7 1.7 0 0 0 8.1 16a1.7 1.7 0 0 0-1.57-1.05H6.4v-2.5h.09A1.7 1.7 0 0 0 8.1 11.4a1.7 1.7 0 0 0-.34-1.88L7.7 9.46l1.8-1.8.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.05-1.57V6.4H15v.09a1.7 1.7 0 0 0 1.05 1.57 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.8 1.8-.06.06A1.7 1.7 0 0 0 19.4 11.4a1.7 1.7 0 0 0 1.57 1.05H21v2.5h-.09A1.7 1.7 0 0 0 19.4 15"/>',arrow:'<path d="m9 18 6-6-6-6"/>',plus:'<path d="M12 5v14M5 12h14"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',check:'<path d="m5 12 4 4L19 6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',social:'<circle cx="9" cy="8" r="3"/><path d="M3 19v-2a6 6 0 0 1 12 0v2M16 6a3 3 0 0 1 0 6m2 2a5 5 0 0 1 3 5"/>'};
 const icon=(n)=>`<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icons[n]||icons.arrow}</svg>`;
 const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -34,7 +34,7 @@ const save=()=>{if(!account.authenticated||!app.activeUid||app.needLegacyChoice|
 const applyTheme=()=>{let t=state.theme==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):state.theme;document.documentElement.dataset.theme=t;document.querySelector('meta[name=theme-color]').content=t==='dark'?'#111716':'#f2f4f1'};
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
 const navs=[['home','Inicio'],['activity','Actividad'],['progress','Progreso'],['habits','Hábitos'],['social','Amigos']];
-const mainView=v=>({home:'home',activity:'activity',routine:'activity',routinesOverview:'activity',routineEdit:'activity',routineShare:'activity',routinePicker:'home',exerciseLibrary:'activity',session:'activity',otherForm:'activity',progress:'progress',record:'progress',recordSetsEdit:'progress',sessionSummary:'progress',habits:'habits',habitEdit:'habits',social:'social',settings:'settings',account:'account',onboard:'home'}[v]||'home');
+const mainView=v=>({home:'home',activity:'activity',routine:'activity',routinesOverview:'activity',routineEdit:'activity',routineShare:'activity',routinePicker:'home',exerciseLibrary:'activity',session:'activity',otherForm:'activity',progress:'progress',record:'progress',recordSetsEdit:'progress',sessionSummary:'progress',habits:'habits',habitEdit:'habits',social:'social',socialProfile:'social',settings:'settings',account:'account',onboard:'home'}[v]||'home');
 const go=v=>{if(!account.authenticated||app.needLegacyChoice)return;if(hasAccountConflict())v='account';const previousView=app.view;app.view=v;window.scrollTo({top:0,behavior:'instant'});render();
   if(previousView!==v&&!app.modal){const heading=document.querySelector('.main h1,.main h2');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}}
   // Al navegar a una pantalla de lectura, traer los datos nuevos de la cuenta.
@@ -411,7 +411,7 @@ function renderSocial(){
   if(!s.data)return `${title('Amigos','Conectá con otras personas que tengan cuenta.')}<div class="card"><p>${h(s.error||'Preparando la sección Social…')}</p>${button('Reintentar','socialRefresh','','outline')}</div>`;
   const data=s.data,profile=data.profile;
   if(!profile)return `${title('Amigos','Elegí el nombre que querés mostrar a tus amigos.')}<div class="social-stack"><div class="card"><label for="socialDisplayName">Nombre visible</label><input id="socialDisplayName" maxlength="60" autocomplete="nickname" placeholder="Tu nombre o apodo" value="${h(account.user?.name||'')}"/><p class="micro">Solo compartiremos tu nombre social cuando aceptes o recibas una solicitud. Tu correo, rutinas e historial siguen privados.</p>${button('Activar mi perfil social','socialSetup','','')}</div></div>`;
-  const list=(items,mode)=>items?.length?items.map(x=>`<div class="listrow social-friend-row"><div class="bubble social-avatar" ${mode==='friends'?`data-social-avatar="${h(x.requestId)}"`:''}>${mode==='friends'&&app.social.avatarImages?.[x.requestId]?`<img src="${h(app.social.avatarImages[x.requestId])}" alt="" decoding="async"/>`:h(String(x.name||'?').trim().slice(0,1).toUpperCase())}</div><div class="grow"><strong>${h(x.name||'Usuario de Percí')}</strong><div class="micro">${mode==='friends'?'En tu lista de amigos':mode==='received'?'Solicitud recibida':'Solicitud enviada'}</div></div><div class="row wrap social-row-actions">${mode==='received'?`${button('Aceptar','socialAccept',x.requestId,'small')}${button('Rechazar','socialRemove',x.requestId,'small outline')}`:mode==='sent'?button('Cancelar','socialRemove',x.requestId,'small outline'):button('Eliminar','socialRemove',x.requestId,'small outline')}</div></div>`).join(''):'<p class="micro social-empty">Todavía no hay nadie acá.</p>';
+  const list=(items,mode)=>items?.length?items.map(x=>`<div class="listrow social-friend-row"><div class="bubble social-avatar" ${mode==='friends'?`data-social-avatar="${h(x.requestId)}"`:''}>${mode==='friends'&&app.social.avatarImages?.[x.requestId]?`<img src="${h(app.social.avatarImages[x.requestId])}" alt="" decoding="async"/>`:h(String(x.name||'?').trim().slice(0,1).toUpperCase())}</div><div class="grow"><strong>${h(x.name||'Usuario de Percí')}</strong><div class="micro">${mode==='friends'?'En tu lista de amigos':mode==='received'?'Solicitud recibida':'Solicitud enviada'}</div></div><div class="row wrap social-row-actions">${mode==='received'?`${button('Aceptar','socialAccept',x.requestId,'small')}${button('Rechazar','socialRemove',x.requestId,'small outline')}`:mode==='sent'?button('Cancelar','socialRemove',x.requestId,'small outline'):`${button('Ver perfil','socialOpenProfile',x.requestId,'small')}${button('Eliminar','socialRemove',x.requestId,'small outline')}`}</div></div>`).join(''):'<p class="micro social-empty">Todavía no hay nadie acá.</p>';
   const match=s.found?.found?`<div class="social-found" aria-live="polite"><div class="grow"><strong>${h(s.found.name||'Usuario de Percí')}</strong>${s.found.username?`<div class="micro">@${h(s.found.username)}</div>`:''}</div>${button('Enviar solicitud','socialInviteLookup','','small')}</div>`:s.found?.found===false?'<p class="fieldhint" role="status">No encontramos un perfil disponible con esos datos. Revisá la escritura o pedile su código.</p>':'';
   return `${title('Amigos','Tus conexiones, a tu ritmo.')}
   <div class="social-stack">
@@ -419,13 +419,85 @@ function renderSocial(){
       <section class="card social-card"><h3>Tu código de invitación</h3><p class="social-invite-code">${h(profile.code)}</p><p class="micro">Compartilo con quien quieras agregar.</p><div class="social-actions">${button('Copiar código','socialCopyCode','','small outline')}</div></section>
       <section class="card social-card"><h3>Buscar amigos</h3><label for="socialLookup">Código, @usuario o correo electrónico</label><input id="socialLookup" maxlength="254" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="Ej.: @vale_ux" value="${h(s.searchTerm||'')}"/><p class="micro">La búsqueda es exacta. Por correo, solo aparecen usuarios que habilitaron esa opción.</p><div class="social-actions">${button(s.busy?'Buscando…':'Buscar','socialFind','','small')}</div>${match}</section>
     </div>
-    <section class="card social-card"><h3>Tu perfil social</h3><div class="field"><label for="socialUsername">Nombre de usuario único</label><input id="socialUsername" maxlength="24" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="Ej.: vale_ux" value="${h(profile.username||'')}"/><p class="fieldhint">Entre 3 y 24 caracteres: letras minúsculas, números y guion bajo. Tus amigos podrán buscarte con @usuario.</p></div><label class="social-optin"><input type="checkbox" id="socialEmailDiscoverable" ${profile.emailDiscoverable===true?'checked':''}/><span>Permitir que me encuentren por mi correo registrado</span></label><p class="micro">Desactivado por defecto. Tu correo nunca se muestra en los resultados.</p><div class="social-actions">${button('Guardar perfil','socialSaveProfile','','small outline')}</div></section>
+    <section class="card social-card"><div class="row between wrap social-profile-edit-head"><h3>Tu perfil social</h3>${button('Ver mi perfil','socialOpenProfile','self','small outline')}</div><div class="field"><label for="socialUsername">Nombre de usuario único</label><input id="socialUsername" maxlength="24" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="Ej.: vale_ux" value="${h(profile.username||'')}"/><p class="fieldhint">Entre 3 y 24 caracteres: letras minúsculas, números y guion bajo. Tus amigos podrán buscarte con @usuario.</p></div><label class="social-optin"><input type="checkbox" id="socialEmailDiscoverable" ${profile.emailDiscoverable===true?'checked':''}/><span>Permitir que me encuentren por mi correo registrado</span></label><p class="micro">Desactivado por defecto. Tu correo nunca se muestra en los resultados.</p><div class="social-actions">${button('Guardar perfil','socialSaveProfile','','small outline')}</div></section>
     <section class="card social-card"><h3>Solicitudes recibidas</h3>${list(data.received,'received')}</section>
     <section class="card social-card"><h3>Mis amigos</h3>${list(data.friends,'friends')}</section>
     <section class="card social-card"><h3>Solicitudes enviadas</h3>${list(data.sent,'sent')}</section>
     ${s.error?`<p class="fieldhint" role="alert">${h(s.error)}</p>`:''}
     <div class="social-refresh">${button('Actualizar','socialRefresh','','small outline')}</div>
   </div>`;
+}
+
+
+async function loadSocialProfile(){
+  const uid=app.activeUid, social=app.social, target=social.profileTarget;
+  if(!uid||!target||isOfflineNow(account)||social.profileLoading)return;
+  social.profileLoading=true;social.profileError='';if(app.view==='socialProfile')render();
+  try{
+    const data=await socialApi(target==='self'?'myProfile':'profile',target==='self'?{}:{requestId:target});
+    if(app.activeUid===uid&&app.social===social&&social.profileTarget===target){
+      social.profileData=data;
+    }
+  }catch(error){if(app.activeUid===uid&&app.social===social&&social.profileTarget===target){
+    social.profileData=null;social.profileError=String(error.message||'No pudimos abrir el perfil.');
+  }}finally{if(app.activeUid===uid&&app.social===social&&social.profileTarget===target){
+    social.profileLoading=false;if(app.view==='socialProfile')render();
+  }}
+}
+function openSocialProfile(target){
+  const isOwn=target==='self';
+  if(!isOwn && !app.social.data?.friends?.some(f=>f.requestId===target)){
+    toast('Solo podés visitar el perfil de un amigo.');return;
+  }
+  app.social.profileTarget=target;app.social.profileData=null;app.social.profileError='';
+  go('socialProfile');void loadSocialProfile();
+  if(!isOwn && !app.social.avatarImages?.[target]){
+    void loadSocialFriendAvatars().then(()=>{
+      if(app.view==='socialProfile'&&app.social.profileTarget===target)render();
+    });
+  }
+}
+async function mutateSocialProfile(action,data){
+  const uid=app.activeUid,social=app.social;
+  if(!uid||social.profileBusy||isOfflineNow(account)){
+    if(isOfflineNow(account))toast('Conectate a Internet para cambiar tu perfil.');return;
+  }
+  social.profileBusy=true;render();
+  try{
+    await socialApi(action,data);
+    if(uid!==app.activeUid||app.social!==social)return;
+    social.profileData=null;
+    await loadSocialProfile();
+    if(uid===app.activeUid)toast('Tu perfil se actualizó ✓');
+  }catch(error){if(uid===app.activeUid){social.profileError=String(error.message||'No pudimos actualizar el perfil.');toast(social.profileError);}}
+  finally{if(uid===app.activeUid&&app.social===social){social.profileBusy=false;if(app.view==='socialProfile')render();}}
+}
+function renderSocialProfile(){
+  const s=app.social,own=s.profileTarget==='self';
+  if(isOfflineNow(account))return `${back('social')}<div class="notice">Conectate a Internet para ver perfiles y rutinas compartidas.</div>`;
+  if(s.profileLoading)return `${back('social')}<section class="card">Cargando perfil…</section>`;
+  if(!s.profileData)return `${back('social')}<section class="card"><p role="alert">${h(s.profileError||'Preparando el perfil…')}</p>${button('Reintentar','socialProfileRefresh','','outline')}</section>`;
+  const profile=s.profileData.profile||{},published=s.profileData.routines||[];
+  const safeName=h(profile.name||'Usuario de Percí');
+  const avatar=own?avatarMarkup(account.user):(s.avatarImages?.[s.profileTarget]?`<img src="${h(s.avatarImages[s.profileTarget])}" alt=""/>`:`<span aria-hidden="true">${h(String(profile.name||'?').trim().slice(0,1).toUpperCase())}</span>`);
+  const routines=own?state.routines:published;
+  const visibleIds=new Set(published.map(x=>x.sourceId));
+  const card=(r)=>{
+    const visible=visibleIds.has(r.sourceId||r.id);
+    const exercises=Array.isArray(r.exercises)?r.exercises:[];
+    const preview=own?(published.find(x=>x.sourceId===r.id)||r):r;
+    return `<article class="card social-routine-card"><div class="row between wrap social-routine-heading"><div><h3>${h(r.name)}</h3><p class="micro">${exercises.length} ejercicios · ${exercises.reduce((n,x)=>n+Number(x.sets||0),0)} series</p></div>${own?`<span class="badge ${visible?'good':''}">${visible?'Visible para amigos':'Solo yo'}</span>`:''}</div>
+    ${own?`<div class="social-routine-actions">${visible?`${button('Ocultar','socialUnpublishRoutine',r.id,'small outline')}${button('Actualizar publicación','socialPublishRoutine',r.id,'small')}`:button('Mostrar a amigos','socialPublishRoutine',r.id,'small')}</div>`:`<details class="social-routine-details"><summary>Ver ejercicios</summary><ol>${(preview.exercises||[]).map(e=>`<li><strong>${h(e.name)}</strong><span>${Number(e.sets)} series · ${Number(e.reps)} reps</span></li>`).join('')}</ol></details>`}</article>`;
+  };
+  const missing=own?published.filter(x=>!state.routines.some(r=>r.id===x.sourceId)):[];
+  return `<div class="detail-top">${back('social')}<span class="micro">${own?'MI PERFIL':'PERFIL DE AMIGO'}</span></div>
+    <section class="card social-profile-hero"><div class="social-profile-avatar">${avatar}</div><div class="social-profile-id"><h1>${safeName}</h1><p class="social-profile-handle">${profile.username?'@'+h(profile.username):'Perfil de Percí'}</p><p class="social-profile-bio">${h(profile.bio||'Todavía no agregó una presentación.')}</p><span class="micro">${published.length} ${published.length===1?'rutina compartida':'rutinas compartidas'}</span></div></section>
+    ${own?`<section class="card social-card"><h2>Presentación</h2><label for="socialProfileBio">Contales algo a tus amigos</label><textarea id="socialProfileBio" maxlength="160" rows="3" placeholder="Ej. Entreno fuerza tres veces por semana">${h(profile.bio||'')}</textarea><p class="fieldhint">Hasta 160 caracteres. Visible solo para amistades aceptadas.</p>${button('Guardar presentación','socialSaveBio','','small outline')}</section>`:''}
+    <div class="social-profile-routine-title"><h2>${own?'Elegí qué rutinas mostrar':'Rutinas compartidas'}</h2><p class="micro">${own?'Todas son privadas hasta que las actives. Solo se publica la plantilla, sin pesos ni entrenamientos.':'Podés consultar los ejercicios, series y repeticiones que tu amigo decidió compartir.'}</p></div>
+    <div class="social-stack">${routines.length?routines.map(card).join(''):'<div class="card social-empty">Todavía no hay rutinas visibles.</div>'}
+    ${missing.length?`<section class="card"><h3>Publicaciones anteriores</h3><p class="micro">Estas publicaciones siguen disponibles para tus amigos aunque ya no tengas la rutina en tu cuenta. Podés ocultarlas ahora.</p>${missing.map(r=>`<div class="listrow"><div class="grow"><strong>${h(r.name)}</strong></div>${button('Ocultar','socialUnpublishRoutine',r.sourceId,'small outline')}</div>`).join('')}</section>`:''}</div>
+    ${s.profileError?`<p role="alert" class="fieldhint">${h(s.profileError)}</p>`:''}
+    ${own?'<p class="micro social-profile-warning">Una publicación es una copia de la rutina en ese momento. Si la editás, usá «Actualizar publicación». Para dejar de compartirla, elegí «Ocultar».</p>':''}`;
 }
 
 function renderSettings(){return `${title('Tu espacio, a tu modo.','Personalizá Percí a tu ritmo.')}<div class="grid2"><div class="card"><h3>Apariencia</h3><p class="micro">Elegí cómo querés ver Percí.</p><div class="filterline">${[['dark','Oscuro'],['light','Claro'],['system','Automático']].map(([k,v])=>`<button class="chip ${state.theme===k?'active':''}" data-action="theme" data-value="${k}" aria-pressed="${state.theme===k}">${v}</button>`).join('')}</div><div class="divider"></div><h3>Tu actividad principal</h3><p class="micro">Podés cambiarla cuando quieras; siempre tendrás acceso a todas tus actividades.</p><div class="filterline">${[['gym','Gimnasio'],['others','Otras actividades'],['both','Ambas']].map(([k,v])=>`<button class="chip ${state.focus===k?'active':''}" data-action="focus" data-value="${k}" aria-pressed="${state.focus===k}">${v}</button>`).join('')}</div><div class="divider"></div>${button('Volver a ver bienvenida','onboard','','outline')}</div><div class="card"><h3>Privacidad y tus datos</h3><div class="notice"><strong>✓ Tus datos se guardan en este dispositivo.</strong><p class="micro" style="margin:8px 0 0">${account.linked?'También tenés una copia vinculada a tu cuenta.':'Podés respaldar tus avances desde Mi cuenta.'}</p></div><div class="row wrap" style="margin-top:18px">${button('Mi cuenta','go','account')}${button('Exportar copia de mis datos','export','','outline')}</div><p class="micro" style="margin-top:16px">Si necesitás recuperar un archivo de respaldo, podés importarlo sin borrar nada hasta que lo confirmes.</p>${button('Importar copia JSON','import','','outline')}${storage.hasBackup()?button('Revertir última importación','restoreBackup','','outline'):''}<div class="divider"></div><h3>Licencias de contenido</h3><p class="micro"><a href="https://ymove.app/exercise-api" target="_blank" rel="noopener noreferrer">Exercise video by Your Move</a></p></div></div>`}
@@ -459,7 +531,7 @@ function render(){
     return;
   }
   let view=app.view;
-  let out=({home:renderHome,activity:renderActivity,routinesOverview:renderAllRoutines,routinePicker:renderRoutinePicker,progress:renderProgress,habits:renderHabits,settings:renderSettings,account:renderAccount,social:renderSocial,routine:renderRoutine,routineEdit:renderRoutineEdit,exerciseLibrary:renderLibrary,session:renderSession,otherForm:renderOtherForm,record:renderRecord,recordSetsEdit:renderRecordSetsEdit,sessionSummary:renderSessionSummary,habitEdit:renderHabitEdit,routineShare:renderRoutineShare,onboard:renderOnboard}[view]||renderHome)();
+  let out=({home:renderHome,activity:renderActivity,routinesOverview:renderAllRoutines,routinePicker:renderRoutinePicker,progress:renderProgress,habits:renderHabits,settings:renderSettings,account:renderAccount,social:renderSocial,socialProfile:renderSocialProfile,routine:renderRoutine,routineEdit:renderRoutineEdit,exerciseLibrary:renderLibrary,session:renderSession,otherForm:renderOtherForm,record:renderRecord,recordSetsEdit:renderRecordSetsEdit,sessionSummary:renderSessionSummary,habitEdit:renderHabitEdit,routineShare:renderRoutineShare,onboard:renderOnboard}[view]||renderHome)();
   root.innerHTML=shell((isOfflineNow(account)&&app.cloudNotice?`<div class="notice" role="status" style="margin-bottom:15px">${h(app.cloudNotice)}</div>`:'')+out)+renderAvatarDialog();
   mountAvatarDialog();
   if(app.modal){document.querySelector('.app')?.setAttribute('inert','');focusModalSafely();}
@@ -469,7 +541,7 @@ function activateAccountData(){
   if(!account.authenticated || account.user?.id!==app.activeUid)app.share=null;
   const id=account.user?.id;
   if(!account.authenticated||!id){
-    app.social={data:null,busy:false,loading:false,error:'',found:null,lookup:null,searchTerm:'',avatarImages:{}};app.activeUid=null;app.needLegacyChoice=false;app.hydrating=false;app.cloudConflict=null;app.cloudNotice='';
+    app.social={data:null,busy:false,loading:false,error:'',found:null,lookup:null,searchTerm:'',avatarImages:{},profileTarget:null,profileData:null,profileLoading:false,profileBusy:false,profileError:''};app.activeUid=null;app.needLegacyChoice=false;app.hydrating=false;app.cloudConflict=null;app.cloudNotice='';
     app.editor=null;app.habit=null;app.record=null;app.routine=null;app.completedRecord=null;app.progressExercise='';app.modal=null;
     storage.activateUser(null);state=freshState();app.view='home';return;
   }
@@ -484,7 +556,7 @@ function activateAccountData(){
   // No arrastrar editores, modales o selecciones de otra cuenta. Esto también
   // evita bloquear futuras lecturas de Supabase con un editor ya abandonado.
   app.editor=null;app.habit=null;app.record=null;app.routine=null;app.completedRecord=null;app.progressExercise='';app.modal=null;
-  app.social={data:null,busy:false,loading:false,error:'',found:null,lookup:null,searchTerm:'',avatarImages:{}};app.activeUid=id;
+  app.social={data:null,busy:false,loading:false,error:'',found:null,lookup:null,searchTerm:'',avatarImages:{},profileTarget:null,profileData:null,profileLoading:false,profileBusy:false,profileError:''};app.activeUid=id;
   account.syncPaused=false;
   app.cloudConflict=null;app.cloudNotice='';
   storage.activateUser(id);
@@ -869,6 +941,21 @@ function deletePersonalEntity(kind,itemId){
 }
 function handle(action,value){switch(action){
 case 'go':app.modal=null;go(value);break;
+case 'socialOpenProfile':openSocialProfile(value);break;
+case 'socialProfileRefresh':void loadSocialProfile();break;
+case 'socialSaveBio':{
+  const bio=String(document.getElementById('socialProfileBio')?.value||'').trim();
+  if(bio.length>160){toast('Máximo 160 caracteres.');break;}
+  void mutateSocialProfile('bio',{bio});break;
+}
+case 'socialPublishRoutine':{
+  const routine=state.routines.find(r=>r.id===value);if(!routine)break;
+  if(!app.social.profileData?.routines?.some(x=>x.sourceId===value) &&
+     !window.confirm('¿Mostrar esta rutina a tus amigos? Compartiremos solo ejercicios, series y repeticiones, nunca tus registros de entrenamiento.'))break;
+  let cleaned;try{cleaned=cleanSharedRoutine(routine);}catch(error){toast(error.message);break;}
+  void mutateSocialProfile('publishRoutine',{sourceId:value,routine:cleaned});break;
+}
+case 'socialUnpublishRoutine':void mutateSocialProfile('unpublishRoutine',{sourceId:value});break;
 case 'socialFind':void findSocial();break;
 case 'socialInviteLookup':void inviteFoundSocial();break;
 case 'socialSaveProfile':{

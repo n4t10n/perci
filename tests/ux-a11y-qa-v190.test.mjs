@@ -44,7 +44,7 @@ test('P2: responsive y contraste mantienen una sola caché de QA',()=>{
   assert.match(css,/--muted2:#526c66/);
   assert.match(css,/@media\(min-width:701px\)/);
   assert.match(css,/prefers-reduced-motion:reduce/);
-  assert.match(sw,/perci-shell-v1\.16\.2-friend-avatars/);
+  assert.match(sw,/perci-shell-v1\.17\.0-friend-profiles/);
 });
 test('P1: tokens de texto tenue alcanzan 4.5:1 en superficies del tema claro',()=>{
   const block=css.match(/:root\[data-theme="light"\]\{([^}]+)\}/)?.[1]||'';

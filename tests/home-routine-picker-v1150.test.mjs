@@ -54,8 +54,8 @@ test('PWA: selector accesible, identidad de assets consistente y nueva caché',(
   assert.match(css,/\.routine-picker-grid\{/);
   assert.match(app,/role="group" aria-label="Rutinas para empezar"/);
   assert.match(app,/aria-label="Empezar \$\{h\(r\.name\)\}/);
-  assert.match(sw,/perci-shell-v1\.16\.2-friend-avatars/);
-  assert.match(sw,/src\/app\.js\?v=1\.16\.2/);
-  assert.match(sw,/src\/styles\.css\?v=1\.16\.2/);
-  assert.match(html,/src\/app\.js\?v=1\.16\.2/);
+  assert.match(sw,/perci-shell-v1\.17\.0-friend-profiles/);
+  assert.match(sw,/src\/app\.js\?v=1\.17\.0/);
+  assert.match(sw,/src\/styles\.css\?v=1\.17\.0/);
+  assert.match(html,/src\/app\.js\?v=1\.17\.0/);
 });

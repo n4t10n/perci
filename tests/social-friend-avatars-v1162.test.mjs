@@ -13,7 +13,7 @@ test('Solo muestra fotos de amistades aceptadas y borra caché al cambiar cuenta
 });
 test('La PWA renueva JS y CSS y conserva fallback con inicial',()=>{
  assert.match(css,/\.social-friend-row \.social-avatar img\{/);
- assert.match(sw,/perci-shell-v1\.16\.2-friend-avatars/);
- assert.match(html,/src\/app\.js\?v=1\.16\.2/);
+ assert.match(sw,/perci-shell-v1\.17\.0-friend-profiles/);
+ assert.match(html,/src\/app\.js\?v=1\.17\.0/);
  assert.match(app,/String\(x\.name\|\|'\?'\)/);
 });

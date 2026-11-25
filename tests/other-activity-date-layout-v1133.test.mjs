@@ -26,10 +26,10 @@ test('Comentario CSS valido, reglas record-date activas y control nativo conserv
   assert.match(css,/\.record-date-control input\[type=date\]\{[^}]*opacity:0;cursor:pointer/);
 });
 test('Service Worker y HTML usan los mismos assets nuevos y cache exclusiva',()=>{
-  assert.match(sw,/perci-shell-v1\.16\.2-friend-avatars/);
-  assert.match(sw,/src\/app\.js\?v=1\.16\.2/);
-  assert.match(sw,/src\/styles\.css\?v=1\.16\.2/);
-  assert.match(html,/src\/app\.js\?v=1\.16\.2/);
-  assert.match(html,/src\/styles\.css\?v=1\.16\.2/);
+  assert.match(sw,/perci-shell-v1\.17\.0-friend-profiles/);
+  assert.match(sw,/src\/app\.js\?v=1\.17\.0/);
+  assert.match(sw,/src\/styles\.css\?v=1\.17\.0/);
+  assert.match(html,/src\/app\.js\?v=1\.17\.0/);
+  assert.match(html,/src\/styles\.css\?v=1\.17\.0/);
   assert.doesNotMatch(sw,/perci-avatars-qa/);
 });
