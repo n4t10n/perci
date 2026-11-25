@@ -40,7 +40,7 @@ const go=v=>{if(!account.authenticated||app.needLegacyChoice)return;if(hasAccoun
   // Al navegar a una pantalla de lectura, traer los datos nuevos de la cuenta.
   // La edición y los entrenamientos activos no deben interrumpirse.
   if(shouldRefreshOnNavigation(v))queueMicrotask(()=>refreshConnectionAware(8000));
-   if(v==='social' && !app.social.data && !app.social.loading)queueMicrotask(()=>loadSocial());
+   if(v==='social')queueMicrotask(()=>{if(!app.social.data&&!app.social.loading)void loadSocial();else void refreshSocialAutomatically();});
 };
 const toast=s=>{app.toast=s;let el=document.createElement('div');el.className='toast';el.setAttribute('role','status');el.textContent=s;document.querySelectorAll('.toast').forEach(x=>x.remove());document.body.appendChild(el);setTimeout(()=>el.remove(),2400)};
 const title=(head,sub,action='')=>`<div class="row between wrap" style="align-items:end;margin:7px 0 21px"><div><h1 style="font-size:clamp(29px,4vw,43px);margin:0 0 8px">${head}</h1><p class="sub" style="margin:0">${sub}</p></div>${action}</div>`;
@@ -384,6 +384,65 @@ async function loadSocialFriendAvatars(){
   }
 }
 
+
+// v1.17.1: refresco de amistades durante la vista Social, sin botón manual.
+// Solo foreground; no persistimos fotografías ni estado social en la PWA.
+const SOCIAL_SYNC_INTERVAL_MS=15000;
+let socialSyncLastChecked=0;
+let socialSyncInFlight=false;
+let socialSyncGeneration=0;
+function socialShouldAutoSync(){
+  return !!app.activeUid && account.authenticated && account.user?.id===app.activeUid &&
+    (app.view==='social'||app.view==='socialProfile') &&
+    document.visibilityState==='visible' && !isOfflineNow(account);
+}
+async function refreshSocialAutomatically(){
+  const uid=app.activeUid, social=app.social;
+  if(!socialShouldAutoSync())return;
+  if(!social.data){
+    if(app.view==='social'&&!social.loading&&!social.busy)void loadSocial();
+    return;
+  }
+  if(socialSyncInFlight||social.loading||social.busy||social.profileBusy)return;
+  const now=Date.now();
+  if(now-socialSyncLastChecked<5000)return; // focus y visibility pueden coincidir
+  socialSyncLastChecked=now;
+  const generation=socialSyncGeneration;
+  socialSyncInFlight=true;
+  try{
+    const remote=await socialApi('overview');
+    if(uid!==app.activeUid||app.social!==social||generation!==socialSyncGeneration||
+       social.busy||social.loading||social.profileBusy||!socialShouldAutoSync())return;
+    if(!remote||!Array.isArray(remote.friends)||!Array.isArray(remote.received)||!Array.isArray(remote.sent))return;
+    const previous=social.data;
+    const groups=['received','friends','sent'];
+    const changed=groups.filter(group=>JSON.stringify(previous?.[group]||[])!==JSON.stringify(remote[group]||[]));
+    const profileChanged=JSON.stringify(previous?.profile??null)!==JSON.stringify(remote.profile??null);
+    if(!changed.length&&!profileChanged)return;
+    social.data=remote;
+    if(changed.includes('friends')){
+      const accepted=new Set(remote.friends.map(friend=>String(friend.requestId||'')));
+      for(const key of Object.keys(social.avatarImages||{})){
+        if(!accepted.has(key))delete social.avatarImages[key];
+      }
+      if(app.view==='socialProfile'&&social.profileTarget!=='self'&&
+         !accepted.has(social.profileTarget)){
+        social.profileTarget=null;social.profileData=null;
+        go('social');toast('Esta amistad ya no está disponible.');return;
+      }
+    }
+    if(app.view==='social'){
+      // Solo tocar las listas cambiadas. Los inputs del perfil y buscador no se regeneran.
+      for(const group of changed){
+        const target=document.querySelector(`[data-social-rows="${group}"]`);
+        if(target)target.innerHTML=socialFriendRows(remote[group],group);
+      }
+    }
+    if(changed.includes('friends')&&remote.friends.length)queueMicrotask(loadSocialFriendAvatars);
+  }catch{ /* Sin alertas durante sincronización: conservar la última lista correcta. */ }
+  finally{socialSyncInFlight=false;}
+}
+
 async function loadSocial(){
   const uid=app.activeUid;
   if(!uid||app.social.loading||isOfflineNow(account))return;
@@ -394,7 +453,7 @@ async function loadSocial(){
 }
 async function mutateSocial(action,data){
   const uid=app.activeUid;if(!uid||app.social.busy||isOfflineNow(account))return;
-  app.social.busy=true;if(app.view==='social')render();
+  app.social.busy=true;socialSyncGeneration++;if(app.view==='social')render();
   try{
     const response=await socialApi(action,data);if(action==='inviteLookup' && response?.sent!==true)throw Error('No se pudo enviar la solicitud. Revisá el usuario e intentá de nuevo.');
     if(uid!==app.activeUid)return;
@@ -404,6 +463,9 @@ async function mutateSocial(action,data){
   }catch(error){if(uid===app.activeUid){app.social.error=String(error.message||'No se pudo completar.');toast(app.social.error);}}
   finally{if(uid===app.activeUid){app.social.busy=false;if(app.view==='social')render();}}
 }
+function socialFriendRows(items,mode){
+  return items?.length?items.map(x=>`<div class="listrow social-friend-row"><div class="bubble social-avatar" ${mode==='friends'?`data-social-avatar="${h(x.requestId)}"`:''}>${mode==='friends'&&app.social.avatarImages?.[x.requestId]?`<img src="${h(app.social.avatarImages[x.requestId])}" alt="" decoding="async"/>`:h(String(x.name||'?').trim().slice(0,1).toUpperCase())}</div><div class="grow"><strong>${h(x.name||'Usuario de Percí')}</strong><div class="micro">${mode==='friends'?'En tu lista de amigos':mode==='received'?'Solicitud recibida':'Solicitud enviada'}</div></div><div class="row wrap social-row-actions">${mode==='received'?`${button('Aceptar','socialAccept',x.requestId,'small')}${button('Rechazar','socialRemove',x.requestId,'small outline')}`:mode==='sent'?button('Cancelar','socialRemove',x.requestId,'small outline'):`${button('Ver perfil','socialOpenProfile',x.requestId,'small')}${button('Eliminar','socialRemove',x.requestId,'small outline')}`}</div></div>`).join(''):'<p class="micro social-empty">Todavía no hay nadie acá.</p>';
+}
 function renderSocial(){
   const s=app.social||{};
   if(isOfflineNow(account))return `${title('Amigos','Conectate a Internet para administrar tus amistades.')}<div class="notice">Tus rutinas y entrenamientos siguen disponibles sin conexión.</div>`;
@@ -411,7 +473,6 @@ function renderSocial(){
   if(!s.data)return `${title('Amigos','Conectá con otras personas que tengan cuenta.')}<div class="card"><p>${h(s.error||'Preparando la sección Social…')}</p>${button('Reintentar','socialRefresh','','outline')}</div>`;
   const data=s.data,profile=data.profile;
   if(!profile)return `${title('Amigos','Elegí el nombre que querés mostrar a tus amigos.')}<div class="social-stack"><div class="card"><label for="socialDisplayName">Nombre visible</label><input id="socialDisplayName" maxlength="60" autocomplete="nickname" placeholder="Tu nombre o apodo" value="${h(account.user?.name||'')}"/><p class="micro">Solo compartiremos tu nombre social cuando aceptes o recibas una solicitud. Tu correo, rutinas e historial siguen privados.</p>${button('Activar mi perfil social','socialSetup','','')}</div></div>`;
-  const list=(items,mode)=>items?.length?items.map(x=>`<div class="listrow social-friend-row"><div class="bubble social-avatar" ${mode==='friends'?`data-social-avatar="${h(x.requestId)}"`:''}>${mode==='friends'&&app.social.avatarImages?.[x.requestId]?`<img src="${h(app.social.avatarImages[x.requestId])}" alt="" decoding="async"/>`:h(String(x.name||'?').trim().slice(0,1).toUpperCase())}</div><div class="grow"><strong>${h(x.name||'Usuario de Percí')}</strong><div class="micro">${mode==='friends'?'En tu lista de amigos':mode==='received'?'Solicitud recibida':'Solicitud enviada'}</div></div><div class="row wrap social-row-actions">${mode==='received'?`${button('Aceptar','socialAccept',x.requestId,'small')}${button('Rechazar','socialRemove',x.requestId,'small outline')}`:mode==='sent'?button('Cancelar','socialRemove',x.requestId,'small outline'):`${button('Ver perfil','socialOpenProfile',x.requestId,'small')}${button('Eliminar','socialRemove',x.requestId,'small outline')}`}</div></div>`).join(''):'<p class="micro social-empty">Todavía no hay nadie acá.</p>';
   const match=s.found?.found?`<div class="social-found" aria-live="polite"><div class="grow"><strong>${h(s.found.name||'Usuario de Percí')}</strong>${s.found.username?`<div class="micro">@${h(s.found.username)}</div>`:''}</div>${button('Enviar solicitud','socialInviteLookup','','small')}</div>`:s.found?.found===false?'<p class="fieldhint" role="status">No encontramos un perfil disponible con esos datos. Revisá la escritura o pedile su código.</p>':'';
   return `${title('Amigos','Tus conexiones, a tu ritmo.')}
   <div class="social-stack">
@@ -420,11 +481,11 @@ function renderSocial(){
       <section class="card social-card"><h3>Buscar amigos</h3><label for="socialLookup">Código, @usuario o correo electrónico</label><input id="socialLookup" maxlength="254" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="Ej.: @vale_ux" value="${h(s.searchTerm||'')}"/><p class="micro">La búsqueda es exacta. Por correo, solo aparecen usuarios que habilitaron esa opción.</p><div class="social-actions">${button(s.busy?'Buscando…':'Buscar','socialFind','','small')}</div>${match}</section>
     </div>
     <section class="card social-card"><div class="row between wrap social-profile-edit-head"><h3>Tu perfil social</h3>${button('Ver mi perfil','socialOpenProfile','self','small outline')}</div><div class="field"><label for="socialUsername">Nombre de usuario único</label><input id="socialUsername" maxlength="24" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="Ej.: vale_ux" value="${h(profile.username||'')}"/><p class="fieldhint">Entre 3 y 24 caracteres: letras minúsculas, números y guion bajo. Tus amigos podrán buscarte con @usuario.</p></div><label class="social-optin"><input type="checkbox" id="socialEmailDiscoverable" ${profile.emailDiscoverable===true?'checked':''}/><span>Permitir que me encuentren por mi correo registrado</span></label><p class="micro">Desactivado por defecto. Tu correo nunca se muestra en los resultados.</p><div class="social-actions">${button('Guardar perfil','socialSaveProfile','','small outline')}</div></section>
-    <section class="card social-card"><h3>Solicitudes recibidas</h3>${list(data.received,'received')}</section>
-    <section class="card social-card"><h3>Mis amigos</h3>${list(data.friends,'friends')}</section>
-    <section class="card social-card"><h3>Solicitudes enviadas</h3>${list(data.sent,'sent')}</section>
+    <section class="card social-card"><h3>Solicitudes recibidas</h3><div data-social-rows="received">${socialFriendRows(data.received,'received')}</div></section>
+    <section class="card social-card"><h3>Mis amigos</h3><div data-social-rows="friends">${socialFriendRows(data.friends,'friends')}</div></section>
+    <section class="card social-card"><h3>Solicitudes enviadas</h3><div data-social-rows="sent">${socialFriendRows(data.sent,'sent')}</div></section>
     ${s.error?`<p class="fieldhint" role="alert">${h(s.error)}</p>`:''}
-    <div class="social-refresh">${button('Actualizar','socialRefresh','','small outline')}</div>
+    <p class="micro social-refresh" role="status">Las solicitudes y amistades se sincronizan automáticamente.</p>
   </div>`;
 }
 
@@ -1507,9 +1568,17 @@ window.addEventListener('focus',()=>refreshConnectionAware());
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState!=='hidden')refreshConnectionAware(0);
 });
+// Social escucha la reconexión por separado, sin alterar la recuperación de la cuenta.
+// El guard de primer plano y el límite de frecuencia están dentro de refreshSocialAutomatically.
+window.addEventListener('online',()=>{void refreshSocialAutomatically();});
+window.addEventListener('focus',()=>{void refreshSocialAutomatically();});
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible')void refreshSocialAutomatically();
+});
 // Un chequeo offline cada 12s con la app visible, y online cada ~30s.
 // No se abre una conexión permanente ni se ejecutan lecturas en background.
 setInterval(()=>refreshConnectionAware(30000),12000);
+setInterval(()=>{if(socialShouldAutoSync())void refreshSocialAutomatically();},SOCIAL_SYNC_INTERVAL_MS);
 applyTheme();render();
 initAccount().catch(()=>{});
 })();

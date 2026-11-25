@@ -72,8 +72,8 @@ test('Calendario: gesto a la derecha abre semana anterior y mantiene scroll vert
 });
 test('PWA: HTML y Service Worker exponen la misma versión nueva',()=>{
   for(const source of [html,sw]){
-    assert.match(source,/src\/app\.js\?v=1\.17\.0/);
-    assert.match(source,/src\/styles\.css\?v=1\.17\.0/);
+    assert.match(source,/src\/app\.js\?v=1\.17\.1/);
+    assert.match(source,/src\/styles\.css\?v=1\.17\.1/);
   }
-  assert.match(sw,/perci-shell-v1\.17\.0-friend-profiles/);
+  assert.match(sw,/perci-shell-v1\.17\.1-social-auto-sync/);
 });

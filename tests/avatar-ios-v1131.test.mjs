@@ -51,8 +51,8 @@ test('RLS de JPEG y WebP restringida al usuario y bucket privado',()=>{
   assert.doesNotMatch(migration,/to public/);
 });
 test('PWA: identidad nueva sin almacenar imágenes privadas',()=>{
-  assert.match(sw,/perci-shell-v1\.17\.0-friend-profiles/);
+  assert.match(sw,/perci-shell-v1\.17\.1-social-auto-sync/);
   assert.match(sw,/profile-avatar\.js\?v=1\.13\.1/);
-  assert.match(html,/app\.js\?v=1\.17\.0/);
+  assert.match(html,/app\.js\?v=1\.17\.1/);
   assert.doesNotMatch(sw,/perci-avatars-qa/);
 });
