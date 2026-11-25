@@ -600,3 +600,5 @@
 .exercise-observation details p,.exercise-history-note p{white-space:pre-wrap;overflow-wrap:anywhere;margin:4px 0}
 .exercise-observation summary{cursor:pointer;min-height:32px;display:list-item;padding-top:6px}
 .exercise-history-note{padding:8px 0;overflow-wrap:anywhere}
+
+.variant-management{margin:8px 0 0;padding:8px 0;min-width:0}.variant-management summary{cursor:pointer;min-height:32px}.variant-management .row{margin-top:8px;overflow-wrap:anywhere}.variant-management p{margin:6px 0 8px}

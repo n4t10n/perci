@@ -16,7 +16,7 @@ class ProfileDownloadTests(unittest.TestCase):
              patch.object(atomic.core, 'download_data', return_value=dict(EMPTY)), \
              patch.object(atomic.core, 'select_rows', return_value=profiles) as select:
             data=atomic.download_data('fake-jwt', USER_A)
-        select.assert_called_with('perci_profiles','fake-jwt',USER_A,'theme,focus,onboarding_done')
+        select.assert_called_with('perci_profiles','fake-jwt',USER_A,'theme,focus,onboarding_done,custom_variants')
         return data
 
     def test_existing_account_restores_onboarding_and_preferences(self):

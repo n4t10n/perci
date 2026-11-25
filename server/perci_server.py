@@ -156,15 +156,32 @@ def to_client(kind, legacy):
     return f'perci-v04:{kind}:{value}'
 
 
-EXERCISE_VARIANTS = {'barra','mancuernas','maquina','discos','polea','multipower'}
+EXERCISE_VARIANTS = {'barra','mancuernas','maquina','discos','polea','multipower','bilateral','unilateral','barra-ez','peso-corporal','agarre-abierto','agarre-cerrado','agarre-neutro','agarre-supino','prensa-45','prensa-horizontal','prensa-vertical','cuerda','barra-recta','barra-v'}
+CUSTOM_VARIANT_RE = re.compile(r'custom:[a-z0-9][a-z0-9 -]{0,39}')
 
 def verify_exercise_variant(value):
-    if value is not None and (not isinstance(value,str) or value not in EXERCISE_VARIANTS):
+    if value is not None and (not isinstance(value,str) or (value not in EXERCISE_VARIANTS and not CUSTOM_VARIANT_RE.fullmatch(value))):
         raise ApiError('Variante de ejercicio inválida.', 400)
+
+def verify_custom_variants(value):
+    if not isinstance(value,list) or len(value)>300:
+        raise ApiError('Variantes personalizadas inválidas.',400)
+    seen=set()
+    for row in value:
+        if (not isinstance(row,dict) or set(row)!={'exercise','variant','active'}
+            or not isinstance(row['exercise'],str) or not 1<=len(row['exercise'].strip())<=80
+            or not isinstance(row['variant'],str) or not CUSTOM_VARIANT_RE.fullmatch(row['variant'])
+            or type(row['active']) is not bool):
+            raise ApiError('Variante personalizada inválida.',400)
+        key=(row['exercise'],row['variant'])
+        if key in seen: raise ApiError('Variantes personalizadas duplicadas.',400)
+        seen.add(key)
+    return value
 
 def verify_snapshot(snapshot):
     if not isinstance(snapshot, dict) or not all(isinstance(snapshot.get(k), list) for k in ('routines','records','habits')):
         raise ApiError('Los datos locales no tienen el formato esperado.')
+    verify_custom_variants(snapshot.get('customVariants',[]))
     if any(len(snapshot[k]) > 300 for k in ('routines','records','habits')):
         raise ApiError('Demasiados registros para esta versión de prueba.')
     # Validate element shapes before reading fields. Invalid JSON must return 400,

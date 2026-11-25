@@ -3,7 +3,8 @@
  * Los conflictos de un mismo ID deben resolverse explícitamente en la interfaz.
  */
 import { cleanImportedState } from './import-cleanup.js?v=1.7.6';
-import {planOfflineSync} from './offline-outbox.js?v=1.18.0';
+import {planOfflineSync} from './offline-outbox.js?v=1.19.0';
+import {cleanVariantRegistry,mergeVariantRegistry} from '../domain/exercise-context.js?v=1.19.0';
 
 const groups = ['routines','records','habits'];
 const own = (obj,key) => Object.prototype.hasOwnProperty.call(obj,key);
@@ -19,7 +20,7 @@ function fingerprint(kind,item){
 }
 export function hasPersonalData(s){
   const c=cleanImportedState(s);
-  return !!c && (groups.some(k=>Array.isArray(c[k])&&c[k].length>0) || Object.values(c.checks||{}).some(Boolean));
+  return !!c && (groups.some(k=>Array.isArray(c[k])&&c[k].length>0) || Object.values(c.checks||{}).some(Boolean) || cleanVariantRegistry(c.customVariants).length>0);
 }
 function validate(snapshot){
   if(!snapshot || groups.some(k=>!Array.isArray(snapshot[k])) || !snapshot.checks || typeof snapshot.checks!=='object' || Array.isArray(snapshot.checks))throw Error('El respaldo remoto no tiene el formato esperado.');
@@ -41,6 +42,8 @@ export function reconcileCloudSnapshot(local,remote,prefer=null){
   if(!['local','remote',null].includes(prefer))throw Error('Preferencia desconocida');
   const conflicts=[];
   const merged={...copy(cleaned),demo:false,onboardSeen:true};
+  const variants=mergeVariantRegistry(null,cleaned.customVariants,remote.customVariants);
+  if(variants.length)merged.customVariants=variants;else delete merged.customVariants;
   let imported=0, keptLocal=0;
   for(const k of groups){
     const other=new Map(remote[k].map(item=>[item.id,item]));

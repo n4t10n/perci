@@ -2,18 +2,18 @@ import { OFFICIAL_LOGOS } from './brand.js?v=1.7.6';
 import {cleanImportedState} from './data/import-cleanup.js?v=1.7.6';
 import { storage,readUserState,writeUserState,getLegacyOwner,legacyAlreadyClaimed,markLegacyClaimed,legacyHasPersonalData } from './data/repository.js?v=1.7.6';
 import { previewLocalMigration } from './data/migration-preflight.js?v=1.7.6';
-import { reconcileCloudWithBaseline, hasPersonalData } from './data/auto-hydration.js?v=1.18.0';
+import { reconcileCloudWithBaseline, hasPersonalData } from './data/auto-hydration.js?v=1.19.0';
 import { dateISO, offsetDate, seed } from './domain/initial-state.js?v=1.7.6';
 import { getInitialView } from './domain/startup-route.js?v=1.7.6';
-import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync,probeOfflineAccount} from './account.js?v=1.18.0';
-import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.18.0';
-import {avatarMarkup,renderAvatarDialog,mountAvatarDialog,installAvatarUI,refreshAvatar,resetAvatarOnAccountChange} from './profile-avatar.js?v=1.18.0';
-import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.18.0';
+import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync,probeOfflineAccount} from './account.js?v=1.19.0';
+import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.19.0';
+import {avatarMarkup,renderAvatarDialog,mountAvatarDialog,installAvatarUI,refreshAvatar,resetAvatarOnAccountChange} from './profile-avatar.js?v=1.19.0';
+import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.19.0';
 import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.7.6';
 import {canAutoRefreshCloud,shouldRefreshOnNavigation} from './data/auto-refresh.js?v=1.7.6';
-import {planFirstDeviceRestore} from './data/first-device-hydration.js?v=1.7.6';
-import {listTrackedExercises,exerciseHistory,previousExerciseSet,sessionStats,nextPendingSet,restRemaining,restClock} from './domain/training-insights.js?v=1.18.0';
-import {exerciseVariants,variantLabel,validVariant,cleanNote,lastExerciseNote,sessionExerciseSnapshot,exerciseNotesForDraft,canChangeVariant,trackedExerciseName} from './domain/exercise-context.js?v=1.18.0';
+import {planFirstDeviceRestore} from './data/first-device-hydration.js?v=1.19.0';
+import {listTrackedExercises,exerciseHistory,previousExerciseSet,sessionStats,nextPendingSet,restRemaining,restClock} from './domain/training-insights.js?v=1.19.0';
+import {exerciseVariants,variantLabel,validVariant,cleanNote,lastExerciseNote,sessionExerciseSnapshot,exerciseNotesForDraft,canChangeVariant,trackedExerciseName,customVariantId,variantExerciseKey,cleanVariantRegistry,setCustomVariant} from './domain/exercise-context.js?v=1.19.0';
 import {cleanSharedRoutine,isValidShareCode,routineTemplateIsEqual} from './domain/routine-share.js?v=1.7.6';
 import {reorderRoutineExercises,isWorkoutDate,getWorkoutDate} from './domain/routine-session-tools.js?v=1.7.6';
 import {updateHistoricalSets} from './domain/historical-sets.js?v=1.10.0';
@@ -215,10 +215,14 @@ function renderRoutine(){const r=state.routines.find(x=>x.id===app.routine);if(!
 function renderRoutineEdit(){const e=app.editor||{id:null,name:'',exercises:[]};return `<div class="detail-top">${back(e.id?'routine':'activity')}<span class="micro">${e.id?'EDITAR':'NUEVA'} RUTINA</span></div>${title(e.id?'Editá tu rutina':'Creá una rutina propia','Planificá el entrenamiento. Registrarlo será otra acción, cuando lo realices.') }${!e.id?`<div class="row wrap" style="margin-bottom:14px">${button('Agregar por código de rutina','importByCode','','small outline')}</div>`:''}<div class="card"><div class="field"><label for="rname">Nombre de la rutina *</label><input id="rname" maxlength="80" value="${h(e.name)}" placeholder="Ej. Tren superior A"/></div><div class="section-head"><h2>Ejercicios (${e.exercises.length})</h2>${button('+ Añadir ejercicio','library','','small outline')}</div><p class="micro exercise-order-hint">Arrastrá ⋮⋮ o usá las flechas para cambiar el orden. Series indica cuántas veces repetís cada ejercicio; Reps objetivo indica cuántas repeticiones buscás en cada serie. Los cambios quedan en tu borrador hasta guardar la rutina.</p>${e.exercises.length?e.exercises.map((item,i)=>`<div class="exercise-row" data-exrow="${i}"><div class="exercise-reorder-bar"><span class="exercise-order-index">Ejercicio ${i+1}</span><div class="exercise-reorder-controls"><span class="exercise-drag-handle" data-exercise-drag="${i}" title="Arrastrar para ordenar" aria-label="Arrastrar ${h(item.name)}">⋮⋮</span><button type="button" class="exercise-arrow" data-action="reorderExercise" data-value="${i}:${i-1}" aria-label="Subir ${h(item.name)}" ${i===0?'disabled':''}>↑</button><button type="button" class="exercise-arrow" data-action="reorderExercise" data-value="${i}:${i+1}" aria-label="Bajar ${h(item.name)}" ${i===e.exercises.length-1?'disabled':''}>↓</button></div></div><div class="row between wrap"><div class="row exercise-demo-inline">${exerciseDemoButton(item.name)}<strong>${h(item.name)}</strong></div><div class="row wrap exercise-edit-controls">${button(app.renamingExercise===i?'Listo':'Renombrar','renameExercise',i,'small outline')}<button class="btn small outline" data-action="removeExercise" data-value="${i}">Quitar</button></div></div>${app.renamingExercise===i?`<div class="field exercise-name-edit"><label for="exercise-name-${i}">Nombre del ejercicio</label><input id="exercise-name-${i}" data-field="exerciseName" type="text" maxlength="80" autocomplete="off" value="${h(item.name)}" placeholder="Ej. Remo unilateral"/><p class="fieldhint">Se actualiza solo en esta rutina cuando la guardes. El historial de sesiones anteriores no cambia.</p></div>`:''}${variantSelector(item,i,'routine')}<div class="inline2" style="margin-top:12px"><div><label for="routine-sets-${i}">Series</label><input id="routine-sets-${i}" data-field="sets" type="number" min="1" max="15" value="${item.sets}" aria-label="Series de ${h(item.name)}"/></div><div><label for="routine-reps-${i}">Reps objetivo</label><input id="routine-reps-${i}" data-field="reps" type="number" min="1" max="100" value="${item.reps}" aria-label="Repeticiones objetivo de ${h(item.name)}"/></div></div></div>`).join(''):`<div class="empty">Todavía no agregaste ejercicios.<br/>Usá la biblioteca para empezar.</div>`}${isOfflineNow(account)?'<div class="offline-draft-note">◌ Sin conexión: guardá esta rutina como borrador local. Se sincronizará después.</div>':''}<div class="row wrap" style="margin-top:17px">${button(isOfflineNow(account)?'Guardar borrador':'Guardar rutina','saveRoutine')} ${button('Cancelar','cancelEdit','','outline')}</div></div>`}
 const asKg=value=>Number(value||0).toLocaleString('es-AR',{maximumFractionDigits:2});
 function variantSelector(item,index,scope,draft){
-  const choices=exerciseVariants(item.name);if(!choices.length)return '';
+  const registry=typeof state==='undefined'?[]:state.customVariants;
   const selected=validVariant(item.name,scope==='routine'?item.defaultVariant:item.variant);
+  const choices=exerciseVariants(item.name,registry);if(selected&&!choices.includes(selected))choices.push(selected);
   const locked=scope==='session'&&!canChangeVariant(draft,index);
-  return `<label class="exercise-variant"><span>${scope==='routine'?'Variante predeterminada':'Variante'}</span><select data-${scope}-variant="${index}" aria-label="Variante de ${h(item.name)}" ${locked?'disabled':''}><option value="" ${!selected?'selected':''}>${scope==='routine'?'Recordar última':'Sin especificar'}</option>${choices.map(v=>`<option value="${v}" ${selected===v?'selected':''}>${h(variantLabel(v))}</option>`).join('')}</select>${locked?'<span class="micro">Desmarcá las series para cambiar</span>':''}</label>`;
+  const selector=choices.length?`<label class="exercise-variant"><span>${scope==='routine'?'Variante predeterminada':'Variante'}</span><select data-${scope}-variant="${index}" aria-label="Variante de ${h(item.name)}" ${locked?'disabled':''}><option value="" ${!selected?'selected':''}>${scope==='routine'?'Recordar última':'Sin especificar'}</option>${choices.map(v=>`<option value="${h(v)}" ${selected===v?'selected':''}>${h(variantLabel(v))}</option>`).join('')}</select>${locked?'<span class="micro">Desmarcá las series para cambiar</span>':''}</label>`:'';
+  if(scope!=='routine')return selector;
+  const custom=cleanVariantRegistry(registry).filter(x=>x.exercise===variantExerciseKey(item.name));
+  return `${selector}<details class="variant-management"><summary class="micro">Administrar variantes</summary><p class="micro">Se guardan en tu cuenta y se aplican a este ejercicio en otras rutinas.</p>${button('+ Añadir variante','addCustomVariant',index,'small outline')}${custom.map(x=>`<div class="row between wrap"><span>${h(variantLabel(x.variant))}${x.active?'':' · archivada'}</span>${button(x.active?'Archivar':'Restaurar','toggleCustomVariant',index+'|'+x.variant,'small outline')}</div>`).join('')}</details>`;
 }
 function exerciseNoteInput(d,item,i){
   const note=cleanNote(d.exerciseNotes?.[i]),last=lastExerciseNote(state.records,item.name,validVariant(item.name,item.variant));
@@ -813,7 +817,7 @@ async function hydrateCloud(uid,{silent=false}={}){
         const deletions=Object.fromEntries(Object.entries(grouped).filter(([,ids])=>ids.length));
         // El merge de entidades no debe sustituir el perfil por defaults locales.
         Object.assign(result.snapshot,cloudProfileForCommit(pending,remote));
-        const committed=await syncCloudSnapshot({...result.snapshot,draft:null,exerciseContextVersion:1},remote,deletions);
+        const committed=await syncCloudSnapshot({...result.snapshot,draft:null,exerciseContextVersion:2},remote,deletions);
         if(!hydrationBelongsToAccount(uid,seq))return;
         const confirmed=await fetchCloudData();
         if(!hydrationBelongsToAccount(uid,seq))return;
@@ -958,7 +962,7 @@ const showModal=(title,body,confirm,value='',danger=false,extra='',confirmLabel=
 };
 const validDate=v=>/^\d{4}-\d{2}-\d{2}$/.test(v)&&!isNaN(new Date(v+'T12:00:00').getTime());
 const id=()=>Math.random().toString(36).slice(2,10);
-function persistEditor(){if(!app.editor)return;const name=get('rname');if(name)app.editor.name=name.value;document.querySelectorAll('[data-exrow]').forEach(x=>{const i=Number(x.dataset.exrow);const exerciseName=x.querySelector('[data-field=exerciseName]');if(exerciseName)app.editor.exercises[i].name=exerciseName.value;const variant=x.querySelector('[data-routine-variant]');if(variant){const selected=validVariant(app.editor.exercises[i].name,variant.value);if(selected)app.editor.exercises[i].defaultVariant=selected;else delete app.editor.exercises[i].defaultVariant;}else delete app.editor.exercises[i].defaultVariant;app.editor.exercises[i].sets=Number(x.querySelector('[data-field=sets]').value)||1;app.editor.exercises[i].reps=Number(x.querySelector('[data-field=reps]').value)||1});try{saveRoutineEditor(app.activeUid,app.editor)}catch{toast('No pudimos guardar el borrador. Exportá una copia JSON antes de cerrar.')}}
+function persistEditor(){if(!app.editor)return;const name=get('rname');if(name)app.editor.name=name.value;document.querySelectorAll('[data-exrow]').forEach(x=>{const i=Number(x.dataset.exrow);const exerciseName=x.querySelector('[data-field=exerciseName]');const oldName=app.editor.exercises[i].name;const renamed=exerciseName&&app.editor.exercises[i].defaultVariant&&variantExerciseKey(oldName)!==variantExerciseKey(exerciseName.value);if(exerciseName)app.editor.exercises[i].name=exerciseName.value;const variant=x.querySelector('[data-routine-variant]');if(variant&&!renamed){const selected=validVariant(app.editor.exercises[i].name,variant.value);if(selected)app.editor.exercises[i].defaultVariant=selected;else delete app.editor.exercises[i].defaultVariant;}else delete app.editor.exercises[i].defaultVariant;app.editor.exercises[i].sets=Number(x.querySelector('[data-field=sets]').value)||1;app.editor.exercises[i].reps=Number(x.querySelector('[data-field=reps]').value)||1});try{saveRoutineEditor(app.activeUid,app.editor)}catch{toast('No pudimos guardar el borrador. Exportá una copia JSON antes de cerrar.')}}
 
 // v1.16.0: cronómetro monotónico derivado de timestamps; compatible con borradores anteriores.
 function activeSessionMs(draft,now=Date.now()){
@@ -976,7 +980,7 @@ function activeSessionClock(draft,now=Date.now()){
   return hrs?`${two(hrs)}:${two(minutes%60)}:${two(seconds%60)}`:`${two(minutes)}:${two(seconds%60)}`;
 }
 
-function beginSession(routineId){const r=state.routines.find(x=>x.id===routineId);if(!r)return;const previous=state.draft;state.draft={id:id(),routineId:r.id,snapshot:sessionExerciseSnapshot(r.exercises,state.records),startedAt:Date.now(),pausedAt:null,pausedTotalMs:0,sessionDate:dateISO(),sets:{},restEnabled:false,restSeconds:90,restUntil:null,offlineDraft:isOfflineNow(account)};if(save())go('session');else state.draft=previous;}
+function beginSession(routineId){const r=state.routines.find(x=>x.id===routineId);if(!r)return;const previous=state.draft;state.draft={id:id(),routineId:r.id,snapshot:sessionExerciseSnapshot(r.exercises,state.records,state.customVariants),startedAt:Date.now(),pausedAt:null,pausedTotalMs:0,sessionDate:dateISO(),sets:{},restEnabled:false,restSeconds:90,restUntil:null,offlineDraft:isOfflineNow(account)};if(save())go('session');else state.draft=previous;}
 function deleteRecordConfirmed(recordId,keepDraft=false){
   const record=state.records.find(x=>x.id===recordId);
   if(!record)return;
@@ -1123,6 +1127,26 @@ case 'renameExercise':{
   }else app.renamingExercise=i;
   saveRoutineEditor(app.activeUid,app.editor);
   render();break;
+}
+case 'addCustomVariant':
+case 'toggleCustomVariant':{
+  if(app.view!=='routineEdit'||!app.editor)break;
+  const [rawIndex,rawId]=String(value).split('|'),i=Number(rawIndex);
+  if(!Number.isInteger(i)||!app.editor.exercises[i])break;
+  persistEditor();const item=app.editor.exercises[i];
+  let nextId=rawId,active=true;
+  if(action==='addCustomVariant'){
+    const label=window.prompt('Nombre de la variante (hasta 40 caracteres). Se guardará en tu cuenta.');if(label===null)break;
+    nextId=customVariantId(label);if(!nextId){toast('Usá letras, números, espacios o guiones; elegí un nombre distinto a las variantes del catálogo.');break;}
+  }else{
+    const existing=cleanVariantRegistry(state.customVariants).find(x=>x.exercise===variantExerciseKey(item.name)&&x.variant===nextId);
+    if(!existing)break;active=!existing.active;
+    if(!active&&!window.confirm('¿Archivar? Se conservarán los registros históricos y las variantes ya elegidas como predeterminadas.'))break;
+  }
+  const previous=state.customVariants;
+  try{state.customVariants=setCustomVariant(previous,item.name,nextId,active);}catch(error){toast(error.message);break;}
+  if(!save()){state.customVariants=previous;break;}
+  const scroll=window.scrollY;render();window.scrollTo(0,scroll);toast(active?'Variante disponible en tu cuenta':'Variante archivada');break;
 }
 case 'removeExercise':persistEditor();app.editor.exercises.splice(Number(value),1);app.renamingExercise=null;saveRoutineEditor(app.activeUid,app.editor);render();break;
 case 'saveRoutine':{persistEditor();const e=app.editor;if(!e.name?.trim()){toast('Poné un nombre a la rutina');break}if(!e.exercises.length){toast('Añadí al menos un ejercicio');break}if(e.exercises.some(x=>typeof x.name!=='string'||!x.name.trim()||x.name.trim().length>80)){toast('Revisá el nombre de los ejercicios');break}if(e.exercises.some(x=>x.sets<1||x.sets>15||x.reps<1||x.reps>100)){toast('Revisá series y repeticiones');break}const r={id:e.id||id(),name:e.name.trim(),exercises:e.exercises.map(x=>({...x,name:x.name.trim()}))};let k=state.routines.findIndex(x=>x.id===r.id);if(k>=0)state.routines[k]=r;else state.routines.push(r);app.routine=r.id;app.editor=null;if(save()){clearRoutineEditor(app.activeUid);go('routine');toast(isOfflineNow(account)?'Borrador guardado · se sincronizará al volver internet':'Rutina guardada');}break}
@@ -1386,6 +1410,7 @@ document.addEventListener('change',e=>{
     const d=state.draft,i=Number(e.target.dataset.sessionVariant),item=d.snapshot?.[i];
     if(!item||!canChangeVariant(d,i)){render();return;}
     const chosen=validVariant(item.name,e.target.value),before=validVariant(item.name,item.variant);
+    if(chosen&&chosen!==before&&!exerciseVariants(item.name,state.customVariants).includes(chosen)){render();return;}
     if(chosen===before)return;
     const keys=Object.keys(d.sets||{}).filter(k=>k.startsWith(`${i}-`));
     if(keys.length&&!window.confirm('Cambiar la variante reinicia los pesos y repeticiones pendientes de este ejercicio. ¿Continuar?')){e.target.value=before;return;}

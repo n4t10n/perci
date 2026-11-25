@@ -3,6 +3,7 @@
  * Los borradores de sesión / editor no se envían al servidor hasta quedar completos.
  */
 import {cleanImportedState} from './import-cleanup.js?v=1.7.6';
+import {cleanVariantRegistry,mergeVariantRegistry} from '../domain/exercise-context.js?v=1.19.0';
 
 const copy=value=>JSON.parse(JSON.stringify(value));
 const items=['routines','records','habits'];
@@ -125,6 +126,8 @@ export function planOfflineSync(base,local,remote,prefer=null,deletedRecordIds=[
   const before=base==null?null:normalized(base);
   const here=normalized(local),there=normalized(remote);
   const merged={...copy(here),demo:false,onboardSeen:true};
+  const variants=mergeVariantRegistry(before?.customVariants,here.customVariants,there.customVariants);
+  if(variants.length)merged.customVariants=variants;else delete merged.customVariants;
   const conflicts=[],unsupportedDeletes=[],deletions=[];
   const explicitDeleted={records:new Set(deletedRecordIds),routines:new Set(deletedEntities.routines||[]),habits:new Set(deletedEntities.habits||[])};
   for(const kind of items){
@@ -191,6 +194,7 @@ export function planOfflineSync(base,local,remote,prefer=null,deletedRecordIds=[
 /** Exigir lectura posterior: confirma que lo que escribimos está realmente en Supabase. */
 export function verifyRemoteSnapshot(expected,actual,deletions=[]){
   const left=normalized(expected),right=normalized(actual);
+  if(JSON.stringify(cleanVariantRegistry(left.customVariants))!==JSON.stringify(cleanVariantRegistry(right.customVariants)))return false;
   for(const kind of items){
     const remote=new Map(right[kind].map(x=>[x.id,x]));
     for(const x of left[kind])if(fingerprint(kind,x)!==fingerprint(kind,remote.get(x.id)))return false;

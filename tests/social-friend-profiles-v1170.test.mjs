@@ -24,5 +24,5 @@ test('Perfil: foto privada, inicial, presentación y responsive',()=>{
   assert.match(app,/socialProfileBio/);
   assert.match(css,/\.social-profile-hero\{/);
   assert.match(css,/@media\(max-width:700px\)\{\.social-profile-hero/);
-  assert.match(sw,/perci-shell-v1\.18\.0-exercise-context/);
+  assert.match(sw,/perci-shell-v1\.19\.0-exercise-context/);
 });
