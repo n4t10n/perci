@@ -9,7 +9,7 @@ test('v1.7.6 PWA envía un único commit con borrados atómicos',()=>{
   const app=source('../public/src/app.js');
   assert.match(acc,/syncCloudSnapshot=\(snapshot, expected, deletions=\{\}\)/);
   assert.match(acc,/\{snapshot,expected,deletions,atomic:true\}/);
-  assert.match(app,/await syncCloudSnapshot\(\{\.\.\.result\.snapshot,draft:null\},remote,deletions\)/);
+  assert.match(app,/await syncCloudSnapshot\(\{\.\.\.result\.snapshot,draft:null,exerciseContextVersion:1\},remote,deletions\)/);
   assert.doesNotMatch(app,/await deleteCloudEntities\(/);
   assert.match(app,/confirmed\?\.revision!==committed\.revision/);
   assert.match(app,/clearOutboxIfCurrent\(uid,revision\)/);
@@ -22,7 +22,9 @@ test('v1.7.6 shell no mezcla versiones',()=>{
   const account=source('../public/src/account.js');
   for(const content of [html,sw,app,account]){
     assert.doesNotMatch(content,/v=1\.6\.4/);
-    assert.match(content,/v=1\.7\.6/);
+    assert.match(content,/v=1\.(?:7\.6|18\.0)/);
   }
-  assert.match(sw,/perci-shell-v1\.17\.1-social-auto-sync/);
+  assert.match(sw,/perci-shell-v1\.18\.0-exercise-context/);
+  assert.match(app,/account\.js\?v=1\.18\.0/);
+  assert.match(account,/offline-outbox\.js\?v=1\.18\.0/);
 });

@@ -104,11 +104,11 @@ export function isOfflineNow(account){
 
 function fingerprint(kind,obj){
   if(obj===undefined)return '__missing__';
-  if(kind==='routines')return JSON.stringify({name:obj.name,exercises:(obj.exercises||[]).map(e=>({name:e.name,sets:Number(e.sets),reps:Number(e.reps)}))});
+  if(kind==='routines')return JSON.stringify({name:obj.name,exercises:(obj.exercises||[]).map(e=>({name:e.name,sets:Number(e.sets),reps:Number(e.reps),defaultVariant:e.defaultVariant||''}))});
   if(kind==='habits')return JSON.stringify({name:obj.name,days:[...(obj.days||[])].sort((a,b)=>a-b),paused:!!obj.paused});
   if(kind==='records')return JSON.stringify({type:obj.type,name:obj.name,date:obj.date,minutes:Number(obj.minutes),
     distance:obj.distance==null?null:Number(obj.distance),setsDone:obj.setsDone==null?null:Number(obj.setsDone),
-    volume:obj.volume==null?null:Number(obj.volume),note:obj.note||'',setDetails:(obj.setDetails||[]).map(x=>({exercisePosition:Number(x.exercisePosition),exerciseName:x.exerciseName,setNumber:Number(x.setNumber),reps:Number(x.reps),weight:Number(x.weight),completed:!!x.completed})).sort((a,b)=>a.exercisePosition-b.exercisePosition||a.setNumber-b.setNumber)});
+    volume:obj.volume==null?null:Number(obj.volume),note:obj.note||'',exerciseNotes:(obj.exerciseNotes||[]).map(n=>({exercisePosition:Number(n.exercisePosition),exerciseName:n.exerciseName,note:n.note,variant:n.variant||''})).sort((a,b)=>a.exercisePosition-b.exercisePosition),setDetails:(obj.setDetails||[]).map(x=>({exercisePosition:Number(x.exercisePosition),exerciseName:x.exerciseName,setNumber:Number(x.setNumber),reps:Number(x.reps),weight:Number(x.weight),completed:!!x.completed,variant:x.variant||''})).sort((a,b)=>a.exercisePosition-b.exercisePosition||a.setNumber-b.setNumber)});
   return JSON.stringify(obj);
 }
 function normalized(src){

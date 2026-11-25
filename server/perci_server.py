@@ -156,6 +156,12 @@ def to_client(kind, legacy):
     return f'perci-v04:{kind}:{value}'
 
 
+EXERCISE_VARIANTS = {'barra','mancuernas','maquina','discos','polea','multipower'}
+
+def verify_exercise_variant(value):
+    if value is not None and (not isinstance(value,str) or value not in EXERCISE_VARIANTS):
+        raise ApiError('Variante de ejercicio inválida.', 400)
+
 def verify_snapshot(snapshot):
     if not isinstance(snapshot, dict) or not all(isinstance(snapshot.get(k), list) for k in ('routines','records','habits')):
         raise ApiError('Los datos locales no tienen el formato esperado.')
@@ -178,12 +184,28 @@ def verify_snapshot(snapshot):
         for e in r['exercises']:
             if not isinstance(e.get('name'),str) or not e['name'].strip() or not 1 <= len(e['name']) <= 80 or not 1<=int(e.get('sets',0))<=15 or not 1<=int(e.get('reps',0))<=100:
                 raise ApiError('Ejercicio con campos inválidos.')
+            verify_exercise_variant(e.get('defaultVariant'))
     for rec in snapshot['records']:
         if rec.get('type') not in TYPES or not isinstance(rec.get('name'),str) or not rec['name'].strip() or not 1<=int(rec.get('minutes',0))<=1440 or not re.fullmatch(r'\d{4}-\d\d-\d\d',str(rec.get('date',''))):
             raise ApiError('Actividad inválida.')
         details=rec.get('setDetails',[])
         if not isinstance(details,list) or len(details)>600 or (details and rec.get('type')!='gym'):
             raise ApiError('Las series del entrenamiento son inválidas.')
+        notes=rec.get('exerciseNotes',[])
+        if not isinstance(notes,list) or len(notes)>100 or (notes and rec.get('type')!='gym'):
+            raise ApiError('Observaciones inválidas.',400)
+        positions=set()
+        for item in notes:
+            if (not isinstance(item,dict) or set(item)-{'exercisePosition','exerciseName','note','variant'}
+                or type(item.get('exercisePosition')) is not int or not 0<=item['exercisePosition']<=99
+                or item['exercisePosition'] in positions or not isinstance(item.get('exerciseName'),str)
+                or not 1<=len(item['exerciseName'].strip())<=80 or not isinstance(item.get('note'),str)
+                or not 1<=len(item['note'])<=250):
+                raise ApiError('Observación de ejercicio inválida.',400)
+            if 'variant' in item:
+                if item['variant'] is None: raise ApiError('Variante inválida.',400)
+                verify_exercise_variant(item['variant'])
+            positions.add(item['exercisePosition'])
         seen=set()
         for entry in details:
             if not isinstance(entry,dict):
@@ -198,6 +220,7 @@ def verify_snapshot(snapshot):
                 not isinstance(name,str) or not 1<=len(name.strip())<=80 or
                 (position,number) in seen):
                 raise ApiError('Serie de entrenamiento inválida.')
+            verify_exercise_variant(entry.get('variant'))
             seen.add((position,number))
     for h in snapshot['habits']:
         if not isinstance(h.get('name'),str) or not h['name'].strip() or not isinstance(h.get('days'),list) or not h['days'] or any(not isinstance(d,int) or d<0 or d>6 for d in h['days']):
@@ -337,9 +360,9 @@ def parse_legacy(client_id,kind):
 
 def download_data(token,user):
     rt=select_rows('perci_routines',token,user,'id,client_id,name')
-    ex=select_rows('perci_routine_exercises',token,user,'routine_id,position,name,target_sets,target_reps')
-    ac=select_rows('perci_activity_records',token,user,'id,client_id,activity_type,name,activity_date,minutes,distance_km,sets_done,volume_kg,note')
-    completed_sets=select_rows('perci_workout_sets',token,user,'record_id,exercise_position,exercise_name,set_number,reps,weight_kg,completed')
+    ex=select_rows('perci_routine_exercises',token,user,'routine_id,position,name,target_sets,target_reps,default_variant')
+    ac=select_rows('perci_activity_records',token,user,'id,client_id,activity_type,name,activity_date,minutes,distance_km,sets_done,volume_kg,note,exercise_notes')
+    completed_sets=select_rows('perci_workout_sets',token,user,'record_id,exercise_position,exercise_name,set_number,reps,weight_kg,completed,exercise_variant')
     sets_by_record={}
     for row in completed_sets:
         sets_by_record.setdefault(row['record_id'],[]).append(row)
@@ -352,7 +375,7 @@ def download_data(token,user):
     for r in rt:
         rid=parse_legacy(r['client_id'],'routine')
         if rid:
-            routines.append({'id':rid,'name':r['name'],'exercises':[{'name':e['name'],'sets':e['target_sets'],'reps':e['target_reps']} for e in sorted(groups.get(r['id'],[]),key=lambda x:x['position'])]})
+            routines.append({'id':rid,'name':r['name'],'exercises':[{'name':e['name'],'sets':e['target_sets'],'reps':e['target_reps'],**({'defaultVariant':e['default_variant']} if e.get('default_variant') else {})} for e in sorted(groups.get(r['id'],[]),key=lambda x:x['position'])]})
     records=[]
     for r in ac:
         rid=parse_legacy(r['client_id'],'record')
@@ -364,8 +387,9 @@ def download_data(token,user):
             if details:
                 obj['setDetails']=[{'exercisePosition':x['exercise_position'],
                     'exerciseName':x['exercise_name'],'setNumber':x['set_number'],
-                    'reps':x['reps'],'weight':float(x['weight_kg']),'completed':bool(x['completed'])}
+                    'reps':x['reps'],'weight':float(x['weight_kg']),'completed':bool(x['completed']),**({'variant':x['exercise_variant']} if x.get('exercise_variant') else {})}
                     for x in sorted(details,key=lambda y:(y['exercise_position'],y['set_number']))]
+            if r.get('exercise_notes'): obj['exerciseNotes']=r['exercise_notes']
             records.append(obj)
     habits=[]
     habit_ids={}

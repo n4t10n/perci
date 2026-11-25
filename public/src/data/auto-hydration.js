@@ -3,17 +3,18 @@
  * Los conflictos de un mismo ID deben resolverse explícitamente en la interfaz.
  */
 import { cleanImportedState } from './import-cleanup.js?v=1.7.6';
-import {planOfflineSync} from './offline-outbox.js?v=1.7.6';
+import {planOfflineSync} from './offline-outbox.js?v=1.18.0';
 
 const groups = ['routines','records','habits'];
 const own = (obj,key) => Object.prototype.hasOwnProperty.call(obj,key);
 const copy = value => JSON.parse(JSON.stringify(value));
 function fingerprint(kind,item){
-  if(kind==='routines')return JSON.stringify({name:item.name,exercises:(item.exercises||[]).map(e=>({name:e.name,sets:Number(e.sets),reps:Number(e.reps)}))});
+  if(kind==='routines')return JSON.stringify({name:item.name,exercises:(item.exercises||[]).map(e=>({name:e.name,sets:Number(e.sets),reps:Number(e.reps),defaultVariant:e.defaultVariant||''}))});
   if(kind==='habits')return JSON.stringify({name:item.name,days:[...(item.days||[])].sort((a,b)=>a-b),paused:!!item.paused});
   const result={type:item.type,name:item.name,date:item.date,minutes:Number(item.minutes),note:item.note||''};
   for(const [field] of [['distance'],['setsDone'],['volume']])if(item[field]!=null)result[field]=Number(item[field]);
-  result.setDetails=(item.setDetails||[]).map(x=>({exercisePosition:Number(x.exercisePosition),exerciseName:x.exerciseName,setNumber:Number(x.setNumber),reps:Number(x.reps),weight:Number(x.weight),completed:!!x.completed})).sort((a,b)=>a.exercisePosition-b.exercisePosition||a.setNumber-b.setNumber);
+  result.setDetails=(item.setDetails||[]).map(x=>({exercisePosition:Number(x.exercisePosition),exerciseName:x.exerciseName,setNumber:Number(x.setNumber),reps:Number(x.reps),weight:Number(x.weight),completed:!!x.completed,variant:x.variant||''})).sort((a,b)=>a.exercisePosition-b.exercisePosition||a.setNumber-b.setNumber);
+  result.exerciseNotes=(item.exerciseNotes||[]).map(n=>({exercisePosition:Number(n.exercisePosition),exerciseName:n.exerciseName,note:n.note,variant:n.variant||''})).sort((a,b)=>a.exercisePosition-b.exercisePosition);
   return JSON.stringify(result);
 }
 export function hasPersonalData(s){

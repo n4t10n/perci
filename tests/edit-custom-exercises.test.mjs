@@ -1,3 +1,4 @@
+import {exerciseVariants,variantLabel,validVariant,canChangeVariant} from '../public/src/domain/exercise-context.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -10,11 +11,11 @@ const slice=(start,end)=>{
   assert.ok(i>=0&&j>i,`No se encontró ${start} hasta ${end}`);
   return source.slice(i,j);
 };
-const fragment=slice('function renderRoutineEdit(){','const asKg=');
+const fragment=slice('function renderRoutineEdit(){','const asKg=')+'\n'+slice('function variantSelector(','function exerciseNoteInput(');
 function renderEdit(editor,renamingExercise=null){
   const app={editor,renamingExercise,activeUid:'u'};
-  return new Function('app','h','back','title','button','isOfflineNow','account','exerciseDemoButton',` ${fragment}; return renderRoutineEdit();`)(
-    app,htmlEscape,()=>'<button>Volver</button>',(a,b)=>`<h1>${a}</h1><p>${b}</p>`,button,()=>false,{},()=>''
+  return new Function('app','h','back','title','button','isOfflineNow','account','exerciseDemoButton','exerciseVariants','variantLabel','validVariant','canChangeVariant',` ${fragment}; return renderRoutineEdit();`)(
+    app,htmlEscape,()=>'<button>Volver</button>',(a,b)=>`<h1>${a}</h1><p>${b}</p>`,button,()=>false,{},()=>'',exerciseVariants,variantLabel,validVariant,canChangeVariant
   );
 }
 test('editor: permite renombrar un ejercicio existente sin perder los controles previos',()=>{
@@ -24,6 +25,9 @@ test('editor: permite renombrar un ejercicio existente sin perder los controles 
   assert.match(closed,/data-action="renameExercise"/);
   assert.equal((closed.match(/data-action="renameExercise"/g)||[]).length,2);
   assert.match(closed,/data-action="removeExercise"/);
+  assert.match(closed,/data-routine-variant="1"/);
+  assert.doesNotMatch(closed,/data-routine-variant="0"/);
+  assert.match(closed,/Mancuernas/);
   const open=renderEdit(editor,0);
   assert.match(open,/id="exercise-name-0"/);
   assert.match(open,/data-field="exerciseName"/);

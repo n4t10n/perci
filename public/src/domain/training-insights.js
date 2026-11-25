@@ -1,3 +1,4 @@
+import {trackedExerciseName} from './exercise-context.js?v=1.18.0';
 /** Percí v1.6: métricas derivadas únicamente de series de fuerza completadas.
  * No modifica registros ni depende de almacenamiento, red o DOM.
  */
@@ -9,12 +10,12 @@ const validSets = record => record?.type === 'gym' && Array.isArray(record.setDe
       isFiniteNumber(Number(x.reps)) && Number(x.weight) >= 0 && Number(x.reps) >= 0)
   : [];
 /** Serie comparable por posición del ejercicio y número, sólo dentro de la cuenta actual. */
-export function previousExerciseSet(records, exerciseName, setNumber) {
+export function previousExerciseSet(records, exerciseName, setNumber, variant='') {
   const key = exerciseKey(exerciseName);
   const ordered = (Array.isArray(records)?records:[]).map((record,index)=>({record,index}))
     .sort((a,b)=>String(b.record?.date||'').localeCompare(String(a.record?.date||''))||a.index-b.index);
   for(const {record} of ordered){
-    const prior=validSets(record).find(s=>exerciseKey(s.exerciseName)===key && Number(s.setNumber)===setNumber);
+    const prior=validSets(record).find(s=>exerciseKey(s.exerciseName)===key && (s.variant||'')===variant && Number(s.setNumber)===setNumber);
     if(prior)return {weight:Number(prior.weight),reps:Number(prior.reps),date:record.date};
   }
   return null;
@@ -23,8 +24,8 @@ export function listTrackedExercises(records){
   const found=new Map();
   for(const record of Array.isArray(records)?records:[]){
     for(const set of validSets(record)){
-      const key=exerciseKey(set.exerciseName);
-      if(key && !found.has(key))found.set(key,set.exerciseName.trim());
+      const name=trackedExerciseName(set),key=exerciseKey(name);
+      if(key && !found.has(key))found.set(key,name);
     }
   }
   return [...found.values()].sort((a,b)=>a.localeCompare(b,'es-AR'));
@@ -33,7 +34,7 @@ export function listTrackedExercises(records){
 export function exerciseHistory(records,exerciseName){
   const key=exerciseKey(exerciseName);
   return (Array.isArray(records)?records:[]).map((record,index)=>{
-    const sets=validSets(record).filter(s=>exerciseKey(s.exerciseName)===key);
+    const sets=validSets(record).filter(s=>exerciseKey(trackedExerciseName(s))===key);
     if(!sets.length)return null;
     const maximum=Math.max(...sets.map(s=>Number(s.weight)));
     const best=sets.find(s=>Number(s.weight)===maximum);

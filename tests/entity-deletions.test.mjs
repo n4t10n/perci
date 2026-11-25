@@ -80,7 +80,7 @@ test('v1.7.6: la UI confirma borrados y los incluye en el commit atómico de la 
   assert.match(app,/case 'confirmDeleteRoutine':deletePersonalEntity\('routines',value\)/);
   assert.match(app,/case 'confirmDeleteHabit':deletePersonalEntity\('habits',value\)/);
   // Se envían las eliminaciones junto con el snapshot, nunca con un DELETE posterior.
-  assert.match(app,/const committed=await syncCloudSnapshot\(\{\.\.\.result\.snapshot,draft:null\},remote,deletions\)/);
+  assert.match(app,/const committed=await syncCloudSnapshot\(\{\.\.\.result\.snapshot,draft:null,exerciseContextVersion:1\},remote,deletions\)/);
   assert.doesNotMatch(app,/await deleteCloudEntities\(/);
   assert.match(api,/deletions=body\.get\('deletions', \{\}\)/);
   assert.match(api,/atomic\.commit\(body\.get\('snapshot'\), token, user\['id'\]/);
