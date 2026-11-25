@@ -26,20 +26,21 @@ import {getRealExerciseMedia} from './domain/real-exercise-media.js?v=1.12.1';
 
 let state;try{state=storage.read()||seed();if(!Array.isArray(state.records)||!Array.isArray(state.routines)||!Array.isArray(state.habits))throw Error('Formato inválido')}catch(e){state=seed()}
 const freshState=()=>({...seed(),version:3,demo:false,routines:[],records:[],habits:[],checks:{},draft:null});
-const app={activeUid:null,needLegacyChoice:false,hydrating:false,silentHydration:false,cloudConflict:null,cloudNotice:'',view:getInitialView(state),tab:'gym',activity:'walk',filter:'all',record:null,routine:null,routineListOrigin:'activity',editor:null,renamingExercise:null,habit:null,exerciseSearch:'',libraryMuscle:'all',progressExercise:'',completedRecord:null,modal:null,toast:'',share:null,progressWeekOffset:0,progressDay:null};
-const icons={account:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>',activity:'<path d="M6.5 6.5 17.5 17.5M4 9l5-5M2 7l5-5M15 20l5-5M17 22l5-5"/>',progress:'<path d="M3 19V5m0 14h18M7 16l5-5 4 3 5-7"/>',habits:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 10h18m-13 5 2 2 4-4"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.8 1.8-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.05 1.57V21h-2.5v-.08a1.7 1.7 0 0 0-1.05-1.57 1.7 1.7 0 0 0-1.88.34l-.06.06-1.8-1.8.06-.06A1.7 1.7 0 0 0 8.1 16a1.7 1.7 0 0 0-1.57-1.05H6.4v-2.5h.09A1.7 1.7 0 0 0 8.1 11.4a1.7 1.7 0 0 0-.34-1.88L7.7 9.46l1.8-1.8.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.05-1.57V6.4H15v.09a1.7 1.7 0 0 0 1.05 1.57 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.8 1.8-.06.06A1.7 1.7 0 0 0 19.4 11.4a1.7 1.7 0 0 0 1.57 1.05H21v2.5h-.09A1.7 1.7 0 0 0 19.4 15"/>',arrow:'<path d="m9 18 6-6-6-6"/>',plus:'<path d="M12 5v14M5 12h14"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',check:'<path d="m5 12 4 4L19 6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'};
+const app={activeUid:null,needLegacyChoice:false,hydrating:false,silentHydration:false,cloudConflict:null,cloudNotice:'',view:getInitialView(state),tab:'gym',activity:'walk',filter:'all',record:null,routine:null,routineListOrigin:'activity',editor:null,renamingExercise:null,habit:null,exerciseSearch:'',libraryMuscle:'all',progressExercise:'',completedRecord:null,modal:null,toast:'',share:null,social:{data:null,busy:false,loading:false,error:'',found:null,lookup:null,searchTerm:'',avatarImages:{},profileTarget:null,profileData:null,profileLoading:false,profileBusy:false,profileError:''},progressWeekOffset:0,progressDay:null};
+const icons={account:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>',activity:'<path d="M6.5 6.5 17.5 17.5M4 9l5-5M2 7l5-5M15 20l5-5M17 22l5-5"/>',progress:'<path d="M3 19V5m0 14h18M7 16l5-5 4 3 5-7"/>',habits:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 10h18m-13 5 2 2 4-4"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.8 1.8-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.05 1.57V21h-2.5v-.08a1.7 1.7 0 0 0-1.05-1.57 1.7 1.7 0 0 0-1.88.34l-.06.06-1.8-1.8.06-.06A1.7 1.7 0 0 0 8.1 16a1.7 1.7 0 0 0-1.57-1.05H6.4v-2.5h.09A1.7 1.7 0 0 0 8.1 11.4a1.7 1.7 0 0 0-.34-1.88L7.7 9.46l1.8-1.8.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.05-1.57V6.4H15v.09a1.7 1.7 0 0 0 1.05 1.57 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.8 1.8-.06.06A1.7 1.7 0 0 0 19.4 11.4a1.7 1.7 0 0 0 1.57 1.05H21v2.5h-.09A1.7 1.7 0 0 0 19.4 15"/>',arrow:'<path d="m9 18 6-6-6-6"/>',plus:'<path d="M12 5v14M5 12h14"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',check:'<path d="m5 12 4 4L19 6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',social:'<circle cx="9" cy="8" r="3"/><path d="M3 19v-2a6 6 0 0 1 12 0v2M16 6a3 3 0 0 1 0 6m2 2a5 5 0 0 1 3 5"/>'};
 const icon=(n)=>`<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icons[n]||icons.arrow}</svg>`;
 const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const save=()=>{if(!account.authenticated||!app.activeUid||app.needLegacyChoice||(app.hydrating&&!app.silentHydration)||app.cloudConflict)return false;try{storage.write(state);scheduleAccountSync(JSON.parse(JSON.stringify(state)));applyTheme();return true;}catch(error){window.alert('No hay espacio para guardar. Exportá tu copia JSON y no cierres la pestaña.');return false}};
 const applyTheme=()=>{let t=state.theme==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):state.theme;document.documentElement.dataset.theme=t;document.querySelector('meta[name=theme-color]').content=t==='dark'?'#111716':'#f2f4f1'};
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
-const navs=[['home','Inicio'],['activity','Actividad'],['progress','Progreso'],['habits','Hábitos']];
-const mainView=v=>({home:'home',activity:'activity',routine:'activity',routinesOverview:'activity',routineEdit:'activity',routineShare:'activity',routinePicker:'home',exerciseLibrary:'activity',session:'activity',otherForm:'activity',progress:'progress',record:'progress',recordSetsEdit:'progress',sessionSummary:'progress',habits:'habits',habitEdit:'habits',settings:'settings',account:'account',onboard:'home'}[v]||'home');
+const navs=[['home','Inicio'],['activity','Actividad'],['progress','Progreso'],['habits','Hábitos'],['social','Amigos']];
+const mainView=v=>({home:'home',activity:'activity',routine:'activity',routinesOverview:'activity',routineEdit:'activity',routineShare:'activity',routinePicker:'home',exerciseLibrary:'activity',session:'activity',otherForm:'activity',progress:'progress',record:'progress',recordSetsEdit:'progress',sessionSummary:'progress',habits:'habits',habitEdit:'habits',social:'social',socialProfile:'social',settings:'settings',account:'account',onboard:'home'}[v]||'home');
 const go=v=>{if(!account.authenticated||app.needLegacyChoice)return;if(hasAccountConflict())v='account';const previousView=app.view;app.view=v;window.scrollTo({top:0,behavior:'instant'});render();
   if(previousView!==v&&!app.modal){const heading=document.querySelector('.main h1,.main h2');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}}
   // Al navegar a una pantalla de lectura, traer los datos nuevos de la cuenta.
   // La edición y los entrenamientos activos no deben interrumpirse.
   if(shouldRefreshOnNavigation(v))queueMicrotask(()=>refreshConnectionAware(8000));
+   if(v==='social')queueMicrotask(()=>{if(!app.social.data&&!app.social.loading)void loadSocial();else void refreshSocialAutomatically();});
 };
 const toast=s=>{app.toast=s;let el=document.createElement('div');el.className='toast';el.setAttribute('role','status');el.textContent=s;document.querySelectorAll('.toast').forEach(x=>x.remove());document.body.appendChild(el);setTimeout(()=>el.remove(),2400)};
 const title=(head,sub,action='')=>`<div class="row between wrap" style="align-items:end;margin:7px 0 21px"><div><h1 style="font-size:clamp(29px,4vw,43px);margin:0 0 8px">${head}</h1><p class="sub" style="margin:0">${sub}</p></div>${action}</div>`;
@@ -233,7 +234,7 @@ function renderSession(){
   const items=d.snapshot||r.exercises;
   const summary=sessionStats(d),completed=summary.completed,total=summary.total;
   const next=nextPendingSet(d);
-  return `<div class="detail-top">${back('activity')}<span class="badge good">● ${isOfflineNow(account)?'Borrador sin conexión':'Guardado localmente'}</span></div><div class="sessionhead"><div class="eyebrow">ENTRENAMIENTO EN CURSO</div><h2 style="margin:10px 0">${h(r.name)}</h2><p class="micro">Registrá cada serie. Podés salir y continuar más tarde.</p><div class="row between wrap"><strong>${completed} / ${total} series confirmadas</strong><span class="micro">${Math.round(completed/Math.max(1,total)*100)}% completado</span></div><div class="progressline" role="progressbar" aria-label="Series confirmadas" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${completed}" style="margin-top:10px"><span style="width:${completed/Math.max(1,total)*100}%"></span></div><div class="session-live-stats"><span>${asKg(summary.volume)} kg de volumen</span><span>Tiempo transcurrido: ${summary.minutes} min</span></div><div class="session-cancel-actions">${button('Cancelar sesión','cancelSession','','small outline')}</div></div>${renderRestPanel(d)}
+  return `<div class="detail-top">${back('activity')}<span class="badge good">● ${isOfflineNow(account)?'Borrador sin conexión':'Guardado localmente'}</span></div><div class="sessionhead"><div class="eyebrow">ENTRENAMIENTO EN CURSO</div><h2 style="margin:10px 0">${h(r.name)}</h2><p class="micro">Registrá cada serie. Podés salir y continuar más tarde.</p><div class="row between wrap"><strong>${completed} / ${total} series confirmadas</strong><span class="micro">${Math.round(completed/Math.max(1,total)*100)}% completado</span></div><div class="progressline" role="progressbar" aria-label="Series confirmadas" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${completed}" style="margin-top:10px"><span style="width:${completed/Math.max(1,total)*100}%"></span></div><div class="session-live-stats"><span>${asKg(summary.volume)} kg de volumen</span><span>Tiempo activo: ${Math.max(1,Math.round(activeSessionMs(d)/60000))} min</span></div><div class="active-session-controls"><div class="active-session-clock"><strong data-active-session-clock role="timer" aria-label="Tiempo activo de entrenamiento">${activeSessionClock(d)}</strong><span class="micro">${d.pausedAt?'Sesión en pausa':'Cronómetro activo'}</span></div>${button(d.pausedAt?'▶ Reanudar':'Ⅱ Pausar',d.pausedAt?'resumeSession':'pauseSession','','small outline')}<div class="session-cancel-actions">${button('Cancelar sesión','cancelSession','','small outline')}</div></div></div>${renderRestPanel(d)}
 <section class="card workout-date-panel" aria-label="Fecha del entrenamiento"><div><h3>¿Qué día entrenaste?</h3><p class="micro">Por defecto, el día en que empezaste. Podés registrar otra fecha antes de finalizar.</p></div><div class="field workout-date-input"><label for="sessionDate">Fecha</label><div class="workout-date-control"><span class="workout-date-value" id="sessionDateText" aria-hidden="true">${formatSessionDate(getWorkoutDate(d,dateISO(),dateISO(new Date(d.startedAt||Date.now()))))}</span><input type="date" id="sessionDate" max="${dateISO()}" value="${getWorkoutDate(d,dateISO(),dateISO(new Date(d.startedAt||Date.now())))}" required/></div></div></section>
 <div class="section-head"><h2>Tu sesión</h2><span class="badge">${isOfflineNow(account)?'Se sincronizará al finalizar y reconectar':'Las series se sincronizan al finalizar'}</span></div>
 ${items.map((item,i)=>`<section class="card session-exercise" aria-label="Ejercicio ${i+1}: ${h(item.name)}"><div class="row between wrap"><div><div class="eyebrow">EJERCICIO ${i+1}/${items.length}</div><h3>${h(item.name)}</h3><div class="micro">Objetivo ${item.reps} reps · ${item.sets} series</div><div class="exercise-demo-in-session">${exerciseDemoButton(item.name)}</div></div><span class="help-icon">${i+1}</span></div>
@@ -309,6 +310,257 @@ function renderRecordSetsEdit(){
 
 function renderHabits(){const due=state.habits.filter(h=>!h.paused&&getDueToday(h));const checked=due.filter(x=>state.checks[`${x.id}:${dateISO()}`]).length;return `${title('Los pequeños pasos importan.','Los hábitos acompañan tu entrenamiento, no lo reemplazan.',button('+ Crear hábito','editHabit','new','small'))}<div class="grid2"><div class="card"><div class="row between"><div><h3>Hoy</h3><p class="micro" style="margin:0">${checked} de ${due.length} hábitos programados</p></div><span class="kpi-val" style="font-size:31px">${due.length?Math.round(checked/due.length*100)+'%':'—'}</span></div><div class="progressline" style="margin-top:15px"><span style="width:${due.length?checked/due.length*100:0}%"></span></div><div class="divider"></div>${renderHabitMini()}</div><div class="card"><h3>Calendario de esta semana</h3><p class="micro">Los días libres no cuentan como incumplimiento.</p><div class="week" role="list" aria-label="Calendario de hábitos">${getWeek().map(d=>{const dt=new Date(d+'T12:00:00');let programmed=state.habits.filter(x=>!x.paused&&x.days.includes(dt.getDay()));const completed=programmed.filter(x=>state.checks[`${x.id}:${d}`]).length;return `<div class="day ${d===dateISO()?'today':''}" role="listitem" aria-label="${dt.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'})}: ${programmed.length?`${completed} de ${programmed.length} hábitos completados`:'sin hábitos programados'}"><span>${weekDay(d).slice(0,3)}</span><b>${d.slice(-2)}</b><i style="background:${programmed.length&&programmed.every(x=>state.checks[`${x.id}:${d}`])?'var(--accent)':'var(--muted2)'};opacity:${programmed.length?1:.15}"></i></div>`}).join('')}</div></div></div><div class="section-head"><h2>Mis hábitos</h2><span class="micro">${state.habits.length} configurados</span></div><div class="card">${state.habits.length?state.habits.map(x=>`<div class="listrow"><div class="bubble">${x.paused?'⏸':'✦'}</div><div class="grow"><strong>${h(x.name)}</strong> ${x.paused?'<span class="badge">Pausado</span>':''}<div class="micro">${x.days.length===7?'Todos los días':x.days.map(i=>['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][i]).join(', ')}</div></div><button class="mini" data-action="editHabit" data-value="${x.id}">Editar</button></div>`).join(''):`<div class="empty empty-state"><p class="empty-state-message">Todavía no creaste hábitos.</p><div class="empty-state-actions">${button('Crear uno','editHabit','new')}</div></div>`}</div>`}
 function renderHabitEdit(){const x=app.habit||{id:null,name:'',days:[1,2,3,4,5],paused:false};return `<div class="detail-top">${back('habits')}<span class="micro">${x.id?'EDITAR':'NUEVO'} HÁBITO</span></div>${title(x.id?'Editar hábito':'Un hábito a la vez.','Elegí el nombre y los días que tienen sentido para vos.') }<div class="card" style="max-width:650px"><div class="field"><label for="hname">Nombre *</label><input id="hname" maxlength="70" value="${h(x.name)}" placeholder="Ej. Estirar 10 minutos"/></div><div class="field"><label>Días programados *</label><div class="checkbox-group">${['D','L','M','M','J','V','S'].map((s,i)=>`<label class="checkday" title="${['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][i]}"><input type="checkbox" name="hdays" value="${i}" aria-label="${['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][i]}" ${x.days.includes(i)?'checked':''}/>${s}</label>`).join('')}</div><div class="fieldhint">Un día no programado se considera descanso, no falta.</div></div><div class="row wrap">${button('Guardar hábito','saveHabit')}${x.id?button(x.paused?'Reanudar':'Pausar','pauseHabit',x.id,'outline'):''}${x.id?button('Eliminar','deleteHabit',x.id,'outline'):''}</div></div>`}
+
+// Social MVP: las amistades son independientes del historial, hábitos y datos de ejercicio.
+async function socialApi(action,data={}){
+  const response=await fetch('/api/social',{
+    method:action==='overview'?'GET':'POST',credentials:'same-origin',cache:'no-store',
+    headers:action==='overview'?{'Accept':'application/json'}:{'Accept':'application/json','Content-Type':'application/json'},
+    ...(action==='overview'?{}:{body:JSON.stringify({action,...data})})
+  });
+  let result;try{result=await response.json();}catch{throw Error('No pudimos leer la respuesta social.');}
+  if(!response.ok)throw Error(result?.error||'No pudimos completar la acción social.');
+  return result;
+}
+
+function socialLookupInput(raw){
+  const query=String(raw||'').trim();
+  if(/^[a-f0-9]{16}$/i.test(query))return {mode:'code',query:query.toUpperCase()};
+  if(query.includes('@')&&!query.startsWith('@')&&query.includes('.')){
+    if(query.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(query))return null;
+    return {mode:'email',query:query.toLowerCase()};
+  }
+  const username=query.replace(/^@/,'').toLowerCase();
+  if(!/^[a-z0-9_]{3,24}$/.test(username))return null;
+  return {mode:'username',query:username};
+}
+async function findSocial(){
+  const uid=app.activeUid;
+  if(!uid||app.social.busy||isOfflineNow(account))return;
+  const typed=String(document.getElementById('socialLookup')?.value||'').trim();
+  app.social.searchTerm=typed;
+  const lookup=socialLookupInput(typed);
+  if(!lookup){app.social.found=null;app.social.lookup=null;app.social.error='Ingresá un código de 16 caracteres, un @usuario o un correo válido.';render();return;}
+  app.social.busy=true;app.social.error='';app.social.found=null;app.social.lookup=null;render();
+  try{
+    const result=await socialApi('find',lookup);
+    if(uid!==app.activeUid)return;
+    app.social.found=result?.found?result:{found:false};
+    app.social.lookup=result?.found?lookup:null;
+  }catch(error){if(uid===app.activeUid)app.social.error=String(error.message||'No se pudo buscar el usuario.');}
+  finally{if(uid===app.activeUid){app.social.busy=false;if(app.view==='social')render();}}
+}
+async function inviteFoundSocial(){
+  const lookup=app.social.lookup;
+  if(!lookup||!app.social.found?.found)return;
+  const ok=await mutateSocial('inviteLookup',lookup);
+  // mutateSocial recarga la lista; no se reenvía automáticamente una solicitud.
+  if(ok===true){app.social.found=null;app.social.lookup=null;app.social.searchTerm='';if(app.view==='social')render();}
+}
+
+async function loadSocialFriendAvatars(){
+  const uid=app.activeUid, social=app.social;
+  if(!uid||!social?.data||isOfflineNow(account))return;
+  const avatars=social.avatarImages||(social.avatarImages={});
+  const friends=(social.data.friends||[]).slice(0,30);
+  for(const friend of friends){
+    if(uid!==app.activeUid||app.social!==social)return;
+    const key=String(friend.requestId||'');
+    if(!/^[a-fA-F0-9-]{36}$/.test(key)||Object.prototype.hasOwnProperty.call(avatars,key))continue;
+    avatars[key]=null;
+    try{
+      const response=await fetch('/api/social?friendAvatar='+encodeURIComponent(key),{
+        credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}
+      });
+      if(uid!==app.activeUid||app.social!==social)return;
+      if(!response.ok)continue;
+      const photo=await response.json();
+      const data=photo?.present?photo.image:null;
+      if(typeof data!=='string'||data.length>280000||!/^data:image\/(?:webp|jpeg);base64,[A-Za-z0-9+/=]+$/.test(data))continue;
+      avatars[key]=data;
+      const node=app.view==='social'?document.querySelector('[data-social-avatar="'+key+'"]'):null;
+      if(node)node.innerHTML='<img src="'+h(data)+'" alt="" decoding="async"/>';
+    }catch{ /* Una foto ausente no interrumpe Social. */ }
+  }
+}
+
+
+// v1.17.1: refresco de amistades durante la vista Social, sin botón manual.
+// Solo foreground; no persistimos fotografías ni estado social en la PWA.
+const SOCIAL_SYNC_INTERVAL_MS=15000;
+let socialSyncLastChecked=0;
+let socialSyncInFlight=false;
+let socialSyncGeneration=0;
+function socialShouldAutoSync(){
+  return !!app.activeUid && account.authenticated && account.user?.id===app.activeUid &&
+    (app.view==='social'||app.view==='socialProfile') &&
+    document.visibilityState==='visible' && !isOfflineNow(account);
+}
+async function refreshSocialAutomatically(){
+  const uid=app.activeUid, social=app.social;
+  if(!socialShouldAutoSync())return;
+  if(!social.data){
+    if(app.view==='social'&&!social.loading&&!social.busy)void loadSocial();
+    return;
+  }
+  if(socialSyncInFlight||social.loading||social.busy||social.profileBusy)return;
+  const now=Date.now();
+  if(now-socialSyncLastChecked<5000)return; // focus y visibility pueden coincidir
+  socialSyncLastChecked=now;
+  const generation=socialSyncGeneration;
+  socialSyncInFlight=true;
+  try{
+    const remote=await socialApi('overview');
+    if(uid!==app.activeUid||app.social!==social||generation!==socialSyncGeneration||
+       social.busy||social.loading||social.profileBusy||!socialShouldAutoSync())return;
+    if(!remote||!Array.isArray(remote.friends)||!Array.isArray(remote.received)||!Array.isArray(remote.sent))return;
+    const previous=social.data;
+    const groups=['received','friends','sent'];
+    const changed=groups.filter(group=>JSON.stringify(previous?.[group]||[])!==JSON.stringify(remote[group]||[]));
+    const profileChanged=JSON.stringify(previous?.profile??null)!==JSON.stringify(remote.profile??null);
+    if(!changed.length&&!profileChanged)return;
+    social.data=remote;
+    if(changed.includes('friends')){
+      const accepted=new Set(remote.friends.map(friend=>String(friend.requestId||'')));
+      for(const key of Object.keys(social.avatarImages||{})){
+        if(!accepted.has(key))delete social.avatarImages[key];
+      }
+      if(app.view==='socialProfile'&&social.profileTarget!=='self'&&
+         !accepted.has(social.profileTarget)){
+        social.profileTarget=null;social.profileData=null;
+        go('social');toast('Esta amistad ya no está disponible.');return;
+      }
+    }
+    if(app.view==='social'){
+      // Solo tocar las listas cambiadas. Los inputs del perfil y buscador no se regeneran.
+      for(const group of changed){
+        const target=document.querySelector(`[data-social-rows="${group}"]`);
+        if(target)target.innerHTML=socialFriendRows(remote[group],group);
+      }
+    }
+    if(changed.includes('friends')&&remote.friends.length)queueMicrotask(loadSocialFriendAvatars);
+  }catch{ /* Sin alertas durante sincronización: conservar la última lista correcta. */ }
+  finally{socialSyncInFlight=false;}
+}
+
+async function loadSocial(){
+  const uid=app.activeUid;
+  if(!uid||app.social.loading||isOfflineNow(account))return;
+  app.social.loading=true;app.social.error='';if(app.view==='social')render();
+  try{const data=await socialApi('overview');if(uid===app.activeUid)app.social.data=data;}
+  catch(error){if(uid===app.activeUid){app.social.data=null;app.social.error='Social todavía no está disponible: '+String(error.message||'verificá la conexión.');}}
+  finally{if(uid===app.activeUid){app.social.loading=false;if(app.view==='social')render();if(app.social.data?.friends?.length)queueMicrotask(loadSocialFriendAvatars);}}
+}
+async function mutateSocial(action,data){
+  const uid=app.activeUid;if(!uid||app.social.busy||isOfflineNow(account))return;
+  app.social.busy=true;socialSyncGeneration++;if(app.view==='social')render();
+  try{
+    const response=await socialApi(action,data);if(action==='inviteLookup' && response?.sent!==true)throw Error('No se pudo enviar la solicitud. Revisá el usuario e intentá de nuevo.');
+    if(uid!==app.activeUid)return;
+    app.social.data=null;app.social.loading=false;
+    await loadSocial();
+    toast('Amigos actualizado ✓');return true;
+  }catch(error){if(uid===app.activeUid){app.social.error=String(error.message||'No se pudo completar.');toast(app.social.error);}}
+  finally{if(uid===app.activeUid){app.social.busy=false;if(app.view==='social')render();}}
+}
+function socialFriendRows(items,mode){
+  return items?.length?items.map(x=>`<div class="listrow social-friend-row"><div class="bubble social-avatar" ${mode==='friends'?`data-social-avatar="${h(x.requestId)}"`:''}>${mode==='friends'&&app.social.avatarImages?.[x.requestId]?`<img src="${h(app.social.avatarImages[x.requestId])}" alt="" decoding="async"/>`:h(String(x.name||'?').trim().slice(0,1).toUpperCase())}</div><div class="grow"><strong>${h(x.name||'Usuario de Percí')}</strong><div class="micro">${mode==='friends'?'En tu lista de amigos':mode==='received'?'Solicitud recibida':'Solicitud enviada'}</div></div><div class="row wrap social-row-actions">${mode==='received'?`${button('Aceptar','socialAccept',x.requestId,'small')}${button('Rechazar','socialRemove',x.requestId,'small outline')}`:mode==='sent'?button('Cancelar','socialRemove',x.requestId,'small outline'):`${button('Ver perfil','socialOpenProfile',x.requestId,'small')}${button('Eliminar','socialRemove',x.requestId,'small outline')}`}</div></div>`).join(''):'<p class="micro social-empty">Todavía no hay nadie acá.</p>';
+}
+function renderSocial(){
+  const s=app.social||{};
+  if(isOfflineNow(account))return `${title('Amigos','Conectate a Internet para administrar tus amistades.')}<div class="notice">Tus rutinas y entrenamientos siguen disponibles sin conexión.</div>`;
+  if(s.loading)return `${title('Amigos','Tus amistades en Percí.')}<div class="card">Cargando tu lista de amigos…</div>`;
+  if(!s.data)return `${title('Amigos','Conectá con otras personas que tengan cuenta.')}<div class="card"><p>${h(s.error||'Preparando la sección Social…')}</p>${button('Reintentar','socialRefresh','','outline')}</div>`;
+  const data=s.data,profile=data.profile;
+  if(!profile)return `${title('Amigos','Elegí el nombre que querés mostrar a tus amigos.')}<div class="social-stack"><div class="card"><label for="socialDisplayName">Nombre visible</label><input id="socialDisplayName" maxlength="60" autocomplete="nickname" placeholder="Tu nombre o apodo" value="${h(account.user?.name||'')}"/><p class="micro">Solo compartiremos tu nombre social cuando aceptes o recibas una solicitud. Tu correo, rutinas e historial siguen privados.</p>${button('Activar mi perfil social','socialSetup','','')}</div></div>`;
+  const match=s.found?.found?`<div class="social-found" aria-live="polite"><div class="grow"><strong>${h(s.found.name||'Usuario de Percí')}</strong>${s.found.username?`<div class="micro">@${h(s.found.username)}</div>`:''}</div>${button('Enviar solicitud','socialInviteLookup','','small')}</div>`:s.found?.found===false?'<p class="fieldhint" role="status">No encontramos un perfil disponible con esos datos. Revisá la escritura o pedile su código.</p>':'';
+  return `${title('Amigos','Tus conexiones, a tu ritmo.')}
+  <div class="social-stack">
+    <div class="grid2 social-panels">
+      <section class="card social-card"><h3>Tu código de invitación</h3><p class="social-invite-code">${h(profile.code)}</p><p class="micro">Compartilo con quien quieras agregar.</p><div class="social-actions">${button('Copiar código','socialCopyCode','','small outline')}</div></section>
+      <section class="card social-card"><h3>Buscar amigos</h3><label for="socialLookup">Código, @usuario o correo electrónico</label><input id="socialLookup" maxlength="254" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="Ej.: @vale_ux" value="${h(s.searchTerm||'')}"/><p class="micro">La búsqueda es exacta. Por correo, solo aparecen usuarios que habilitaron esa opción.</p><div class="social-actions">${button(s.busy?'Buscando…':'Buscar','socialFind','','small')}</div>${match}</section>
+    </div>
+    <section class="card social-card"><div class="row between wrap social-profile-edit-head"><h3>Tu perfil social</h3>${button('Ver mi perfil','socialOpenProfile','self','small outline')}</div><div class="field"><label for="socialUsername">Nombre de usuario único</label><input id="socialUsername" maxlength="24" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="Ej.: vale_ux" value="${h(profile.username||'')}"/><p class="fieldhint">Entre 3 y 24 caracteres: letras minúsculas, números y guion bajo. Tus amigos podrán buscarte con @usuario.</p></div><label class="social-optin"><input type="checkbox" id="socialEmailDiscoverable" ${profile.emailDiscoverable===true?'checked':''}/><span>Permitir que me encuentren por mi correo registrado</span></label><p class="micro">Desactivado por defecto. Tu correo nunca se muestra en los resultados.</p><div class="social-actions">${button('Guardar perfil','socialSaveProfile','','small outline')}</div></section>
+    <section class="card social-card"><h3>Solicitudes recibidas</h3><div data-social-rows="received">${socialFriendRows(data.received,'received')}</div></section>
+    <section class="card social-card"><h3>Mis amigos</h3><div data-social-rows="friends">${socialFriendRows(data.friends,'friends')}</div></section>
+    <section class="card social-card"><h3>Solicitudes enviadas</h3><div data-social-rows="sent">${socialFriendRows(data.sent,'sent')}</div></section>
+    ${s.error?`<p class="fieldhint" role="alert">${h(s.error)}</p>`:''}
+    <p class="micro social-refresh" role="status">Las solicitudes y amistades se sincronizan automáticamente.</p>
+  </div>`;
+}
+
+
+async function loadSocialProfile(){
+  const uid=app.activeUid, social=app.social, target=social.profileTarget;
+  if(!uid||!target||isOfflineNow(account)||social.profileLoading)return;
+  social.profileLoading=true;social.profileError='';if(app.view==='socialProfile')render();
+  try{
+    const data=await socialApi(target==='self'?'myProfile':'profile',target==='self'?{}:{requestId:target});
+    if(app.activeUid===uid&&app.social===social&&social.profileTarget===target){
+      social.profileData=data;
+    }
+  }catch(error){if(app.activeUid===uid&&app.social===social&&social.profileTarget===target){
+    social.profileData=null;social.profileError=String(error.message||'No pudimos abrir el perfil.');
+  }}finally{if(app.activeUid===uid&&app.social===social&&social.profileTarget===target){
+    social.profileLoading=false;if(app.view==='socialProfile')render();
+  }}
+}
+function openSocialProfile(target){
+  const isOwn=target==='self';
+  if(!isOwn && !app.social.data?.friends?.some(f=>f.requestId===target)){
+    toast('Solo podés visitar el perfil de un amigo.');return;
+  }
+  app.social.profileTarget=target;app.social.profileData=null;app.social.profileError='';
+  go('socialProfile');void loadSocialProfile();
+  if(!isOwn && !app.social.avatarImages?.[target]){
+    void loadSocialFriendAvatars().then(()=>{
+      if(app.view==='socialProfile'&&app.social.profileTarget===target)render();
+    });
+  }
+}
+async function mutateSocialProfile(action,data){
+  const uid=app.activeUid,social=app.social;
+  if(!uid||social.profileBusy||isOfflineNow(account)){
+    if(isOfflineNow(account))toast('Conectate a Internet para cambiar tu perfil.');return;
+  }
+  social.profileBusy=true;render();
+  try{
+    await socialApi(action,data);
+    if(uid!==app.activeUid||app.social!==social)return;
+    social.profileData=null;
+    await loadSocialProfile();
+    if(uid===app.activeUid)toast('Tu perfil se actualizó ✓');
+  }catch(error){if(uid===app.activeUid){social.profileError=String(error.message||'No pudimos actualizar el perfil.');toast(social.profileError);}}
+  finally{if(uid===app.activeUid&&app.social===social){social.profileBusy=false;if(app.view==='socialProfile')render();}}
+}
+function renderSocialProfile(){
+  const s=app.social,own=s.profileTarget==='self';
+  if(isOfflineNow(account))return `${back('social')}<div class="notice">Conectate a Internet para ver perfiles y rutinas compartidas.</div>`;
+  if(s.profileLoading)return `${back('social')}<section class="card">Cargando perfil…</section>`;
+  if(!s.profileData)return `${back('social')}<section class="card"><p role="alert">${h(s.profileError||'Preparando el perfil…')}</p>${button('Reintentar','socialProfileRefresh','','outline')}</section>`;
+  const profile=s.profileData.profile||{},published=s.profileData.routines||[];
+  const safeName=h(profile.name||'Usuario de Percí');
+  const avatar=own?avatarMarkup(account.user):(s.avatarImages?.[s.profileTarget]?`<img src="${h(s.avatarImages[s.profileTarget])}" alt=""/>`:`<span aria-hidden="true">${h(String(profile.name||'?').trim().slice(0,1).toUpperCase())}</span>`);
+  const routines=own?state.routines:published;
+  const visibleIds=new Set(published.map(x=>x.sourceId));
+  const card=(r)=>{
+    const visible=visibleIds.has(r.sourceId||r.id);
+    const exercises=Array.isArray(r.exercises)?r.exercises:[];
+    const preview=own?(published.find(x=>x.sourceId===r.id)||r):r;
+    return `<article class="card social-routine-card"><div class="row between wrap social-routine-heading"><div><h3>${h(r.name)}</h3><p class="micro">${exercises.length} ejercicios · ${exercises.reduce((n,x)=>n+Number(x.sets||0),0)} series</p></div>${own?`<span class="badge ${visible?'good':''}">${visible?'Visible para amigos':'Solo yo'}</span>`:''}</div>
+    ${own?`<div class="social-routine-actions">${visible?`${button('Ocultar','socialUnpublishRoutine',r.id,'small outline')}${button('Actualizar publicación','socialPublishRoutine',r.id,'small')}`:button('Mostrar a amigos','socialPublishRoutine',r.id,'small')}</div>`:`<details class="social-routine-details"><summary>Ver ejercicios</summary><ol>${(preview.exercises||[]).map(e=>`<li><strong>${h(e.name)}</strong><span>${Number(e.sets)} series · ${Number(e.reps)} reps</span></li>`).join('')}</ol></details>`}</article>`;
+  };
+  const missing=own?published.filter(x=>!state.routines.some(r=>r.id===x.sourceId)):[];
+  return `<div class="detail-top">${back('social')}<span class="micro">${own?'MI PERFIL':'PERFIL DE AMIGO'}</span></div>
+    <section class="card social-profile-hero"><div class="social-profile-avatar">${avatar}</div><div class="social-profile-id"><h1>${safeName}</h1><p class="social-profile-handle">${profile.username?'@'+h(profile.username):'Perfil de Percí'}</p><p class="social-profile-bio">${h(profile.bio||'Todavía no agregó una presentación.')}</p><span class="micro">${published.length} ${published.length===1?'rutina compartida':'rutinas compartidas'}</span></div></section>
+    ${own?`<section class="card social-card"><h2>Presentación</h2><label for="socialProfileBio">Contales algo a tus amigos</label><textarea id="socialProfileBio" maxlength="160" rows="3" placeholder="Ej. Entreno fuerza tres veces por semana">${h(profile.bio||'')}</textarea><p class="fieldhint">Hasta 160 caracteres. Visible solo para amistades aceptadas.</p>${button('Guardar presentación','socialSaveBio','','small outline')}</section>`:''}
+    <div class="social-profile-routine-title"><h2>${own?'Elegí qué rutinas mostrar':'Rutinas compartidas'}</h2><p class="micro">${own?'Todas son privadas hasta que las actives. Solo se publica la plantilla, sin pesos ni entrenamientos.':'Podés consultar los ejercicios, series y repeticiones que tu amigo decidió compartir.'}</p></div>
+    <div class="social-stack">${routines.length?routines.map(card).join(''):'<div class="card social-empty">Todavía no hay rutinas visibles.</div>'}
+    ${missing.length?`<section class="card"><h3>Publicaciones anteriores</h3><p class="micro">Estas publicaciones siguen disponibles para tus amigos aunque ya no tengas la rutina en tu cuenta. Podés ocultarlas ahora.</p>${missing.map(r=>`<div class="listrow"><div class="grow"><strong>${h(r.name)}</strong></div>${button('Ocultar','socialUnpublishRoutine',r.sourceId,'small outline')}</div>`).join('')}</section>`:''}</div>
+    ${s.profileError?`<p role="alert" class="fieldhint">${h(s.profileError)}</p>`:''}
+    ${own?'<p class="micro social-profile-warning">Una publicación es una copia de la rutina en ese momento. Si la editás, usá «Actualizar publicación». Para dejar de compartirla, elegí «Ocultar».</p>':''}`;
+}
+
 function renderSettings(){return `${title('Tu espacio, a tu modo.','Personalizá Percí a tu ritmo.')}<div class="grid2"><div class="card"><h3>Apariencia</h3><p class="micro">Elegí cómo querés ver Percí.</p><div class="filterline">${[['dark','Oscuro'],['light','Claro'],['system','Automático']].map(([k,v])=>`<button class="chip ${state.theme===k?'active':''}" data-action="theme" data-value="${k}" aria-pressed="${state.theme===k}">${v}</button>`).join('')}</div><div class="divider"></div><h3>Tu actividad principal</h3><p class="micro">Podés cambiarla cuando quieras; siempre tendrás acceso a todas tus actividades.</p><div class="filterline">${[['gym','Gimnasio'],['others','Otras actividades'],['both','Ambas']].map(([k,v])=>`<button class="chip ${state.focus===k?'active':''}" data-action="focus" data-value="${k}" aria-pressed="${state.focus===k}">${v}</button>`).join('')}</div><div class="divider"></div>${button('Volver a ver bienvenida','onboard','','outline')}</div><div class="card"><h3>Privacidad y tus datos</h3><div class="notice"><strong>✓ Tus datos se guardan en este dispositivo.</strong><p class="micro" style="margin:8px 0 0">${account.linked?'También tenés una copia vinculada a tu cuenta.':'Podés respaldar tus avances desde Mi cuenta.'}</p></div><div class="row wrap" style="margin-top:18px">${button('Mi cuenta','go','account')}${button('Exportar copia de mis datos','export','','outline')}</div><p class="micro" style="margin-top:16px">Si necesitás recuperar un archivo de respaldo, podés importarlo sin borrar nada hasta que lo confirmes.</p>${button('Importar copia JSON','import','','outline')}${storage.hasBackup()?button('Revertir última importación','restoreBackup','','outline'):''}<div class="divider"></div><h3>Licencias de contenido</h3><p class="micro"><a href="https://ymove.app/exercise-api" target="_blank" rel="noopener noreferrer">Exercise video by Your Move</a></p></div></div>`}
 function renderOnboard(){return `<div style="max-width:675px;margin:35px auto 0"><div class="onboard-visual">${iconMarkup('onboard-brand')}</div><div class="eyebrow">BIENVENIDO A PERCÍ</div><h1>Tu progreso. Sin comparaciones.</h1><p class="sub">Entrená, movete, registrá tus avances y construí hábitos a tu propio ritmo. Empezá por lo que te interesa.</p><div class="card"><h3>¿Qué te gustaría priorizar?</h3><p class="micro">Podés cambiarlo después y siempre verás todas las actividades.</p><div class="filterline">${[['gym','Gimnasio'],['others','Otras actividades'],['both','Ambas']].map(([k,v])=>`<button class="chip ${state.focus===k?'active':''}" data-action="focus" data-value="${k}" aria-pressed="${state.focus===k}">${v}</button>`).join('')}</div><h3 style="margin-top:23px">¿Cómo preferís visualizar Percí?</h3><div class="filterline">${[['dark','Oscuro'],['light','Claro'],['system','Automático']].map(([k,v])=>`<button class="chip ${state.theme===k?'active':''}" data-action="theme" data-value="${k}" aria-pressed="${state.theme===k}">${v}</button>`).join('')}</div><div class="row wrap" style="margin-top:17px">${button('Entrar a Percí ↗','finishOnboard')}${button('Omitir por ahora','finishOnboard','','outline')}</div></div></div>`}
 function renderModal(){const m=app.modal;if(!m)return '';
@@ -340,7 +592,7 @@ function render(){
     return;
   }
   let view=app.view;
-  let out=({home:renderHome,activity:renderActivity,routinesOverview:renderAllRoutines,routinePicker:renderRoutinePicker,progress:renderProgress,habits:renderHabits,settings:renderSettings,account:renderAccount,routine:renderRoutine,routineEdit:renderRoutineEdit,exerciseLibrary:renderLibrary,session:renderSession,otherForm:renderOtherForm,record:renderRecord,recordSetsEdit:renderRecordSetsEdit,sessionSummary:renderSessionSummary,habitEdit:renderHabitEdit,routineShare:renderRoutineShare,onboard:renderOnboard}[view]||renderHome)();
+  let out=({home:renderHome,activity:renderActivity,routinesOverview:renderAllRoutines,routinePicker:renderRoutinePicker,progress:renderProgress,habits:renderHabits,settings:renderSettings,account:renderAccount,social:renderSocial,socialProfile:renderSocialProfile,routine:renderRoutine,routineEdit:renderRoutineEdit,exerciseLibrary:renderLibrary,session:renderSession,otherForm:renderOtherForm,record:renderRecord,recordSetsEdit:renderRecordSetsEdit,sessionSummary:renderSessionSummary,habitEdit:renderHabitEdit,routineShare:renderRoutineShare,onboard:renderOnboard}[view]||renderHome)();
   root.innerHTML=shell((isOfflineNow(account)&&app.cloudNotice?`<div class="notice" role="status" style="margin-bottom:15px">${h(app.cloudNotice)}</div>`:'')+out)+renderAvatarDialog();
   mountAvatarDialog();
   if(app.modal){document.querySelector('.app')?.setAttribute('inert','');focusModalSafely();}
@@ -350,7 +602,7 @@ function activateAccountData(){
   if(!account.authenticated || account.user?.id!==app.activeUid)app.share=null;
   const id=account.user?.id;
   if(!account.authenticated||!id){
-    app.activeUid=null;app.needLegacyChoice=false;app.hydrating=false;app.cloudConflict=null;app.cloudNotice='';
+    app.social={data:null,busy:false,loading:false,error:'',found:null,lookup:null,searchTerm:'',avatarImages:{},profileTarget:null,profileData:null,profileLoading:false,profileBusy:false,profileError:''};app.activeUid=null;app.needLegacyChoice=false;app.hydrating=false;app.cloudConflict=null;app.cloudNotice='';
     app.editor=null;app.habit=null;app.record=null;app.routine=null;app.completedRecord=null;app.progressExercise='';app.modal=null;
     storage.activateUser(null);state=freshState();app.view='home';return;
   }
@@ -365,7 +617,7 @@ function activateAccountData(){
   // No arrastrar editores, modales o selecciones de otra cuenta. Esto también
   // evita bloquear futuras lecturas de Supabase con un editor ya abandonado.
   app.editor=null;app.habit=null;app.record=null;app.routine=null;app.completedRecord=null;app.progressExercise='';app.modal=null;
-  app.activeUid=id;
+  app.social={data:null,busy:false,loading:false,error:'',found:null,lookup:null,searchTerm:'',avatarImages:{},profileTarget:null,profileData:null,profileLoading:false,profileBusy:false,profileError:''};app.activeUid=id;
   account.syncPaused=false;
   app.cloudConflict=null;app.cloudNotice='';
   storage.activateUser(id);
@@ -689,7 +941,24 @@ const showModal=(title,body,confirm,value='',danger=false,extra='',confirmLabel=
 const validDate=v=>/^\d{4}-\d{2}-\d{2}$/.test(v)&&!isNaN(new Date(v+'T12:00:00').getTime());
 const id=()=>Math.random().toString(36).slice(2,10);
 function persistEditor(){if(!app.editor)return;const name=get('rname');if(name)app.editor.name=name.value;document.querySelectorAll('[data-exrow]').forEach(x=>{const i=Number(x.dataset.exrow);const exerciseName=x.querySelector('[data-field=exerciseName]');if(exerciseName)app.editor.exercises[i].name=exerciseName.value;app.editor.exercises[i].sets=Number(x.querySelector('[data-field=sets]').value)||1;app.editor.exercises[i].reps=Number(x.querySelector('[data-field=reps]').value)||1});try{saveRoutineEditor(app.activeUid,app.editor)}catch{toast('No pudimos guardar el borrador. Exportá una copia JSON antes de cerrar.')}}
-function beginSession(routineId){const r=state.routines.find(x=>x.id===routineId);if(!r)return;const previous=state.draft;state.draft={id:id(),routineId:r.id,snapshot:JSON.parse(JSON.stringify(r.exercises)),startedAt:Date.now(),sessionDate:dateISO(),sets:{},restEnabled:false,restSeconds:90,restUntil:null,offlineDraft:isOfflineNow(account)};if(save())go('session');else state.draft=previous;}
+
+// v1.16.0: cronómetro monotónico derivado de timestamps; compatible con borradores anteriores.
+function activeSessionMs(draft,now=Date.now()){
+  const start=Number(draft?.startedAt);
+  if(!Number.isFinite(start)||start<=0)return 0;
+  const pausedAt=Number(draft?.pausedAt);
+  const until=Number.isFinite(pausedAt)&&pausedAt>=start?Math.min(now,pausedAt):now;
+  const pausedTotal=Math.max(0,Number(draft?.pausedTotalMs)||0);
+  return Math.max(0,until-start-pausedTotal);
+}
+function activeSessionClock(draft,now=Date.now()){
+  const seconds=Math.floor(activeSessionMs(draft,now)/1000);
+  const minutes=Math.floor(seconds/60),hrs=Math.floor(minutes/60);
+  const two=n=>String(n).padStart(2,'0');
+  return hrs?`${two(hrs)}:${two(minutes%60)}:${two(seconds%60)}`:`${two(minutes)}:${two(seconds%60)}`;
+}
+
+function beginSession(routineId){const r=state.routines.find(x=>x.id===routineId);if(!r)return;const previous=state.draft;state.draft={id:id(),routineId:r.id,snapshot:JSON.parse(JSON.stringify(r.exercises)),startedAt:Date.now(),pausedAt:null,pausedTotalMs:0,sessionDate:dateISO(),sets:{},restEnabled:false,restSeconds:90,restUntil:null,offlineDraft:isOfflineNow(account)};if(save())go('session');else state.draft=previous;}
 function deleteRecordConfirmed(recordId,keepDraft=false){
   const record=state.records.find(x=>x.id===recordId);
   if(!record)return;
@@ -733,6 +1002,35 @@ function deletePersonalEntity(kind,itemId){
 }
 function handle(action,value){switch(action){
 case 'go':app.modal=null;go(value);break;
+case 'socialOpenProfile':openSocialProfile(value);break;
+case 'socialProfileRefresh':void loadSocialProfile();break;
+case 'socialSaveBio':{
+  const bio=String(document.getElementById('socialProfileBio')?.value||'').trim();
+  if(bio.length>160){toast('Máximo 160 caracteres.');break;}
+  void mutateSocialProfile('bio',{bio});break;
+}
+case 'socialPublishRoutine':{
+  const routine=state.routines.find(r=>r.id===value);if(!routine)break;
+  if(!app.social.profileData?.routines?.some(x=>x.sourceId===value) &&
+     !window.confirm('¿Mostrar esta rutina a tus amigos? Compartiremos solo ejercicios, series y repeticiones, nunca tus registros de entrenamiento.'))break;
+  let cleaned;try{cleaned=cleanSharedRoutine(routine);}catch(error){toast(error.message);break;}
+  void mutateSocialProfile('publishRoutine',{sourceId:value,routine:cleaned});break;
+}
+case 'socialUnpublishRoutine':void mutateSocialProfile('unpublishRoutine',{sourceId:value});break;
+case 'socialFind':void findSocial();break;
+case 'socialInviteLookup':void inviteFoundSocial();break;
+case 'socialSaveProfile':{
+  const username=String(document.getElementById('socialUsername')?.value||'').trim().toLowerCase().replace(/^@/,'');
+  if(!/^[a-z0-9_]{3,24}$/.test(username)){toast('Usá 3 a 24 caracteres: letras, números y _');break;}
+  const emailDiscoverable=document.getElementById('socialEmailDiscoverable')?.checked===true;
+  void mutateSocial('settings',{username,emailDiscoverable});break;
+}
+case 'socialRefresh':app.social.data=null;app.social.avatarImages={};void loadSocial();break;
+case 'socialSetup':{const name=document.getElementById('socialDisplayName')?.value.trim();if(!name||name.length<2||name.length>60){toast('Escribí un nombre de 2 a 60 caracteres');break;}void mutateSocial('setup',{name});break;}
+case 'socialInvite':{const code=String(document.getElementById('socialInviteCode')?.value||'').trim().toUpperCase();if(!/^[0-9A-F]{16}$/.test(code)){toast('Ingresá un código válido de 16 caracteres');break;}void mutateSocial('invite',{code});break;}
+case 'socialAccept':void mutateSocial('accept',{requestId:value});break;
+case 'socialRemove':if(window.confirm('¿Quitar esta solicitud o amistad?'))void mutateSocial('remove',{requestId:value});break;
+case 'socialCopyCode':{const code=app.social.data?.profile?.code;if(!code)break;if(navigator.clipboard?.writeText)navigator.clipboard.writeText(code).then(()=>toast('Código copiado'),()=>window.prompt('Copiá tu código:',code));else window.prompt('Copiá tu código:',code);break;}
 case 'tab':app.tab=value;render();break;
 case 'progressWeek':{
   const delta=Number(value);
@@ -865,6 +1163,18 @@ case 'toggleSet':{
   }
   if(save())render();break;
 }
+case 'pauseSession':{
+  const draft=state.draft;if(!draft||draft.pausedAt)break;
+  const previous={...draft};draft.pausedAt=Date.now();draft.restUntil=null;
+  if(save())render();else{state.draft=previous;render();}break;
+}
+case 'resumeSession':{
+  const draft=state.draft;if(!draft||!draft.pausedAt)break;
+  const previous={...draft},now=Date.now();
+  draft.pausedTotalMs=Math.max(0,Number(draft.pausedTotalMs)||0)+Math.max(0,now-Number(draft.pausedAt));
+  draft.pausedAt=null;
+  if(save())render();else{state.draft=previous;render();}break;
+}
 case 'cancelSession':{
   if(!state.draft)break;
   showModal('¿Cancelar esta sesión?', 'Se descartarán los pesos y las series registrados en esta sesión, incluso si todavía no los confirmaste. Tus rutinas y los entrenamientos anteriores no cambiarán.', 'confirmCancelSession','',true,'','Descartar sesión');
@@ -890,7 +1200,7 @@ case 'confirmFinish':{let d=state.draft;if(!d)break;let r=state.routines.find(x=
     const exercise=d.snapshot?.[exercisePosition]||r?.exercises?.[exercisePosition];
     return {exercisePosition,exerciseName:exercise?.name||'Ejercicio',setNumber:index+1,reps:entry.reps,weight:entry.weight,completed:true};
   }).sort((a,b)=>a.exercisePosition-b.exercisePosition||a.setNumber-b.setNumber);
-  const rec={id:id(),type:'gym',name:r?.name||'Entrenamiento de fuerza',date:getWorkoutDate(d,dateISO(),dateISO(new Date(d.startedAt||Date.now()))),minutes:Math.max(1,Math.round((Date.now()-d.startedAt)/60000)),setsDone:sets.length,volume:Math.round(vol*100)/100,note:'',routineId:d.routineId,setDetails};
+  const rec={id:id(),type:'gym',name:r?.name||'Entrenamiento de fuerza',date:getWorkoutDate(d,dateISO(),dateISO(new Date(d.startedAt||Date.now()))),minutes:Math.max(1,Math.round(activeSessionMs(d)/60000)),setsDone:sets.length,volume:Math.round(vol*100)/100,note:'',routineId:d.routineId,setDetails};
   state.records.unshift(rec);state.draft=null;app.modal=null;
   if(save()){
     app.completedRecord=rec.id;
@@ -1118,6 +1428,11 @@ function refreshRestClock(){
   if(button && remaining===0){button.dataset.action='startRest';button.textContent='Iniciar descanso';}
 }
 setInterval(refreshRestClock,1000);
+function refreshActiveSessionClock(){
+  const el=document.querySelector('[data-active-session-clock]');
+  if(el && state.draft)el.textContent=activeSessionClock(state.draft);
+}
+setInterval(refreshActiveSessionClock,1000);
 window.addEventListener('pagehide',()=>{if(app.view==='routineEdit'&&app.editor)try{persistEditor()}catch{}});
 
 // Safari puede recuperar una pestaña anterior desde Back/Forward Cache.
@@ -1253,9 +1568,17 @@ window.addEventListener('focus',()=>refreshConnectionAware());
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState!=='hidden')refreshConnectionAware(0);
 });
+// Social escucha la reconexión por separado, sin alterar la recuperación de la cuenta.
+// El guard de primer plano y el límite de frecuencia están dentro de refreshSocialAutomatically.
+window.addEventListener('online',()=>{void refreshSocialAutomatically();});
+window.addEventListener('focus',()=>{void refreshSocialAutomatically();});
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible')void refreshSocialAutomatically();
+});
 // Un chequeo offline cada 12s con la app visible, y online cada ~30s.
 // No se abre una conexión permanente ni se ejecutan lecturas en background.
 setInterval(()=>refreshConnectionAware(30000),12000);
+setInterval(()=>{if(socialShouldAutoSync())void refreshSocialAutomatically();},SOCIAL_SYNC_INTERVAL_MS);
 applyTheme();render();
 initAccount().catch(()=>{});
 })();

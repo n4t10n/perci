@@ -110,7 +110,9 @@ test('finalizar sesión: guarda fecha elegida y las series originales',()=>{
     snapshot:[{name:'Press de banca',sets:1,reps:10}],sets:{'0-0':{done:true,weight:40,reps:10}}};
   const state={draft,routines:[{id:'r1',name:'Pecho',exercises:draft.snapshot}],records:[]};
   const appState={completedRecord:null,modal:{}};
-  const act=new Function('state','app','id','dateISO','getWorkoutDate','save','go','toast','isOfflineNow','account',`${handler};return handle;`)(
+  const timerCode=app.slice(app.indexOf('function activeSessionMs('),app.indexOf('function beginSession('));
+  assert.ok(timerCode.startsWith('function activeSessionMs(') && timerCode.includes('function activeSessionClock('));
+  const act=new Function('state','app','id','dateISO','getWorkoutDate','save','go','toast','isOfflineNow','account',`${timerCode}\n${handler};return handle;`)(
     state,appState,()=>'registro1',()=> '2026-11-11',getWorkoutDate,()=>true,()=>{},()=>{},()=>false,{}
   );
   act('confirmFinish','');
@@ -124,8 +126,8 @@ test('finalizar sesión: guarda fecha elegida y las series originales',()=>{
 test('fecha en mobile: input de Safari no excede la tarjeta y se renueva la caché CSS',()=>{
   assert.match(css,/\.workout-date-input input\{[^}]*min-width:0;max-width:100%/);
   assert.match(css,/@media\(max-width:480px\)\{\.workout-date-panel\{[^}]*\}\.workout-date-panel>div\{min-width:0\}\.workout-date-input\{[^}]*width:100%/);
-  assert.match(sw,/perci-shell-v1\.15\.0-activity-date-layout/);
-  assert.match(sw,/src\/styles\.css\?v=1\.15\.0/);
+  assert.match(sw,/perci-shell-v1\.17\.1-social-auto-sync/);
+  assert.match(sw,/src\/styles\.css\?v=1\.17\.1/);
 });
 
 
@@ -136,5 +138,5 @@ test('iOS: fecha visible propia dentro de un contenedor recortado, con calendari
   assert.match(app,/if\(display\)display\.textContent=formatSessionDate\(selected\)/);
   assert.match(css,/\.workout-date-control\{[^}]*overflow:hidden/);
   assert.match(css,/\.workout-date-control input\[type=date\]\{[^}]*opacity:0/);
-  assert.match(sw,/\.\/src\/app\.js\?v=1\.15\.0/);
+  assert.match(sw,/\.\/src\/app\.js\?v=1\.17\.1/);
 });

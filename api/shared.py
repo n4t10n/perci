@@ -14,6 +14,7 @@ import urllib.parse
 from server import perci_server as core
 from server import perci_share
 from server import perci_avatar
+from server import perci_social
 from server import perci_atomic as atomic
 
 SESSION_TTL = core.SESSION_TTL
@@ -23,7 +24,7 @@ REFRESH_COOKIE = 'perci_rt'
 WEB_ROOT = Path(__file__).resolve().parents[1] / 'public'
 ENDPOINTS = {
     '/api/status', '/api/auth/session', '/api/auth/login',
-    '/api/auth/signup', '/api/auth/logout', '/api/cloud/data', '/api/cloud/sync', '/api/cloud/delete', '/api/routine/share', '/api/profile/avatar'
+    '/api/auth/signup', '/api/auth/logout', '/api/cloud/data', '/api/cloud/sync', '/api/cloud/delete', '/api/routine/share', '/api/profile/avatar', '/api/social'
 }
 
 
@@ -170,6 +171,17 @@ class ApiHandler(BaseHTTPRequestHandler):
                     if not user:
                         raise core.ApiError('Iniciá sesión para ver tu foto.', 401)
                     return self.send_json(perci_avatar.fetch(core, token, user['id']), cookies=cookies)
+                if path == '/api/social':
+                    token, user, cookies = self.authenticated()
+                    if not user:raise core.ApiError('Iniciá sesión para ver tus amistades.',401)
+                    params = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query,
+                                                   keep_blank_values=True)
+                    if params:
+                        if set(params) != {'friendAvatar'} or len(params['friendAvatar']) != 1:
+                            raise core.ApiError('Solicitud de avatar inválida.', 400)
+                        return self.send_json(perci_social.friend_avatar(
+                            core, token, user['id'], params['friendAvatar'][0]), cookies=cookies)
+                    return self.send_json(perci_social.handle(core,token,user['id'],'overview'),cookies=cookies)
                 if path == '/api/cloud/data':
                     token, user, cookies = self.authenticated()
                     if not user:
@@ -219,6 +231,10 @@ class ApiHandler(BaseHTTPRequestHandler):
                 if not user:
                     raise core.ApiError('Iniciá sesión para cambiar tu foto.', 401)
                 return self.send_json(perci_avatar.update(core, token, user['id'], body), cookies=cookies)
+            if path == '/api/social':
+                token, user, cookies = self.authenticated()
+                if not user:raise core.ApiError('Iniciá sesión para usar Social.',401)
+                return self.send_json(perci_social.handle(core,token,user['id'],body.get('action'),body),cookies=cookies)
             if path == '/api/routine/share':
                 token, user, cookies = self.authenticated()
                 if not user:
