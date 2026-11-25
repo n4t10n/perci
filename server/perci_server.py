@@ -202,6 +202,8 @@ def verify_snapshot(snapshot):
             if not isinstance(e.get('name'),str) or not e['name'].strip() or not 1 <= len(e['name']) <= 80 or not 1<=int(e.get('sets',0))<=15 or not 1<=int(e.get('reps',0))<=100:
                 raise ApiError('Ejercicio con campos inválidos.')
             verify_exercise_variant(e.get('defaultVariant'))
+            if 'variantsEnabled' in e and type(e['variantsEnabled']) is not bool:
+                raise ApiError('Preferencia de variantes inválida.',400)
     for rec in snapshot['records']:
         if rec.get('type') not in TYPES or not isinstance(rec.get('name'),str) or not rec['name'].strip() or not 1<=int(rec.get('minutes',0))<=1440 or not re.fullmatch(r'\d{4}-\d\d-\d\d',str(rec.get('date',''))):
             raise ApiError('Actividad inválida.')
@@ -377,7 +379,7 @@ def parse_legacy(client_id,kind):
 
 def download_data(token,user):
     rt=select_rows('perci_routines',token,user,'id,client_id,name')
-    ex=select_rows('perci_routine_exercises',token,user,'routine_id,position,name,target_sets,target_reps,default_variant')
+    ex=select_rows('perci_routine_exercises',token,user,'routine_id,position,name,target_sets,target_reps,default_variant,variants_enabled')
     ac=select_rows('perci_activity_records',token,user,'id,client_id,activity_type,name,activity_date,minutes,distance_km,sets_done,volume_kg,note,exercise_notes')
     completed_sets=select_rows('perci_workout_sets',token,user,'record_id,exercise_position,exercise_name,set_number,reps,weight_kg,completed,exercise_variant')
     sets_by_record={}
@@ -392,7 +394,7 @@ def download_data(token,user):
     for r in rt:
         rid=parse_legacy(r['client_id'],'routine')
         if rid:
-            routines.append({'id':rid,'name':r['name'],'exercises':[{'name':e['name'],'sets':e['target_sets'],'reps':e['target_reps'],**({'defaultVariant':e['default_variant']} if e.get('default_variant') else {})} for e in sorted(groups.get(r['id'],[]),key=lambda x:x['position'])]})
+            routines.append({'id':rid,'name':r['name'],'exercises':[{'name':e['name'],'sets':e['target_sets'],'reps':e['target_reps'],**({'defaultVariant':e['default_variant']} if e.get('default_variant') else {}),**({'variantsEnabled':e['variants_enabled']} if type(e.get('variants_enabled')) is bool else {})} for e in sorted(groups.get(r['id'],[]),key=lambda x:x['position'])]})
     records=[]
     for r in ac:
         rid=parse_legacy(r['client_id'],'record')

@@ -1,4 +1,4 @@
-import {exerciseVariants,variantLabel,validVariant,canChangeVariant,cleanVariantRegistry,variantExerciseKey} from '../public/src/domain/exercise-context.js';
+import {exerciseVariants,variantLabel,validVariant,canChangeVariant,cleanVariantRegistry,variantExerciseKey,variantsEnabled} from '../public/src/domain/exercise-context.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -14,8 +14,8 @@ const slice=(start,end)=>{
 const fragment=slice('function renderRoutineEdit(){','const asKg=')+'\n'+slice('function variantSelector(','function exerciseNoteInput(');
 function renderEdit(editor,renamingExercise=null){
   const app={editor,renamingExercise,activeUid:'u'};
-  return new Function('app','h','back','title','button','isOfflineNow','account','exerciseDemoButton','exerciseVariants','variantLabel','validVariant','canChangeVariant','cleanVariantRegistry','variantExerciseKey',` ${fragment}; return renderRoutineEdit();`)(
-    app,htmlEscape,()=>'<button>Volver</button>',(a,b)=>`<h1>${a}</h1><p>${b}</p>`,button,()=>false,{},()=>'',exerciseVariants,variantLabel,validVariant,canChangeVariant,cleanVariantRegistry,variantExerciseKey
+  return new Function('app','h','back','title','button','isOfflineNow','account','exerciseDemoButton','exerciseVariants','variantLabel','validVariant','canChangeVariant','cleanVariantRegistry','variantExerciseKey','variantsEnabled',` ${fragment}; return renderRoutineEdit();`)(
+    app,htmlEscape,()=>'<button>Volver</button>',(a,b)=>`<h1>${a}</h1><p>${b}</p>`,button,()=>false,{},()=>'',exerciseVariants,variantLabel,validVariant,canChangeVariant,cleanVariantRegistry,variantExerciseKey,variantsEnabled
   );
 }
 test('editor: permite renombrar un ejercicio existente sin perder los controles previos',()=>{

@@ -2,18 +2,18 @@ import { OFFICIAL_LOGOS } from './brand.js?v=1.7.6';
 import {cleanImportedState} from './data/import-cleanup.js?v=1.7.6';
 import { storage,readUserState,writeUserState,getLegacyOwner,legacyAlreadyClaimed,markLegacyClaimed,legacyHasPersonalData } from './data/repository.js?v=1.7.6';
 import { previewLocalMigration } from './data/migration-preflight.js?v=1.7.6';
-import { reconcileCloudWithBaseline, hasPersonalData } from './data/auto-hydration.js?v=1.19.0';
+import { reconcileCloudWithBaseline, hasPersonalData } from './data/auto-hydration.js?v=1.19.1';
 import { dateISO, offsetDate, seed } from './domain/initial-state.js?v=1.7.6';
 import { getInitialView } from './domain/startup-route.js?v=1.7.6';
-import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync,probeOfflineAccount} from './account.js?v=1.19.0';
-import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.19.0';
-import {avatarMarkup,renderAvatarDialog,mountAvatarDialog,installAvatarUI,refreshAvatar,resetAvatarOnAccountChange} from './profile-avatar.js?v=1.19.0';
-import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.19.0';
+import {account,onAccountChange,onSyncRequested,initAccount,login,signup,logout,markLinked,fetchCloudData,syncCloudSnapshot,scheduleAccountSync,hasAccountConflict,changeAccountMode,accountInitial,resumePendingSync,probeOfflineAccount} from './account.js?v=1.19.1';
+import {renderAccount,renderAuthGate,renderLegacyChoice} from './account-ui.js?v=1.19.1';
+import {avatarMarkup,renderAvatarDialog,mountAvatarDialog,installAvatarUI,refreshAvatar,resetAvatarOnAccountChange} from './profile-avatar.js?v=1.19.1';
+import {readOutbox,queueSnapshot,rebaseOutbox,clearOutboxIfCurrent,saveBaseline,getBaseline,planOfflineSync,verifyRemoteSnapshot,readRoutineEditor,saveRoutineEditor,clearRoutineEditor,isOfflineNow,markRecordDeleted,listRecordDeletes,clearRecordDeletes,cancelRecordDelete,applyRemoteEntityDeletes,listEntityDeletes,markEntityDeleted,clearEntityDeletes,cancelEntityDelete,allDeleteIntents,hasDeleteIntents} from './data/offline-outbox.js?v=1.19.1';
 import {listRecordDrafts,saveRecordDraft,removeRecordDraft,findRecordDraft} from './data/record-drafts.js?v=1.7.6';
 import {canAutoRefreshCloud,shouldRefreshOnNavigation} from './data/auto-refresh.js?v=1.7.6';
-import {planFirstDeviceRestore} from './data/first-device-hydration.js?v=1.19.0';
-import {listTrackedExercises,exerciseHistory,previousExerciseSet,sessionStats,nextPendingSet,restRemaining,restClock} from './domain/training-insights.js?v=1.19.0';
-import {exerciseVariants,variantLabel,validVariant,cleanNote,lastExerciseNote,sessionExerciseSnapshot,exerciseNotesForDraft,canChangeVariant,trackedExerciseName,customVariantId,variantExerciseKey,cleanVariantRegistry,setCustomVariant} from './domain/exercise-context.js?v=1.19.0';
+import {planFirstDeviceRestore} from './data/first-device-hydration.js?v=1.19.1';
+import {listTrackedExercises,exerciseHistory,previousExerciseSet,sessionStats,nextPendingSet,restRemaining,restClock} from './domain/training-insights.js?v=1.19.1';
+import {exerciseVariants,variantLabel,validVariant,cleanNote,lastExerciseNote,sessionExerciseSnapshot,exerciseNotesForDraft,canChangeVariant,trackedExerciseName,customVariantId,variantExerciseKey,cleanVariantRegistry,setCustomVariant,variantsEnabled} from './domain/exercise-context.js?v=1.19.1';
 import {cleanSharedRoutine,isValidShareCode,routineTemplateIsEqual} from './domain/routine-share.js?v=1.7.6';
 import {reorderRoutineExercises,isWorkoutDate,getWorkoutDate} from './domain/routine-session-tools.js?v=1.7.6';
 import {updateHistoricalSets} from './domain/historical-sets.js?v=1.10.0';
@@ -216,13 +216,18 @@ function renderRoutineEdit(){const e=app.editor||{id:null,name:'',exercises:[]};
 const asKg=value=>Number(value||0).toLocaleString('es-AR',{maximumFractionDigits:2});
 function variantSelector(item,index,scope,draft){
   const registry=typeof state==='undefined'?[]:state.customVariants;
+  // Un borrador anterior sin flag conserva el comportamiento con el que se inició.
+  if(scope==='session'&&item.variantsEnabled===false)return '';
+  const enabled=scope==='routine'?variantsEnabled(item,registry):true;
+  const toggle=scope==='routine'?`<div class="row between wrap variant-toggle"><span>Habilitar variantes</span><button type="button" role="switch" aria-checked="${enabled}" aria-label="Habilitar variantes de ${h(item.name)}" class="btn small outline" data-action="toggleExerciseVariants" data-value="${index}">${enabled?'Sí':'No'}</button></div>`:'';
+  if(!enabled)return toggle;
   const selected=validVariant(item.name,scope==='routine'?item.defaultVariant:item.variant);
   const choices=exerciseVariants(item.name,registry);if(selected&&!choices.includes(selected))choices.push(selected);
   const locked=scope==='session'&&!canChangeVariant(draft,index);
   const selector=choices.length?`<label class="exercise-variant"><span>${scope==='routine'?'Variante predeterminada':'Variante'}</span><select data-${scope}-variant="${index}" aria-label="Variante de ${h(item.name)}" ${locked?'disabled':''}><option value="" ${!selected?'selected':''}>${scope==='routine'?'Recordar última':'Sin especificar'}</option>${choices.map(v=>`<option value="${h(v)}" ${selected===v?'selected':''}>${h(variantLabel(v))}</option>`).join('')}</select>${locked?'<span class="micro">Desmarcá las series para cambiar</span>':''}</label>`:'';
   if(scope!=='routine')return selector;
   const custom=cleanVariantRegistry(registry).filter(x=>x.exercise===variantExerciseKey(item.name));
-  return `${selector}<details class="variant-management"><summary class="micro">Administrar variantes</summary><p class="micro">Se guardan en tu cuenta y se aplican a este ejercicio en otras rutinas.</p>${button('+ Añadir variante','addCustomVariant',index,'small outline')}${custom.map(x=>`<div class="row between wrap"><span>${h(variantLabel(x.variant))}${x.active?'':' · archivada'}</span>${button(x.active?'Archivar':'Restaurar','toggleCustomVariant',index+'|'+x.variant,'small outline')}</div>`).join('')}</details>`;
+  return `${toggle}${selector}<details class="variant-management"><summary class="micro">Administrar variantes</summary><p class="micro">Se guardan en tu cuenta y se aplican a este ejercicio en otras rutinas.</p>${button('+ Añadir variante','addCustomVariant',index,'small outline')}${custom.map(x=>`<div class="row between wrap"><span>${h(variantLabel(x.variant))}${x.active?'':' · archivada'}</span>${button(x.active?'Archivar':'Restaurar','toggleCustomVariant',index+'|'+x.variant,'small outline')}</div>`).join('')}</details>`;
 }
 function exerciseNoteInput(d,item,i){
   const note=cleanNote(d.exerciseNotes?.[i]),last=lastExerciseNote(state.records,item.name,validVariant(item.name,item.variant));
@@ -817,7 +822,7 @@ async function hydrateCloud(uid,{silent=false}={}){
         const deletions=Object.fromEntries(Object.entries(grouped).filter(([,ids])=>ids.length));
         // El merge de entidades no debe sustituir el perfil por defaults locales.
         Object.assign(result.snapshot,cloudProfileForCommit(pending,remote));
-        const committed=await syncCloudSnapshot({...result.snapshot,draft:null,exerciseContextVersion:2},remote,deletions);
+        const committed=await syncCloudSnapshot({...result.snapshot,draft:null,exerciseContextVersion:3},remote,deletions);
         if(!hydrationBelongsToAccount(uid,seq))return;
         const confirmed=await fetchCloudData();
         if(!hydrationBelongsToAccount(uid,seq))return;
@@ -962,7 +967,7 @@ const showModal=(title,body,confirm,value='',danger=false,extra='',confirmLabel=
 };
 const validDate=v=>/^\d{4}-\d{2}-\d{2}$/.test(v)&&!isNaN(new Date(v+'T12:00:00').getTime());
 const id=()=>Math.random().toString(36).slice(2,10);
-function persistEditor(){if(!app.editor)return;const name=get('rname');if(name)app.editor.name=name.value;document.querySelectorAll('[data-exrow]').forEach(x=>{const i=Number(x.dataset.exrow);const exerciseName=x.querySelector('[data-field=exerciseName]');const oldName=app.editor.exercises[i].name;const renamed=exerciseName&&app.editor.exercises[i].defaultVariant&&variantExerciseKey(oldName)!==variantExerciseKey(exerciseName.value);if(exerciseName)app.editor.exercises[i].name=exerciseName.value;const variant=x.querySelector('[data-routine-variant]');if(variant&&!renamed){const selected=validVariant(app.editor.exercises[i].name,variant.value);if(selected)app.editor.exercises[i].defaultVariant=selected;else delete app.editor.exercises[i].defaultVariant;}else delete app.editor.exercises[i].defaultVariant;app.editor.exercises[i].sets=Number(x.querySelector('[data-field=sets]').value)||1;app.editor.exercises[i].reps=Number(x.querySelector('[data-field=reps]').value)||1});try{saveRoutineEditor(app.activeUid,app.editor)}catch{toast('No pudimos guardar el borrador. Exportá una copia JSON antes de cerrar.')}}
+function persistEditor(){if(!app.editor)return;const name=get('rname');if(name)app.editor.name=name.value;document.querySelectorAll('[data-exrow]').forEach(x=>{const i=Number(x.dataset.exrow);const exerciseName=x.querySelector('[data-field=exerciseName]');const oldName=app.editor.exercises[i].name;const renamed=exerciseName&&app.editor.exercises[i].defaultVariant&&variantExerciseKey(oldName)!==variantExerciseKey(exerciseName.value);if(exerciseName)app.editor.exercises[i].name=exerciseName.value;const variant=x.querySelector('[data-routine-variant]');if(variant&&!renamed){const selected=validVariant(app.editor.exercises[i].name,variant.value);if(selected)app.editor.exercises[i].defaultVariant=selected;else delete app.editor.exercises[i].defaultVariant;}else if(renamed)delete app.editor.exercises[i].defaultVariant;app.editor.exercises[i].sets=Number(x.querySelector('[data-field=sets]').value)||1;app.editor.exercises[i].reps=Number(x.querySelector('[data-field=reps]').value)||1});try{saveRoutineEditor(app.activeUid,app.editor)}catch{toast('No pudimos guardar el borrador. Exportá una copia JSON antes de cerrar.')}}
 
 // v1.16.0: cronómetro monotónico derivado de timestamps; compatible con borradores anteriores.
 function activeSessionMs(draft,now=Date.now()){
@@ -1127,6 +1132,13 @@ case 'renameExercise':{
   }else app.renamingExercise=i;
   saveRoutineEditor(app.activeUid,app.editor);
   render();break;
+}
+case 'toggleExerciseVariants':{
+  if(app.view!=='routineEdit'||!app.editor)break;
+  const i=Number(value);if(!Number.isInteger(i)||!app.editor.exercises[i])break;
+  persistEditor();const item=app.editor.exercises[i];
+  item.variantsEnabled=!variantsEnabled(item,state.customVariants);
+  saveRoutineEditor(app.activeUid,app.editor);render();break;
 }
 case 'addCustomVariant':
 case 'toggleCustomVariant':{
@@ -1408,7 +1420,7 @@ document.addEventListener('change',e=>{
   if(app.view==='routineEdit'&&e.target.matches?.('[data-routine-variant]')){persistEditor();return;}
   if(app.view==='session'&&state.draft&&e.target.matches?.('[data-session-variant]')){
     const d=state.draft,i=Number(e.target.dataset.sessionVariant),item=d.snapshot?.[i];
-    if(!item||!canChangeVariant(d,i)){render();return;}
+    if(!item||item.variantsEnabled===false||!canChangeVariant(d,i)){render();return;}
     const chosen=validVariant(item.name,e.target.value),before=validVariant(item.name,item.variant);
     if(chosen&&chosen!==before&&!exerciseVariants(item.name,state.customVariants).includes(chosen)){render();return;}
     if(chosen===before)return;

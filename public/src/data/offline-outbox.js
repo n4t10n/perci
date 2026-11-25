@@ -3,7 +3,7 @@
  * Los borradores de sesión / editor no se envían al servidor hasta quedar completos.
  */
 import {cleanImportedState} from './import-cleanup.js?v=1.7.6';
-import {cleanVariantRegistry,mergeVariantRegistry} from '../domain/exercise-context.js?v=1.19.0';
+import {cleanVariantRegistry,mergeVariantRegistry} from '../domain/exercise-context.js?v=1.19.1';
 
 const copy=value=>JSON.parse(JSON.stringify(value));
 const items=['routines','records','habits'];
@@ -105,7 +105,7 @@ export function isOfflineNow(account){
 
 function fingerprint(kind,obj){
   if(obj===undefined)return '__missing__';
-  if(kind==='routines')return JSON.stringify({name:obj.name,exercises:(obj.exercises||[]).map(e=>({name:e.name,sets:Number(e.sets),reps:Number(e.reps),defaultVariant:e.defaultVariant||''}))});
+  if(kind==='routines')return JSON.stringify({name:obj.name,exercises:(obj.exercises||[]).map(e=>({name:e.name,sets:Number(e.sets),reps:Number(e.reps),defaultVariant:e.defaultVariant||'',variantsEnabled:typeof e.variantsEnabled==='boolean'?e.variantsEnabled:null}))});
   if(kind==='habits')return JSON.stringify({name:obj.name,days:[...(obj.days||[])].sort((a,b)=>a-b),paused:!!obj.paused});
   if(kind==='records')return JSON.stringify({type:obj.type,name:obj.name,date:obj.date,minutes:Number(obj.minutes),
     distance:obj.distance==null?null:Number(obj.distance),setsDone:obj.setsDone==null?null:Number(obj.setsDone),

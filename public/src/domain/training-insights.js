@@ -1,4 +1,4 @@
-import {trackedExerciseName} from './exercise-context.js?v=1.19.0';
+import {trackedExerciseName} from './exercise-context.js?v=1.19.1';
 /** Percí v1.6: métricas derivadas únicamente de series de fuerza completadas.
  * No modifica registros ni depende de almacenamiento, red o DOM.
  */

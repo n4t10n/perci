@@ -1,4 +1,4 @@
-/** Percí QA v1.19.0 · contexto privado del ejercicio. */
+/** Percí QA v1.19.1 · contexto privado del ejercicio. */
 const labels=Object.freeze({barra:'Barra',mancuernas:'Mancuernas',maquina:'Máquina',discos:'Discos',polea:'Polea',multipower:'Multipower',bilateral:'Bilateral',unilateral:'Unilateral','barra-ez':'Barra EZ','peso-corporal':'Peso corporal','agarre-abierto':'Agarre abierto','agarre-cerrado':'Agarre cerrado','agarre-neutro':'Agarre neutro','agarre-supino':'Agarre supino','prensa-45':'45°','prensa-horizontal':'Horizontal','prensa-vertical':'Vertical',cuerda:'Cuerda','barra-recta':'Barra recta','barra-v':'Barra V'});
 const normalize=name=>String(name??'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').toLowerCase();
 const groups=[
@@ -21,7 +21,7 @@ const groups=[
   [['remo sentado','remo en polea baja'],['agarre-cerrado','agarre-abierto','agarre-neutro']],
   [['apertura en maquina','aperturas en maquina','aperturas de pecho','aperturas con mancuernas'],['maquina','polea','mancuernas']],
   [['triceps en polea','extension de triceps en polea'],['cuerda','barra-recta','barra-v','unilateral']],
-  [['aductores en maquina'],[]],
+  [['aductores en maquina'],['bilateral','unilateral']],
   [['curl de biceps + press militar','curl biceps + press militar'],[]]
 ];
 const groupFor=name=>groups.find(([names])=>names.includes(normalize(name)));
@@ -64,6 +64,12 @@ export function setCustomVariant(registry,name,id,active){
 export function exerciseVariants(name,registry=[]){
   return [...new Set([...(groupFor(name)?.[1]||[]),...cleanVariantRegistry(registry).filter(x=>x.exercise===variantExerciseKey(name)&&x.active).map(x=>x.variant)])];
 }
+// La preferencia es por ejercicio de rutina; el catálogo queda intacto.
+const defaultDisabled=new Set(['sillon de cuadriceps','remo inclinado','curl de biceps + press militar','prensa maquina','remo sentado','apertura en maquina']);
+export function variantsEnabled(item,registry=[]){
+  if(typeof item?.variantsEnabled==='boolean')return item.variantsEnabled;
+  return !defaultDisabled.has(variantExerciseKey(item?.name)) && Boolean(item?.defaultVariant||exerciseVariants(item?.name,registry).length);
+}
 export const validVariant=(name,id)=>exerciseVariants(name).includes(id)||isCustomVariant(id)?id:'';
 export const cleanNote=value=>String(value??'').slice(0,250);
 const ordered=records=>(Array.isArray(records)?records:[]).map((r,i)=>({r,i})).sort((a,b)=>String(b.r.date||'').localeCompare(String(a.r.date||''))||a.i-b.i).map(x=>x.r);
@@ -80,7 +86,7 @@ export function lastExerciseNote(records,name,variant=''){
   return '';
 }
 export function sessionExerciseSnapshot(exercises,records,registry=[]){
-  return exercises.map(item=>{const {variant:_,defaultVariant,...rest}=item;const last=lastExerciseVariant(records,item.name);const chosen=validVariant(item.name,defaultVariant)||(exerciseVariants(item.name,registry).includes(last)?last:'');return {...rest,...(chosen?{variant:chosen}:{})};});
+  return exercises.map(item=>{const {variant:_,defaultVariant,...rest}=item;const enabled=variantsEnabled(item,registry);const last=lastExerciseVariant(records,item.name);const chosen=enabled?(validVariant(item.name,defaultVariant)||(exerciseVariants(item.name,registry).includes(last)?last:'')):'';return {...rest,variantsEnabled:enabled,...(chosen?{variant:chosen}:{})};});
 }
 export const trackedExerciseName=set=>`${String(set.exerciseName||'').trim()}${variantLabel(set.variant)?' · '+variantLabel(set.variant):''}`;
 export function exerciseNotesForDraft(draft){

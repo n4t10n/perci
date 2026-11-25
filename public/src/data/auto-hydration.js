@@ -3,14 +3,14 @@
  * Los conflictos de un mismo ID deben resolverse explícitamente en la interfaz.
  */
 import { cleanImportedState } from './import-cleanup.js?v=1.7.6';
-import {planOfflineSync} from './offline-outbox.js?v=1.19.0';
-import {cleanVariantRegistry,mergeVariantRegistry} from '../domain/exercise-context.js?v=1.19.0';
+import {planOfflineSync} from './offline-outbox.js?v=1.19.1';
+import {cleanVariantRegistry,mergeVariantRegistry} from '../domain/exercise-context.js?v=1.19.1';
 
 const groups = ['routines','records','habits'];
 const own = (obj,key) => Object.prototype.hasOwnProperty.call(obj,key);
 const copy = value => JSON.parse(JSON.stringify(value));
 function fingerprint(kind,item){
-  if(kind==='routines')return JSON.stringify({name:item.name,exercises:(item.exercises||[]).map(e=>({name:e.name,sets:Number(e.sets),reps:Number(e.reps),defaultVariant:e.defaultVariant||''}))});
+  if(kind==='routines')return JSON.stringify({name:item.name,exercises:(item.exercises||[]).map(e=>({name:e.name,sets:Number(e.sets),reps:Number(e.reps),defaultVariant:e.defaultVariant||'',variantsEnabled:typeof e.variantsEnabled==='boolean'?e.variantsEnabled:null}))});
   if(kind==='habits')return JSON.stringify({name:item.name,days:[...(item.days||[])].sort((a,b)=>a-b),paused:!!item.paused});
   const result={type:item.type,name:item.name,date:item.date,minutes:Number(item.minutes),note:item.note||''};
   for(const [field] of [['distance'],['setsDone'],['volume']])if(item[field]!=null)result[field]=Number(item[field]);
