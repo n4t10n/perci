@@ -1,4 +1,4 @@
-/** Percí QA v1.19.1 · contexto privado del ejercicio. */
+/** Percí QA v1.19.2 · contexto privado del ejercicio. */
 const labels=Object.freeze({barra:'Barra',mancuernas:'Mancuernas',maquina:'Máquina',discos:'Discos',polea:'Polea',multipower:'Multipower',bilateral:'Bilateral',unilateral:'Unilateral','barra-ez':'Barra EZ','peso-corporal':'Peso corporal','agarre-abierto':'Agarre abierto','agarre-cerrado':'Agarre cerrado','agarre-neutro':'Agarre neutro','agarre-supino':'Agarre supino','prensa-45':'45°','prensa-horizontal':'Horizontal','prensa-vertical':'Vertical',cuerda:'Cuerda','barra-recta':'Barra recta','barra-v':'Barra V'});
 const normalize=name=>String(name??'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').toLowerCase();
 const groups=[

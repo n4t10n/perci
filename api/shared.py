@@ -151,6 +151,7 @@ class ApiHandler(BaseHTTPRequestHandler):
         self.dispatch('POST')
 
     def dispatch(self, method):
+        cookies = ()
         path = urllib.parse.urlsplit(self.path).path
         # Endpoint files have a fixed route in production; /local-dev also has it in path.
         if self.endpoint and path != self.endpoint:
@@ -264,12 +265,12 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self.send_json(core.delete_cloud_entities(body, token, user['id']), cookies=cookies)
             raise core.ApiError('Método no permitido.', 405)
         except (ValueError, TypeError, json.JSONDecodeError):
-            return self.send_json({'error': 'Solicitud inválida.'}, 400)
+            return self.send_json({'error': 'Solicitud inválida.'}, 400, cookies=cookies)
         except core.ApiError as e:
-            return self.send_json({'error': str(e)}, e.status if 400 <= e.status <= 599 else 502)
+            return self.send_json({'error': str(e)}, e.status if 400 <= e.status <= 599 else 502, cookies=cookies)
         except Exception as e:
             print('Percí API error:', type(e).__name__)
-            return self.send_json({'error': 'No se pudo completar la operación.'}, 500)
+            return self.send_json({'error': 'No se pudo completar la operación.'}, 500, cookies=cookies)
 
 
 if __name__ == '__main__':

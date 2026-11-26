@@ -22,9 +22,9 @@ test('v1.7.6 shell no mezcla versiones',()=>{
   const account=source('../public/src/account.js');
   for(const content of [html,sw,app,account]){
     assert.doesNotMatch(content,/v=1\.6\.4/);
-    assert.match(content,/v=1\.(?:7\.6|19\.1)/);
+    assert.match(content,/v=1\.(?:7\.6|19\.2)/);
   }
-  assert.match(sw,/perci-shell-v1\.19\.1-exercise-context/);
-  assert.match(app,/account\.js\?v=1\.19\.1/);
-  assert.match(account,/offline-outbox\.js\?v=1\.19\.1/);
+  assert.match(sw,/perci-shell-v1\.19\.2-exercise-context/);
+  assert.match(app,/account\.js\?v=1\.19\.2/);
+  assert.match(account,/offline-outbox\.js\?v=1\.19\.2/);
 });

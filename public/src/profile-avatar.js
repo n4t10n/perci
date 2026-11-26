@@ -2,7 +2,7 @@
  * Only the user's verified, host-only-cookie session may read/write Storage.
  * Offline cache is scoped by account ID and is never shared across accounts.
  */
-import {account,accountInitial} from './account.js?v=1.19.1';
+import {account,accountInitial} from './account.js?v=1.19.2';
 
 const CACHE_PREFIX='perci_avatar_v113_';
 const MAX_ORIGINAL=10*1024*1024;

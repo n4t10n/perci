@@ -1,4 +1,4 @@
-import {queueSnapshot,readOutbox,isOfflineNow} from './data/offline-outbox.js?v=1.19.1';
+import {queueSnapshot,readOutbox,isOfflineNow} from './data/offline-outbox.js?v=1.19.2';
 /** Percí v1.2: cuenta obligatoria, sesión del servidor + acceso offline previamente autorizado.
  * La credencial offline solo recuerda un usuario autenticado en este dispositivo;
  * NO sustituye cifrado local ni autentica contra Supabase sin conexión.
@@ -89,7 +89,7 @@ export async function initAccount(){
       forgetUser();
       update({ready:true,configured:!!data.configured,authenticated:false,offline:false,verifiedOnline:true,verifiedOnlineAt:Date.now(),
         user:null,linked:false,syncFailed:false,mode:emailReturn.requested?'login':account.mode,
-        error:emailReturn.requested&&emailReturn.failed?'No pudimos confirmar el correo. Abrí el enlace de verificación otra vez o solicitá uno nuevo.':'',
+        error:emailReturn.requested&&emailReturn.failed?'No pudimos confirmar el correo. Abrí el enlace de verificación otra vez o solicitá uno nuevo.':account.authenticated?'Tu sesión venció. Iniciá sesión nuevamente con la misma cuenta. Tus cambios locales se conservan.':'',
         message:emailReturn.requested&&!emailReturn.failed?'Si ya confirmaste tu correo, iniciá sesión con tu contraseña.':''});
     }
   }catch(error){
@@ -119,7 +119,7 @@ export function login(email,password){return action(async()=>{
   const data=await request('/api/auth/login',{email,password});
   rememberUser(data.user);
   update({authenticated:true,offline:false,verifiedOnline:true,verifiedOnlineAt:Date.now(),user:data.user,linked:linked(data.user),mode:'login',
-    message:'¡Bienvenido a Percí!',syncFailed:false,error:''});
+    message:'',syncFailed:false,error:''});
 });}
 export function signup(name,email,password,confirmation){return action(async()=>{
   name=String(name||'').trim().replace(/\s+/g,' ');

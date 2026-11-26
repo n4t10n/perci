@@ -3,8 +3,8 @@
  * Los conflictos de un mismo ID deben resolverse explícitamente en la interfaz.
  */
 import { cleanImportedState } from './import-cleanup.js?v=1.7.6';
-import {planOfflineSync} from './offline-outbox.js?v=1.19.1';
-import {cleanVariantRegistry,mergeVariantRegistry} from '../domain/exercise-context.js?v=1.19.1';
+import {planOfflineSync} from './offline-outbox.js?v=1.19.2';
+import {cleanVariantRegistry,mergeVariantRegistry} from '../domain/exercise-context.js?v=1.19.2';
 
 const groups = ['routines','records','habits'];
 const own = (obj,key) => Object.prototype.hasOwnProperty.call(obj,key);
