@@ -3,7 +3,7 @@
  * Los borradores de sesión / editor no se envían al servidor hasta quedar completos.
  */
 import {cleanImportedState} from './import-cleanup.js?v=1.7.6';
-import {cleanVariantRegistry,mergeVariantRegistry} from '../domain/exercise-context.js?v=1.19.1';
+import {cleanVariantRegistry,mergeVariantRegistry} from '../domain/exercise-context.js?v=1.19.2';
 
 const copy=value=>JSON.parse(JSON.stringify(value));
 const items=['routines','records','habits'];

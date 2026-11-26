@@ -130,6 +130,15 @@ class TestVercelAPI(unittest.TestCase):
             self.assertTrue(data['authenticated'])
             self.assertEqual(len(head.get_all('Set-Cookie')), 2)
 
+    def test_rotated_cookies_survive_failed_commit(self):
+        cookies=('perci_at=new; HttpOnly','perci_rt=rotated; HttpOnly')
+        with patch.object(shared.ApiHandler,'authenticated',return_value=('jwt',{'id':'user'},cookies)), \
+             patch.object(shared.atomic,'enabled',return_value=True), \
+             patch.object(shared.atomic,'commit',side_effect=shared.core.ApiError('invalid snapshot',400)):
+            status, _, headers=self.call('/api/cloud/sync', {'snapshot':{},'atomic':True})
+        self.assertEqual(status,400)
+        self.assertEqual(headers.get_all('Set-Cookie'),list(cookies))
+
     def test_private_cloud_requires_auth(self):
         with patch.object(shared.core, 'CONFIG', {'url': 'https://x.supabase.co', 'key': 'x'}):
             status, data, _ = self.call('/api/cloud/sync', {'snapshot': {'routines': [], 'records': [], 'habits': []}})

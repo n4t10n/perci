@@ -79,9 +79,9 @@ test('La reconexión histórica de iPhone sigue intacta y Social usa eventos sep
 });
 
 test('Las dos versiones del shell JS y CSS se actualizan juntas',()=>{
-  assert.match(sw,/perci-shell-v1\.19\.1-exercise-context/);
-  assert.match(sw,/src\/app\.js\?v=1\.19\.1/);
-  assert.match(sw,/src\/styles\.css\?v=1\.19\.1/);
-  assert.match(html,/src\/app\.js\?v=1\.19\.1/);
-  assert.match(html,/src\/styles\.css\?v=1\.19\.1/);
+  assert.match(sw,/perci-shell-v1\.19\.2-exercise-context/);
+  assert.match(sw,/src\/app\.js\?v=1\.19\.2/);
+  assert.match(sw,/src\/styles\.css\?v=1\.19\.2/);
+  assert.match(html,/src\/app\.js\?v=1\.19\.2/);
+  assert.match(html,/src\/styles\.css\?v=1\.19\.2/);
 });

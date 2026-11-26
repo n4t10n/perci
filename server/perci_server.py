@@ -178,6 +178,11 @@ def verify_custom_variants(value):
         seen.add(key)
     return value
 
+def valid_activity_minutes(value):
+    # JSON number, not a boolean/string. Preserve the value; never int()/round().
+    return (type(value) in (int, float) and 1 <= value <= 1440)
+
+
 def verify_snapshot(snapshot):
     if not isinstance(snapshot, dict) or not all(isinstance(snapshot.get(k), list) for k in ('routines','records','habits')):
         raise ApiError('Los datos locales no tienen el formato esperado.')
@@ -205,7 +210,7 @@ def verify_snapshot(snapshot):
             if 'variantsEnabled' in e and type(e['variantsEnabled']) is not bool:
                 raise ApiError('Preferencia de variantes inválida.',400)
     for rec in snapshot['records']:
-        if rec.get('type') not in TYPES or not isinstance(rec.get('name'),str) or not rec['name'].strip() or not 1<=int(rec.get('minutes',0))<=1440 or not re.fullmatch(r'\d{4}-\d\d-\d\d',str(rec.get('date',''))):
+        if rec.get('type') not in TYPES or not isinstance(rec.get('name'),str) or not rec['name'].strip() or not valid_activity_minutes(rec.get('minutes')) or not re.fullmatch(r'\d{4}-\d\d-\d\d',str(rec.get('date',''))):
             raise ApiError('Actividad inválida.')
         details=rec.get('setDetails',[])
         if not isinstance(details,list) or len(details)>600 or (details and rec.get('type')!='gym'):
@@ -338,7 +343,7 @@ def upload_data(snapshot, token, user, expected=None):
         for ix,e in enumerate(r['exercises']):
             ex.append({'user_id':user,'routine_id':routine_id,'client_id':to_client('exercise',f"{r['id']}:{ix}"),'position':ix,'name':e['name'].strip(),'target_sets':int(e['sets']),'target_reps':int(e['reps'])})
     batch_upsert('perci_routine_exercises', ex, token, 'user_id,client_id')
-    batch_upsert('perci_activity_records', [{'user_id':user,'client_id':to_client('record',r['id']), 'activity_type':r['type'],'name':r['name'][:80],'activity_date':r['date'],'minutes':int(r['minutes']), 'distance_km':r.get('distance'), 'sets_done':r.get('setsDone'),'volume_kg':r.get('volume'),'note':str(r.get('note',''))[:400]} for r in records], token, 'user_id,client_id')
+    batch_upsert('perci_activity_records', [{'user_id':user,'client_id':to_client('record',r['id']), 'activity_type':r['type'],'name':r['name'][:80],'activity_date':r['date'],'minutes':r['minutes'], 'distance_km':r.get('distance'), 'sets_done':r.get('setsDone'),'volume_kg':r.get('volume'),'note':str(r.get('note',''))[:400]} for r in records], token, 'user_id,client_id')
     # Subir series completadas, idempotentes por registro, ejercicio y número de serie.
     if any(r.get('setDetails') for r in records):
         remote_records=select_rows('perci_activity_records',token,user,'id,client_id')
